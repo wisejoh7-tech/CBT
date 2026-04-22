@@ -86,5 +86,10 @@ service cloud.firestore {
                     );
       allow delete: if isAdmin();
     }
+
+    match /question_bank/{questionId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin() && isValidId(questionId) && isValidQuestion(incoming());
+    }
   }
 }

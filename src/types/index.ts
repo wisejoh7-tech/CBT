@@ -3,6 +3,7 @@ export interface UserProfile {
   email: string;
   displayName: string;
   photoURL?: string;
+  examNumber?: string;
   role: 'student' | 'admin';
   createdAt: string;
 }

@@ -79,6 +79,28 @@
         "status": { "type": "string", "enum": ["in-progress", "completed"] }
       },
       "required": ["userId", "examId", "status"]
+    },
+    "QuestionBank": {
+      "title": "Central Question Bank",
+      "description": "A repository of questions that can be reused across exams.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "options": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "correctOptionIndex": { "type": "integer" },
+        "explanation": { "type": "string" },
+        "subject": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "options", "correctOptionIndex"]
     }
   },
   "firestore": {
@@ -97,6 +119,10 @@
     "/attempts/{attemptId}": {
       "schema": "Attempt",
       "description": "Student exam attempts"
+    },
+    "/question_bank/{questionId}": {
+      "schema": "QuestionBank",
+      "description": "Central repository of questions"
     }
   }
 }

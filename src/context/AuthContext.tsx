@@ -100,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         uid: user.uid,
         email: `${examNumber}@edutest.local`,
         displayName: candidateData.fullName,
+        examNumber: candidateData.examNumber,
         role: 'student',
         createdAt: new Date().toISOString(),
       };
