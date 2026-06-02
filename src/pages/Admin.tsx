@@ -285,7 +285,7 @@ export default function Admin() {
         status: 'active' as const,
         thumbprinted: true,
         updatedAt: serverTimestamp(),
-        pin: Math.floor(1000 + Math.random() * 9000).toString() // Generate PIN
+        pin: Math.floor(100000 + Math.random() * 900000).toString() // Generate 6-digit PIN
       };
       if (editingCandidateId) await updateDoc(doc(db, 'candidates', editingCandidateId), data);
       else await setDoc(doc(db, 'candidates', en), { ...data, registrationDate: new Date().toISOString(), createdAt: new Date().toISOString() });
@@ -346,23 +346,20 @@ export default function Admin() {
 
       // Attempt to send email notification
       const c = candidates.find(can => can.examNumber === at.userId || can.id === at.userId);
-      if (c && profile?.email) { // Assuming we have candidate email, if not we skip
-         // In a real scenario, the candidate object would have an 'email' field.
-         // Let's check if the user profile has it or if we can find it.
-         const candidateEmail = (c as any).email || "";
-         if (candidateEmail) {
-            fetch('/api/notify-result', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: candidateEmail,
-                candidateName: c.fullName,
-                examNumber: c.examNumber,
-                pin: (c as any).pin || "N/A",
-                totalScore: at.score
-              })
-            }).catch(e => console.error("Notification failed", e));
-         }
+      const candidateEmail = (c as any)?.email;
+
+      if (candidateEmail) {
+        fetch('/api/notify-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: candidateEmail,
+            candidateName: c.fullName,
+            examNumber: c.examNumber,
+            pin: (c as any).pin || "N/A",
+            totalScore: at.score
+          })
+        }).catch(e => console.error("Notification failed", e));
       }
 
       toast.success("Result Published!");

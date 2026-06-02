@@ -64,4 +64,6 @@ export interface Attempt {
   completedAt?: any;
   status: 'in-progress' | 'completed';
   proctoringSnaps?: string[];
+  released?: boolean;
+  releasedAt?: any;
 }

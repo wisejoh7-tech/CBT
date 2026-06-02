@@ -28,9 +28,10 @@ app.use(express.json());
 // Database Setup
 export const AppDataSource = new DataSource({
   type: "postgres",
-  url: process.env.DATABASE_URL || "postgres://postgres:password@localhost:5432/cbt_db",
-  synchronize: true, // Be careful with this in production
-  logging: false,
+  url: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  synchronize: process.env.NODE_ENV !== "production", // Never sync in production
+  logging: process.env.NODE_ENV !== "production",
   entities: [User, Candidate],
   migrations: [],
   subscribers: [],
@@ -66,7 +67,7 @@ async function startServer() {
   });
 
   // Get active exam sessions from Redis
-  app.get("/api/active-sessions", async (req, res) => {
+  app.get("/active-sessions", async (req, res) => {
     try {
       const keys = await redisClient.keys("exam_progress:*");
       const sessions = [];
@@ -88,12 +89,12 @@ async function startServer() {
   });
 
   // Candidate Management
-  app.get("/api/candidates", async (req, res) => {
+  app.get("/candidates", async (req, res) => {
     const candidates = await AppDataSource.getRepository(Candidate).find();
     res.json(candidates);
   });
 
-  app.post("/api/candidates", async (req, res) => {
+  app.post("/candidates", async (req, res) => {
     try {
       const candidate = AppDataSource.getRepository(Candidate).create(req.body);
       await AppDataSource.getRepository(Candidate).save(candidate);
@@ -103,13 +104,13 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/candidates/:examNumber", async (req, res) => {
+  app.delete("/candidates/:examNumber", async (req, res) => {
     await AppDataSource.getRepository(Candidate).delete(req.params.examNumber);
     res.status(204).send();
   });
 
   // Email Notification Endpoint
-  app.post("/api/notify-result", async (req, res) => {
+  app.post("/notify-result", async (req, res) => {
     const { email, candidateName, examNumber, pin, totalScore } = req.body;
 
     if (!email) {

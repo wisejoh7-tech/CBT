@@ -26,6 +26,9 @@ export class Candidate {
   @Column({ nullable: true })
   faceUrl?: string;
 
+  @Column({ nullable: true })
+  pin?: string;
+
   @Column("simple-array")
   subjectCombination!: string[];
 
