@@ -95,6 +95,8 @@ export default function Admin() {
   const [analyticsQuestions, setAnalyticsQuestions] = useState<Record<string, Question[]>>({});
   const [selectedAnalyticsExam, setSelectedAnalyticsExam] = useState<string | null>(null);
   const [selectedBankQuestions, setSelectedBankQuestions] = useState<Set<string>>(new Set());
+  const [viewingSnaps, setViewingSnaps] = useState<string | null>(null);
+  const [analyticsMode, setAnalyticsMode] = useState<'performance' | 'items'>('performance');
 
   useEffect(() => {
     if (!user || !profile) return;
@@ -461,12 +463,42 @@ export default function Admin() {
                       <div className="space-y-4 mb-6">
                         <div><div className="flex justify-between text-[8px] font-black mb-1.5"><span className="text-primary/40 uppercase">Progress</span><span className="text-primary">{Math.round(progress)}%</span></div><div className="h-1.5 w-full bg-primary/5 rounded-full overflow-hidden"><div className="h-full bg-primary" style={{ width: `${progress}%` }} /></div></div>
                       </div>
-                      <div className="flex gap-2"><Button onClick={() => handleRemoteAction(s.id, 'reset')} className="flex-1 h-9 rounded-xl border border-primary/10 text-primary text-[8px] font-bold uppercase">Reset PC</Button><Button onClick={() => handleRemoteAction(s.id, 'terminate')} className="flex-1 h-9 rounded-xl border border-primary/10 text-primary text-[8px] font-bold uppercase">Terminate</Button></div>
+                      <div className="flex gap-2">
+                        <Button onClick={() => setViewingSnaps(s.id)} className="flex-1 h-9 rounded-xl border border-primary/10 text-primary text-[8px] font-bold uppercase flex items-center gap-1.5">
+                          <Camera className="w-3 h-3" /> View Snaps
+                        </Button>
+                        <Button onClick={() => handleRemoteAction(s.id, 'reset')} className="flex-1 h-9 rounded-xl border border-primary/10 text-primary text-[8px] font-bold uppercase">Reset PC</Button>
+                        <Button onClick={() => handleRemoteAction(s.id, 'terminate')} className="flex-1 h-9 rounded-xl border border-primary/10 text-primary text-[8px] font-bold uppercase">Terminate</Button>
+                      </div>
                     </Card>
                   );
                 })}
               </div>
             </div>
+
+            {/* Proctor Snapshot Gallery Modal */}
+            <AnimatePresence>
+              {viewingSnaps && (
+                <div className="fixed inset-0 z-[250] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden">
+                    <div className="p-6 bg-primary text-white flex justify-between items-center">
+                      <h3 className="text-sm font-black tracking-widest uppercase">Oversight Snapshots</h3>
+                      <Button variant="ghost" onClick={() => setViewingSnaps(null)} className="text-white h-8 w-8 hover:bg-white/10"><XCircle className="w-5 h-5" /></Button>
+                    </div>
+                    <div className="p-6">
+                      <div className="grid grid-cols-5 gap-3">
+                        {liveSessions.find(s => s.id === viewingSnaps)?.proctoringSnaps?.map((snap, i) => (
+                          <div key={i} className="aspect-square bg-slate-100 rounded-xl overflow-hidden border-2 border-primary/5 hover:border-primary/40 transition-all cursor-zoom-in">
+                            <img src={snap} className="w-full h-full object-cover grayscale contrast-125" />
+                          </div>
+                        )) || <div className="col-span-5 py-20 text-center opacity-20"><CameraOff className="w-12 h-12 mx-auto mb-2" /><p className="text-[10px] font-black uppercase">No Security Snaps Captured Yet</p></div>}
+                      </div>
+                      <p className="mt-6 text-[8px] font-bold text-primary/30 text-center uppercase">Snaps are periodically captured every 120 seconds for identity verification.</p>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
         ) : activeTab === 'candidates' && isRegAdmin ? (
           <div className="flex-1 overflow-y-auto p-4 max-w-4xl mx-auto w-full">
@@ -651,53 +683,107 @@ export default function Admin() {
         ) : activeTab === 'analytics' && isSuperAdmin ? (
           <div className="flex-1 overflow-y-auto p-4 max-w-5xl mx-auto w-full uppercase">
             <div className="space-y-8">
-              <div className="flex justify-between items-end"><div><h2 className="text-2xl font-black text-primary tracking-tighter uppercase">INTELLIGENCE</h2><p className="text-primary/40 text-[10px] font-bold">SYSTEM ANALYTICS</p></div><Badge className="h-8 rounded-full border-2 bg-primary text-white text-[10px] px-4 font-black">{attempts.length} RECORDS</Badge></div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="rounded-[32px] border-2 border-primary/10 p-6 bg-white shadow-xl">
-                  <h3 className="text-[10px] font-black text-primary/40 mb-6">PASS RATE DISTRIBUTION</h3>
-                  <div className="h-[250px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={exams.map(e => { const at = attempts.filter(a => a.examId === e.id); if (at.length === 0) return null; return { name: e.subject, rate: Math.round((at.filter(a => a.score >= (a.totalPossible / 2)).length / at.length) * 100) }; }).filter(Boolean)}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--primary) / 0.05)" /><XAxis dataKey="name" hide /><YAxis axisLine={false} tickLine={false} tick={{fill: 'oklch(var(--primary))', fontSize: 10, fontWeight: 900}} unit="%" /><Tooltip contentStyle={{borderRadius: '16px', border: 'none', background: 'white', fontWeight: 900, fontSize: 10}} /><Bar dataKey="rate" fill="oklch(var(--primary))" radius={[8, 8, 8, 8]} barSize={40} /></BarChart></ResponsiveContainer></div>
-                </Card>
-                <Card className="rounded-[32px] border-2 border-primary/10 p-6 bg-white shadow-xl">
-                  <h3 className="text-[10px] font-black text-primary/40 mb-6">PERFORMANCE TREND</h3>
-                  <div className="h-[250px] w-full"><ResponsiveContainer width="100%" height="100%"><AreaChart data={exams.map(e => { const at = attempts.filter(a => a.examId === e.id); if (at.length === 0) return null; return { name: e.subject, score: parseFloat((at.reduce((acc, c) => acc + c.score, 0) / at.length).toFixed(1)) }; }).filter(Boolean)}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--primary) / 0.05)" /><XAxis dataKey="name" hide /><YAxis axisLine={false} tickLine={false} tick={{fill: 'oklch(var(--primary))', fontSize: 10, fontWeight: 900}} /><Tooltip contentStyle={{borderRadius: '16px', border: 'none', background: 'white', fontWeight: 900, fontSize: 10}} /><Area type="monotone" dataKey="score" stroke="oklch(var(--primary))" fill="oklch(var(--primary) / 0.1)" strokeWidth={3} /></AreaChart></ResponsiveContainer></div>
-                </Card>
+              <div className="flex justify-between items-end">
+                <div>
+                  <h2 className="text-2xl font-black text-primary tracking-tighter uppercase">INTELLIGENCE</h2>
+                  <div className="flex gap-4 mt-2">
+                    <button onClick={() => setAnalyticsMode('performance')} className={cn("text-[10px] font-black tracking-widest uppercase", analyticsMode === 'performance' ? "text-primary border-b-2 border-primary" : "text-primary/30")}>Student Performance</button>
+                    <button onClick={() => setAnalyticsMode('items')} className={cn("text-[10px] font-black tracking-widest uppercase", analyticsMode === 'items' ? "text-primary border-b-2 border-primary" : "text-primary/30")}>Item Difficulty Analysis</button>
+                  </div>
+                </div>
+                <Badge className="h-8 rounded-full border-2 bg-primary text-white text-[10px] px-4 font-black">{attempts.length} RECORDS</Badge>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                 <aside className="space-y-2">
-                    <p className="text-[10px] font-black text-primary/30 tracking-widest px-2 mb-4">MODULES</p>
-                    {exams.map(e => (
-                      <button key={e.id} onClick={() => setSelectedAnalyticsExam(e.id)} className={cn("w-full text-left p-4 rounded-xl border-2 transition-all", selectedAnalyticsExam === e.id ? "bg-primary text-white border-primary shadow-md" : "bg-white border-primary/5 hover:border-primary/10")}>
-                        <p className="font-black text-[10px] truncate uppercase">{e.title}</p>
-                      </button>
-                    ))}
-                 </aside>
-                 <div className="md:col-span-3">
-                   {selectedAnalyticsExam ? (
-                     <div className="space-y-4">
-                        <div className="grid grid-cols-3 gap-4">
-                           {(() => {
-                             const at = attempts.filter(a => a.examId === selectedAnalyticsExam);
-                             const avg = at.length > 0 ? at.reduce((acc, c) => acc + c.score, 0) / at.length : 0;
-                             return (<><Card className="p-4 bg-white border-2 border-primary/5 rounded-2xl"><p className="text-[8px] font-black text-primary/40 mb-1 uppercase">AVG SCORE</p><h5 className="text-2xl font-black">{avg.toFixed(1)}</h5></Card><Card className="p-4 bg-white border-2 border-primary/5 rounded-2xl"><p className="text-[8px] font-black text-primary/40 mb-1 uppercase">PASS RATE</p><h5 className="text-2xl font-black">{at.length > 0 ? Math.round((at.filter(a => a.score >= a.totalPossible/2).length/at.length)*100) : 0}%</h5></Card><Card className="p-4 bg-white border-2 border-primary/5 rounded-2xl"><p className="text-[8px] font-black text-primary/40 mb-1 uppercase">HIGHEST</p><h5 className="text-2xl font-black">{at.length > 0 ? Math.max(...at.map(a => a.score)) : 0}</h5></Card></>);
-                           })()}
+
+              {analyticsMode === 'performance' ? (
+                <>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card className="rounded-[32px] border-2 border-primary/10 p-6 bg-white shadow-xl">
+                      <h3 className="text-[10px] font-black text-primary/40 mb-6">PASS RATE DISTRIBUTION</h3>
+                      <div className="h-[250px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={exams.map(e => { const at = attempts.filter(a => a.examId === e.id); if (at.length === 0) return null; return { name: e.subject, rate: Math.round((at.filter(a => a.score >= (a.totalPossible / 2)).length / at.length) * 100) }; }).filter(Boolean)}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--primary) / 0.05)" /><XAxis dataKey="name" hide /><YAxis axisLine={false} tickLine={false} tick={{fill: 'oklch(var(--primary))', fontSize: 10, fontWeight: 900}} unit="%" /><Tooltip contentStyle={{borderRadius: '16px', border: 'none', background: 'white', fontWeight: 900, fontSize: 10}} /><Bar dataKey="rate" fill="oklch(var(--primary))" radius={[8, 8, 8, 8]} barSize={40} /></BarChart></ResponsiveContainer></div>
+                    </Card>
+                    <Card className="rounded-[32px] border-2 border-primary/10 p-6 bg-white shadow-xl">
+                      <h3 className="text-[10px] font-black text-primary/40 mb-6">PERFORMANCE TREND</h3>
+                      <div className="h-[250px] w-full"><ResponsiveContainer width="100%" height="100%"><AreaChart data={exams.map(e => { const at = attempts.filter(a => a.examId === e.id); if (at.length === 0) return null; return { name: e.subject, score: parseFloat((at.reduce((acc, c) => acc + c.score, 0) / at.length).toFixed(1)) }; }).filter(Boolean)}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--primary) / 0.05)" /><XAxis dataKey="name" hide /><YAxis axisLine={false} tickLine={false} tick={{fill: 'oklch(var(--primary))', fontSize: 10, fontWeight: 900}} /><Tooltip contentStyle={{borderRadius: '16px', border: 'none', background: 'white', fontWeight: 900, fontSize: 10}} /><Area type="monotone" dataKey="score" stroke="oklch(var(--primary))" fill="oklch(var(--primary) / 0.1)" strokeWidth={3} /></AreaChart></ResponsiveContainer></div>
+                    </Card>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <aside className="space-y-2">
+                        <p className="text-[10px] font-black text-primary/30 tracking-widest px-2 mb-4">MODULES</p>
+                        {exams.map(e => (
+                          <button key={e.id} onClick={() => setSelectedAnalyticsExam(e.id)} className={cn("w-full text-left p-4 rounded-xl border-2 transition-all", selectedAnalyticsExam === e.id ? "bg-primary text-white border-primary shadow-md" : "bg-white border-primary/5 hover:border-primary/10")}>
+                            <p className="font-black text-[10px] truncate uppercase">{e.title}</p>
+                          </button>
+                        ))}
+                    </aside>
+                    <div className="md:col-span-3">
+                      {selectedAnalyticsExam ? (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-3 gap-4">
+                              {(() => {
+                                const at = attempts.filter(a => a.examId === selectedAnalyticsExam);
+                                const avg = at.length > 0 ? at.reduce((acc, c) => acc + c.score, 0) / at.length : 0;
+                                return (<><Card className="p-4 bg-white border-2 border-primary/5 rounded-2xl"><p className="text-[8px] font-black text-primary/40 mb-1 uppercase">AVG SCORE</p><h5 className="text-2xl font-black">{avg.toFixed(1)}</h5></Card><Card className="p-4 bg-white border-2 border-primary/5 rounded-2xl"><p className="text-[8px] font-black text-primary/40 mb-1 uppercase">PASS RATE</p><h5 className="text-2xl font-black">{at.length > 0 ? Math.round((at.filter(a => a.score >= a.totalPossible/2).length/at.length)*100) : 0}%</h5></Card><Card className="p-4 bg-white border-2 border-primary/5 rounded-2xl"><p className="text-[8px] font-black text-primary/40 mb-1 uppercase">HIGHEST</p><h5 className="text-2xl font-black">{at.length > 0 ? Math.max(...at.map(a => a.score)) : 0}</h5></Card></>);
+                              })()}
+                            </div>
+                            <div className="space-y-2">
+                              {attempts.filter(a => a.examId === selectedAnalyticsExam).map(at => {
+                                const c = candidates.find(can => can.examNumber === at.userId || can.id === at.userId);
+                                return (
+                                  <Card key={at.id} className="p-4 border-2 border-primary/5 bg-white flex justify-between items-center rounded-2xl shadow-sm">
+                                    <div className="flex items-center gap-3"><div className="w-10 h-10 bg-primary/5 rounded-xl border-2 flex items-center justify-center font-black text-primary/40 uppercase">{c?.fullName?.charAt(0) || "U"}</div><div><p className="font-black text-xs uppercase truncate max-w-[150px]">{c?.fullName || "ANONYMOUS"}</p><p className="text-[8px] font-bold text-primary/20">{at.userId}</p></div></div>
+                                    <div className="flex items-center gap-4"><p className="text-xl font-black">{at.score}/{at.totalPossible}</p>{at.released ? <Badge className="bg-sky-400 text-white text-[7px] border-none font-black uppercase">SENT</Badge> : <Button onClick={() => handleReleaseResult(at.id)} disabled={releasing === at.id} className="h-8 text-[8px] font-black px-4 bg-primary text-white rounded-lg shadow-md uppercase">RELEASE</Button>}</div>
+                                  </Card>
+                                );
+                              })}
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                          {attempts.filter(a => a.examId === selectedAnalyticsExam).map(at => {
-                            const c = candidates.find(can => can.examNumber === at.userId || can.id === at.userId);
-                            return (
-                              <Card key={at.id} className="p-4 border-2 border-primary/5 bg-white flex justify-between items-center rounded-2xl shadow-sm">
-                                <div className="flex items-center gap-3"><div className="w-10 h-10 bg-primary/5 rounded-xl border-2 flex items-center justify-center font-black text-primary/40 uppercase">{c?.fullName?.charAt(0) || "U"}</div><div><p className="font-black text-xs uppercase truncate max-w-[150px]">{c?.fullName || "ANONYMOUS"}</p><p className="text-[8px] font-bold text-primary/20">{at.userId}</p></div></div>
-                                <div className="flex items-center gap-4"><p className="text-xl font-black">{at.score}/{at.totalPossible}</p>{at.released ? <Badge className="bg-sky-400 text-white text-[7px] border-none font-black uppercase">SENT</Badge> : <Button onClick={() => handleReleaseResult(at.id)} disabled={releasing === at.id} className="h-8 text-[8px] font-black px-4 bg-primary text-white rounded-lg shadow-md uppercase">RELEASE</Button>}</div>
-                              </Card>
-                            );
-                          })}
-                        </div>
+                      ) : (
+                        <div className="h-[400px] bg-slate-50 border-2 border-dashed border-primary/10 rounded-[32px] flex flex-col items-center justify-center p-8 text-center opacity-30"><PieChartIcon className="w-10 h-10 mb-4" /><p className="text-[10px] font-black uppercase">SELECT A MODULE TO VIEW ANALYTICS</p></div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-6">
+                   <aside className="flex gap-2 overflow-x-auto pb-4">
+                      {exams.map(e => (
+                        <button key={e.id} onClick={() => setSelectedAnalyticsExam(e.id)} className={cn("px-6 py-3 rounded-full border-2 whitespace-nowrap text-[10px] font-black transition-all", selectedAnalyticsExam === e.id ? "bg-primary text-white border-primary" : "bg-white border-primary/5")}>{e.subject}</button>
+                      ))}
+                   </aside>
+
+                   {selectedAnalyticsExam && analyticsQuestions[selectedAnalyticsExam] ? (
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {analyticsQuestions[selectedAnalyticsExam].map((q, idx) => {
+                          const atForExam = attempts.filter(a => a.examId === selectedAnalyticsExam || a.results?.some((r: any) => r.examId === selectedAnalyticsExam));
+                          const correctCount = atForExam.filter(a => a.answers?.[q.id] === q.correctOptionIndex).length;
+                          const totalAns = atForExam.filter(a => a.answers?.[q.id] !== undefined).length;
+                          const difficulty = totalAns > 0 ? Math.round((correctCount / totalAns) * 100) : 0;
+
+                          return (
+                            <Card key={q.id} className="p-6 bg-white border-2 border-primary/10 rounded-[24px]">
+                               <div className="flex justify-between items-start mb-4">
+                                  <Badge className="bg-primary/5 text-primary text-[8px] font-black uppercase">Item {idx + 1}</Badge>
+                                  <div className="text-right">
+                                     <p className="text-[10px] font-black text-primary uppercase">Difficulty: {difficulty}%</p>
+                                     <div className="w-24 h-1.5 bg-primary/5 rounded-full mt-1 overflow-hidden">
+                                        <div className={cn("h-full transition-all", difficulty > 70 ? "bg-emerald-500" : difficulty > 40 ? "bg-amber-500" : "bg-rose-500")} style={{ width: `${difficulty}%` }} />
+                                     </div>
+                                  </div>
+                               </div>
+                               <p className="text-[11px] font-bold text-primary/60 mb-4 line-clamp-2 uppercase">{q.text}</p>
+                               <div className="flex items-center gap-6 text-[9px] font-black uppercase">
+                                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500" /> Correct: {correctCount}</div>
+                                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-rose-500" /> Wrong: {totalAns - correctCount}</div>
+                               </div>
+                            </Card>
+                          );
+                        })}
                      </div>
                    ) : (
-                     <div className="h-[400px] bg-slate-50 border-2 border-dashed border-primary/10 rounded-[32px] flex flex-col items-center justify-center p-8 text-center opacity-30"><PieChartIcon className="w-10 h-10 mb-4" /><p className="text-[10px] font-black uppercase">SELECT A MODULE TO VIEW ANALYTICS</p></div>
+                     <div className="h-[400px] bg-slate-50 border-2 border-dashed border-primary/10 rounded-[32px] flex items-center justify-center text-center opacity-30"><p className="text-[10px] font-black uppercase">Select a module to view Item Response data</p></div>
                    )}
-                 </div>
-              </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (
