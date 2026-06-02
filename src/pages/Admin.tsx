@@ -525,6 +525,65 @@ export default function Admin() {
                   <Button type="submit" className="w-full h-14 bg-primary text-white rounded-2xl font-black text-[12px] shadow-xl uppercase tracking-widest">{editingCandidateId ? 'Update Record' : 'Finalize Registration'}</Button>
                 </form>
               </Card>
+
+              {/* Bulk Registration Section */}
+              <Card className="rounded-[32px] border-2 border-primary/10 bg-white p-8 shadow-xl">
+                 <div className="flex justify-between items-center mb-6">
+                    <div>
+                       <h3 className="text-xl font-black text-primary  tracking-tighter uppercase">Bulk Enrollment</h3>
+                       <p className="text-[9px] font-black text-primary/40  tracking-widest uppercase">Register multiple candidates via CSV/Excel</p>
+                    </div>
+                    <div className="bg-primary/5 p-3 rounded-xl border border-primary/10 flex items-center gap-3">
+                       <Upload className="w-5 h-5 text-primary" />
+                       <p className="text-[7px] font-black text-primary/60 leading-tight">Format: Full Name, DOB, Subj1, Subj2, Subj3, Subj4</p>
+                    </div>
+                 </div>
+                 <div className="relative group">
+                    <Input
+                      type="file"
+                      accept=".csv"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = async (ev) => {
+                          const lines = (ev.target?.result as string).split('\n').filter(l => l.trim());
+                          let successCount = 0;
+                          toast.loading(`Processing ${lines.length} registrations...`);
+                          for (const line of lines) {
+                            const [name, dob, s1, s2, s3, s4] = line.split(',').map(s => s.trim());
+                            if (name && dob && s1 && s2 && s3 && s4) {
+                              const en = `${new Date().getFullYear()}${Math.floor(100000 + Math.random() * 900000)}XY`;
+                              try {
+                                await setDoc(doc(db, 'candidates', en), {
+                                  fullName: name.toUpperCase(),
+                                  examNumber: en,
+                                  dateOfBirth: dob,
+                                  subjectCombination: [s1, s2, s3, s4],
+                                  status: 'active',
+                                  thumbprinted: false, // Must be verified in person
+                                  registrationDate: new Date().toISOString(),
+                                  createdAt: new Date().toISOString()
+                                });
+                                successCount++;
+                              } catch (err) {}
+                            }
+                          }
+                          toast.dismiss();
+                          toast.success(`Successfully enrolled ${successCount} candidates.`);
+                          fetchCandidates();
+                        };
+                        reader.readAsText(file);
+                      }}
+                      className="h-24 border-2 border-dashed border-primary/20 rounded-2xl cursor-pointer pt-14 text-center text-[10px] font-black"
+                    />
+                    <div className="absolute top-6 left-0 right-0 pointer-events-none flex flex-col items-center">
+                       <Database className="w-8 h-8 text-primary/10 mb-1" />
+                       <span className="text-[10px] font-black text-primary/30 uppercase tracking-widest">Select Enrollment Data (.csv)</span>
+                    </div>
+                 </div>
+              </Card>
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">{candidates.map(c => (<Card key={c.id} className="p-4 border-2 border-primary/10 bg-white flex justify-between items-center group hover:border-primary transition-all rounded-2xl shadow-sm"><div className="flex items-center gap-3"><div className="w-12 h-12 bg-primary/5 rounded-xl border-2 overflow-hidden flex items-center justify-center">{c.faceUrl ? <img src={c.faceUrl} className="w-full h-full object-cover" /> : <p className="font-black opacity-20 uppercase text-[12px]">{c.fullName.charAt(0)}</p>}</div><div><h4 className="font-black text-[12px] truncate max-w-[120px] uppercase">{c.fullName}</h4><p className="text-[12px] font-bold text-primary/40 uppercase tracking-widest">{c.examNumber}</p></div></div><div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => startEditCandidate(c)} className="h-9 px-3 rounded-lg uppercase"><Pencil className="w-3 h-3" /></Button><Button variant="default" size="sm" onClick={() => handleStartCandidateExam(c.examNumber)} className="h-9 px-4 text-[12px] font-black uppercase">Run</Button><Button variant="ghost" size="icon" onClick={async () => { if(confirm("Permanently delete candidate?")) { await deleteDoc(doc(db, 'candidates', c.id)); fetchCandidates(); } }} className="h-9 w-9 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></Button></div></Card>))}</div>
             </div>
           </div>
