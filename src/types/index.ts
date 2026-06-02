@@ -44,6 +44,8 @@ export interface Question {
   options: string[];
   correctOptionIndex: number;
   explanation?: string;
+  imageUrl?: string;
+  audioUrl?: string;
 }
 
 export interface Attempt {
@@ -59,4 +61,5 @@ export interface Attempt {
   startedAt: any;
   completedAt?: any;
   status: 'in-progress' | 'completed';
+  proctoringSnaps?: string[];
 }

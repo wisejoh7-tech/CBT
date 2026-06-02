@@ -4,12 +4,14 @@ import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firesto
 import { db } from '@/src/lib/firebase';
 import { Candidate, Attempt } from '@/src/types';
 import { Button } from '@/lib/ui/button';
-import { Printer, ArrowLeft, ShieldCheck, BadgeCheck } from 'lucide-react';
+import { Printer, ArrowLeft, ShieldCheck, BadgeCheck, Download } from 'lucide-react';
 import { Separator } from '@/lib/ui/separator';
 import { Badge } from '@/lib/ui/badge';
 import { useAuth } from '@/src/context/AuthContext';
 import { auth } from '@/src/lib/firebase';
 import { signInAnonymously } from 'firebase/auth';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function ResultSlip() {
   const { examNumber } = useParams<{ examNumber: string }>();
@@ -86,6 +88,58 @@ export default function ResultSlip() {
   const totalScore = results.reduce((acc: number, curr: any) => acc + (Number(curr.score) || 0), 0) || Number(unifiedAttempt.score) || 0;
   const totalPossible = results.reduce((acc: number, curr: any) => acc + (Number(curr.totalPossible) || 0), 0) || Number(unifiedAttempt.totalPossible) || 0;
 
+  const downloadPDF = () => {
+    if (!candidate || !unifiedAttempt) return;
+
+    const doc = new jsPDF();
+    const primaryColor = [14, 165, 233]; // #0EA5E9
+
+    // Header
+    doc.setFillColor(248, 250, 252);
+    doc.rect(0, 0, 210, 40, 'F');
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('VIVI CBT OFFICIAL RESULT', 105, 20, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text('Unified Examination Standards', 105, 28, { align: 'center' });
+
+    // Candidate Info
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.text(`Full Name: ${candidate.fullName}`, 20, 55);
+    doc.text(`Exam Number: ${candidate.examNumber}`, 20, 65);
+    doc.text(`Date of Birth: ${candidate.dateOfBirth || 'N/A'}`, 20, 75);
+    doc.text(`Date Issued: ${new Date().toLocaleDateString()}`, 20, 85);
+
+    // Results Table
+    const tableBody = results.length > 0
+      ? results.map((r: any) => [r.subject.toUpperCase(), r.score.toString()])
+      : [[unifiedAttempt.subject?.toUpperCase() || 'UNIFIED CONSOLIDATED ASSESSMENT', unifiedAttempt.score.toString()]];
+
+    (doc as any).autoTable({
+      startY: 95,
+      head: [['SUBJECT', 'SCORE']],
+      body: tableBody,
+      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+      styles: { fontSize: 10, cellPadding: 5 },
+      foot: [['AGGREGATE SCORE', totalScore.toString()]],
+      footStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' }
+    });
+
+    // Verification Seal
+    const finalY = (doc as any).lastAutoTable.finalY + 20;
+    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.setLineWidth(0.5);
+    doc.circle(170, finalY, 15, 'S');
+    doc.setFontSize(6);
+    doc.text('OFFICIAL', 170, finalY - 2, { align: 'center' });
+    doc.text('SEAL', 170, finalY + 4, { align: 'center' });
+
+    doc.save(`Result_${candidate.examNumber}.pdf`);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 py-4 px-4 print:p-0 print:bg-white selection:bg-primary/10 font-sans">
       {/* Print Controls (Hidden on Print) */}
@@ -97,12 +151,21 @@ export default function ResultSlip() {
         >
           <ArrowLeft className="w-4 h-4" /> Back
         </Button>
-        <Button
-          onClick={() => window.print()}
-          className="bg-primary text-white font-black  text-[11px] tracking-widest gap-3 rounded-2xl h-14 px-10 shadow-2xl shadow-primary/20 border-none hover:bg-primary/90"
-        >
-          <Printer className="w-5 h-5" /> Print Official Result
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={downloadPDF}
+            variant="outline"
+            className="border-2 border-primary/20 text-primary font-black text-[11px] tracking-widest gap-3 rounded-2xl h-14 px-6 hover:bg-primary/5 transition-all"
+          >
+            <Download className="w-5 h-5" /> Download PDF
+          </Button>
+          <Button
+            onClick={() => window.print()}
+            className="bg-primary text-white font-black  text-[11px] tracking-widest gap-3 rounded-2xl h-14 px-10 shadow-2xl shadow-primary/20 border-none hover:bg-primary/90"
+          >
+            <Printer className="w-5 h-5" /> Print Official Result
+          </Button>
+        </div>
       </div>
 
       {/* Official Result Slip Paper */}

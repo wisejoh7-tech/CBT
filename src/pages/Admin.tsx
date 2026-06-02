@@ -41,7 +41,7 @@ export default function Admin() {
 
   const [newExam, setNewExam] = useState<{title: string, subject: string, description: string, durationMinutes: number}>({ title: '', subject: '', description: '', durationMinutes: 30 });
   const [editingExamId, setEditingExamId] = useState<string | null>(null);
-  const [newQuestion, setNewQuestion] = useState({ text: '', options: ['', '', '', ''], correctOptionIndex: 0 });
+  const [newQuestion, setNewQuestion] = useState({ text: '', options: ['', '', '', ''], correctOptionIndex: 0, imageUrl: '', audioUrl: '' });
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   
   const [newCandidate, setNewCandidate] = useState({
@@ -562,6 +562,14 @@ export default function Admin() {
                         <textarea className="w-full min-h-[100px] rounded-xl border-2 border-primary/5 bg-slate-50 p-4 text-sm font-bold focus:border-primary outline-none" placeholder="TYPE QUESTIONS HERE..." value={newQuestion.text} onChange={e => setNewQuestion({...newQuestion, text: e.target.value.toUpperCase()})} required />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-[10px] font-black opacity-40 uppercase">Image URL (Optional)</Label>
+                          <Input placeholder="HTTPS://..." value={newQuestion.imageUrl} onChange={e => setNewQuestion({...newQuestion, imageUrl: e.target.value})} className="h-11 text-xs rounded-lg font-black" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-[10px] font-black opacity-40 uppercase">Audio URL (Optional)</Label>
+                          <Input placeholder="HTTPS://..." value={newQuestion.audioUrl} onChange={e => setNewQuestion({...newQuestion, audioUrl: e.target.value})} className="h-11 text-xs rounded-lg font-black" />
+                        </div>
                         {newQuestion.options.map((opt, i) => (
                           <div key={i} className="flex gap-2">
                             <Input value={opt} onChange={e => { const o = [...newQuestion.options]; o[i] = e.target.value.toUpperCase(); setNewQuestion({...newQuestion, options: o}); }} className="h-12 text-xs font-black rounded-lg" placeholder={`OPTION ${String.fromCharCode(65 + i)}`} required />
@@ -606,6 +614,8 @@ export default function Admin() {
                     <div className="space-y-4">
                        <textarea className="w-full min-h-[80px] rounded-xl border-2 border-primary/5 bg-slate-50 p-4 text-xs font-bold focus:border-primary outline-none" placeholder="QUESTION TEXT..." value={newQuestion.text} onChange={e => setNewQuestion({...newQuestion, text: e.target.value.toUpperCase()})} />
                        <div className="grid grid-cols-2 gap-2">
+                          <Input placeholder="IMAGE URL" value={newQuestion.imageUrl} onChange={e => setNewQuestion({...newQuestion, imageUrl: e.target.value})} className="h-10 text-[9px] font-black" />
+                          <Input placeholder="AUDIO URL" value={newQuestion.audioUrl} onChange={e => setNewQuestion({...newQuestion, audioUrl: e.target.value})} className="h-10 text-[9px] font-black" />
                           {newQuestion.options.map((opt, i) => <Input key={i} placeholder={`OPT ${i+1}`} value={opt} onChange={e => { const o = [...newQuestion.options]; o[i] = e.target.value.toUpperCase(); setNewQuestion({...newQuestion, options: o}); }} className="h-10 text-[9px] font-black" />)}
                        </div>
                        <Button onClick={() => addToBank(newQuestion)} className="w-full h-11 bg-primary text-white rounded-xl font-black text-[9px] shadow-lg">STORE IN BANK</Button>

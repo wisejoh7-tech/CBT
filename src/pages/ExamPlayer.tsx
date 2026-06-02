@@ -29,7 +29,10 @@ import {
   MousePointer2,
   RefreshCw,
   Printer,
-  LogOut
+  LogOut,
+  Volume2,
+  CameraOff,
+  Eye
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils/utils';
 import { GoogleGenAI } from "@google/genai";
@@ -55,11 +58,23 @@ export default function ExamPlayer() {
   const [acceptedInstructions, setAcceptedInstructions] = useState(false);
   const [lastSaved, setLastSaved] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
-  
+  const [proctoringActive, setProctoringActive] = useState(false);
+
   const { profile, user, logOut } = useAuth();
   const { socket } = useSocket();
   const navigate = useNavigate();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Synchronization when coming back online
+  useEffect(() => {
+    const handleOnlineSync = () => {
+      if (user) {
+        saveStateToFirestore(answers, activeExamIndex, currentQuestionIndex, flaggedQuestions, timeLeft || 0);
+      }
+    };
+    window.addEventListener('online', handleOnlineSync);
+    return () => window.removeEventListener('online', handleOnlineSync);
+  }, [user, answers, activeExamIndex, currentQuestionIndex, flaggedQuestions, timeLeft, saveStateToFirestore]);
 
   // Socket.io real-time reporting
   useEffect(() => {
@@ -96,10 +111,27 @@ export default function ExamPlayer() {
     navigate('/');
   };
 
-  // Persistence to Firestore
+  // Persistence to Firestore and LocalStorage
   const saveStateToFirestore = useCallback(async (currentAnswers: Record<string, number>, currentExamIdx: number, currentQIdx: number, currentFlags: Set<string>, currentTimer: number) => {
     if (!user || !profile || isCompleted) return;
     setIsSaving(true);
+
+    // Always save to localStorage first for offline safety
+    const localData = {
+      answers: currentAnswers,
+      activeExamIndex: currentExamIdx,
+      currentQuestionIndex: currentQIdx,
+      flagged: Array.from(currentFlags),
+      timeLeft: currentTimer,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(`exam_state_${user.uid}`, JSON.stringify(localData));
+
+    if (!navigator.onLine) {
+      setIsSaving(false);
+      return; // Skip firestore if offline, will sync when online
+    }
+
     try {
       const attemptRef = doc(db, 'attempts', `${user.uid}_unified`);
       await setDoc(attemptRef, {
@@ -133,6 +165,63 @@ export default function ExamPlayer() {
   const [cheatingAttempts, setCheatingAttempts] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const videoRefProctor = useRef<HTMLVideoElement | null>(null);
+
+  // AI Proctoring: Periodic Webcam Capture
+  useEffect(() => {
+    if (!hasStarted || isCompleted || !user) return;
+
+    let proctorInterval: NodeJS.Timeout;
+
+    const setupProctoring = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 160, height: 120 } });
+        if (videoRefProctor.current) {
+          videoRefProctor.current.srcObject = stream;
+        }
+        setProctoringActive(true);
+
+        proctorInterval = setInterval(async () => {
+          if (videoRefProctor.current) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 160;
+            canvas.height = 120;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(videoRefProctor.current, 0, 0, 160, 120);
+              const snap = canvas.toDataURL('image/jpeg', 0.5);
+
+              // Save snap to Firestore attempt log
+              const attemptRef = doc(db, 'attempts', `${user.uid}_unified`);
+              const attemptDoc = await getDoc(attemptRef);
+              const snaps = attemptDoc.exists() ? (attemptDoc.data().proctoringSnaps || []) : [];
+
+              // Keep only last 10 snaps to save space
+              const newSnaps = [...snaps, snap].slice(-10);
+
+              await updateDoc(attemptRef, {
+                proctoringSnaps: newSnaps
+              });
+            }
+          }
+        }, 120000); // Every 2 minutes
+      } catch (err) {
+        console.error("Proctoring failed:", err);
+        toast.error("Security violation: Camera access is mandatory.");
+        setProctoringActive(false);
+      }
+    };
+
+    setupProctoring();
+
+    return () => {
+      if (proctorInterval) clearInterval(proctorInterval);
+      if (videoRefProctor.current && videoRefProctor.current.srcObject) {
+        const stream = videoRefProctor.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [hasStarted, isCompleted, user]);
 
   const handleSubmit = useCallback(async () => {
     if (isSubmitting || isCompleted) return;
@@ -291,23 +380,44 @@ export default function ExamPlayer() {
         }
         setQuestionsByExam(qMap);
 
-        // Restore active session from Firestore
-        const attemptRef = doc(db, 'attempts', `${user.uid}_unified`);
-        const attemptDoc = await getDoc(attemptRef);
+        // Restore active session
+        let savedState: any = null;
 
-        if (attemptDoc.exists()) {
-          const data = attemptDoc.data();
-          if (data.status === 'completed') {
+        // 1. Try Firestore first if online
+        if (navigator.onLine) {
+          try {
+            const attemptRef = doc(db, 'attempts', `${user.uid}_unified`);
+            const attemptDoc = await getDoc(attemptRef);
+            if (attemptDoc.exists()) {
+              savedState = attemptDoc.data();
+            }
+          } catch (e) {
+            console.warn("Firestore restore failed, falling back to local storage", e);
+          }
+        }
+
+        // 2. Fallback to LocalStorage if Firestore is unavailable or empty
+        const localJson = localStorage.getItem(`exam_state_${user.uid}`);
+        if (localJson) {
+          const localData = JSON.parse(localJson);
+          // Only use local if it's newer than Firestore or if Firestore failed
+          if (!savedState || localData.timestamp > (savedState.lastUpdated?.toMillis?.() || 0)) {
+            savedState = { ...savedState, ...localData };
+          }
+        }
+
+        if (savedState) {
+          if (savedState.status === 'completed') {
             setIsCompleted(true);
-            setSessionResults(data.results || []);
+            setSessionResults(savedState.results || []);
             return;
           }
           setHasStarted(true);
-          setAnswers(data.answers || {});
-          setActiveExamIndex(data.activeExamIndex || 0);
-          setCurrentQuestionIndex(data.currentQuestionIndex || 0);
-          setFlaggedQuestions(new Set(data.flagged || []));
-          if (data.timeLeft !== undefined) setTimeLeft(data.timeLeft);
+          setAnswers(savedState.answers || {});
+          setActiveExamIndex(savedState.activeExamIndex || 0);
+          setCurrentQuestionIndex(savedState.currentQuestionIndex || 0);
+          setFlaggedQuestions(new Set(savedState.flagged || []));
+          if (savedState.timeLeft !== undefined) setTimeLeft(savedState.timeLeft);
         } else {
           // Initialize time
           const totalMinutes = exams.reduce((acc, curr) => acc + (parseInt(curr.durationMinutes as any) || 30), 0);
@@ -698,6 +808,15 @@ export default function ExamPlayer() {
         </div>
         
         <div className="flex gap-8 items-center">
+          {proctoringActive && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 rounded-full border border-rose-100">
+              <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
+              <span className="text-[8px] font-black text-rose-600 uppercase tracking-widest flex items-center gap-1">
+                <Eye className="w-3 h-3" /> Proctoring Active
+              </span>
+              <video ref={videoRefProctor} autoPlay muted playsInline className="hidden" />
+            </div>
+          )}
           <div className="flex items-center gap-3 text-right pr-4 border-r border-primary/10">
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-2">
@@ -825,6 +944,24 @@ export default function ExamPlayer() {
                   <h3 className="text-3xl md:text-4xl leading-snug font-black text-primary tracking-tight mb-8">
                     {currentQuestion.text}
                   </h3>
+
+                  {currentQuestion.imageUrl && (
+                    <div className="mb-8 rounded-3xl overflow-hidden border-4 border-primary/10 shadow-xl max-w-2xl mx-auto bg-white">
+                      <img src={currentQuestion.imageUrl} alt="Question Graphic" className="w-full h-auto object-contain max-h-[400px]" />
+                    </div>
+                  )}
+
+                  {currentQuestion.audioUrl && (
+                    <div className="mb-8 p-6 bg-primary/5 rounded-3xl border-2 border-primary/10 flex items-center gap-6">
+                      <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg">
+                        <Volume2 className="w-6 h-6" />
+                      </div>
+                      <audio controls className="flex-1 h-10 accent-primary">
+                        <source src={currentQuestion.audioUrl} />
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 gap-3">
                     {currentQuestion.options.map((option, idx) => {
