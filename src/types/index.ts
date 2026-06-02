@@ -16,6 +16,7 @@ export interface Candidate {
   id: string;
   examNumber: string;
   fullName: string;
+  email?: string;
   dateOfBirth?: string;
   status: 'active' | 'suspended';
   thumbprinted: boolean;

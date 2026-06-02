@@ -6,6 +6,7 @@ import { createClient } from "redis";
 import { DataSource } from "typeorm";
 import cors from "cors";
 import dotenv from "dotenv";
+import nodemailer from "nodemailer";
 import { User } from "./entities/User";
 import { Candidate } from "./entities/Candidate";
 
@@ -41,6 +42,17 @@ const redisClient = createClient({
 });
 
 redisClient.on("error", (err) => console.log("Redis Client Error", err));
+
+// Mailer Setup
+const transporter = nodemailer.createTransport({
+  host: process.env.MAIL_HOST || "smtp.gmail.com",
+  port: parseInt(process.env.MAIL_PORT || "587"),
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+});
 
 async function startServer() {
   await AppDataSource.initialize();
@@ -94,6 +106,44 @@ async function startServer() {
   app.delete("/api/candidates/:examNumber", async (req, res) => {
     await AppDataSource.getRepository(Candidate).delete(req.params.examNumber);
     res.status(204).send();
+  });
+
+  // Email Notification Endpoint
+  app.post("/api/notify-result", async (req, res) => {
+    const { email, candidateName, examNumber, pin, totalScore } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    try {
+      const mailOptions = {
+        from: `"VIVI CBT Portal" <${process.env.MAIL_USER}>`,
+        to: email,
+        subject: "Your Examination Results Have Been Released",
+        html: `
+          <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <h2 style="color: #0EA5E9;">Official Result Notification</h2>
+            <p>Dear <b>${candidateName}</b>,</p>
+            <p>Your examination results for the 2026 session have been officially verified and released.</p>
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p><b>Registration Number:</b> ${examNumber}</p>
+              <p><b>Access PIN:</b> ${pin}</p>
+              <p style="font-size: 18px; color: #0EA5E9;"><b>Aggregate Score:</b> ${totalScore}</p>
+            </div>
+            <p>You can now log in to the portal or use the Public Result Checker to download your official transcript.</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+            <p style="font-size: 10px; color: #999;">This is an automated message. Please do not reply.</p>
+          </div>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+      res.json({ message: "Notification sent successfully" });
+    } catch (error) {
+      console.error("Email error:", error);
+      res.status(500).json({ error: "Failed to send email notification" });
+    }
   });
 
   // Example Socket.io logic with Redis for real-time state

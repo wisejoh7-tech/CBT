@@ -45,7 +45,7 @@ export default function Admin() {
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   
   const [newCandidate, setNewCandidate] = useState({
-    fullName: '', examNumber: '', dateOfBirth: '', subjects: [] as string[], faceUrl: '', fingerprintData: ''
+    fullName: '', email: '', examNumber: '', dateOfBirth: '', subjects: [] as string[], faceUrl: '', fingerprintData: ''
   });
   const [editingCandidateId, setEditingCandidateId] = useState<string | null>(null);
 
@@ -276,6 +276,7 @@ export default function Admin() {
       }
       const data = {
         fullName: newCandidate.fullName,
+        email: newCandidate.email,
         examNumber: en,
         dateOfBirth: newCandidate.dateOfBirth,
         subjectCombination: newCandidate.subjects,
@@ -289,14 +290,14 @@ export default function Admin() {
       if (editingCandidateId) await updateDoc(doc(db, 'candidates', editingCandidateId), data);
       else await setDoc(doc(db, 'candidates', en), { ...data, registrationDate: new Date().toISOString(), createdAt: new Date().toISOString() });
       toast.success(editingCandidateId ? "Updated" : `Registered: ${en}`);
-      setNewCandidate({ fullName: '', examNumber: '', dateOfBirth: '', subjects: [], faceUrl: '', fingerprintData: '' });
+      setNewCandidate({ fullName: '', email: '', examNumber: '', dateOfBirth: '', subjects: [], faceUrl: '', fingerprintData: '' });
       setEditingCandidateId(null);
       fetchCandidates();
     } catch (err) { toast.error("Registration Failed"); }
   };
 
   const startEditCandidate = (c: Candidate) => {
-    setNewCandidate({ fullName: c.fullName, examNumber: c.examNumber, dateOfBirth: c.dateOfBirth || '', subjects: [...c.subjectCombination], faceUrl: c.faceUrl || '', fingerprintData: c.thumbprintData || '' });
+    setNewCandidate({ fullName: c.fullName, email: c.email || '', examNumber: c.examNumber, dateOfBirth: c.dateOfBirth || '', subjects: [...c.subjectCombination], faceUrl: c.faceUrl || '', fingerprintData: c.thumbprintData || '' });
     setEditingCandidateId(c.id);
   };
 
@@ -338,9 +339,35 @@ export default function Admin() {
     } catch (e) {}
   };
 
-  const handleReleaseResult = async (id: string) => {
-    setReleasing(id);
-    try { await updateDoc(doc(db, 'attempts', id), { released: true, releasedAt: serverTimestamp() }); toast.success("Result Published!"); fetchAttempts(); }
+  const handleReleaseResult = async (at: Attempt) => {
+    setReleasing(at.id);
+    try {
+      await updateDoc(doc(db, 'attempts', at.id), { released: true, releasedAt: serverTimestamp() });
+
+      // Attempt to send email notification
+      const c = candidates.find(can => can.examNumber === at.userId || can.id === at.userId);
+      if (c && profile?.email) { // Assuming we have candidate email, if not we skip
+         // In a real scenario, the candidate object would have an 'email' field.
+         // Let's check if the user profile has it or if we can find it.
+         const candidateEmail = (c as any).email || "";
+         if (candidateEmail) {
+            fetch('/api/notify-result', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: candidateEmail,
+                candidateName: c.fullName,
+                examNumber: c.examNumber,
+                pin: (c as any).pin || "N/A",
+                totalScore: at.score
+              })
+            }).catch(e => console.error("Notification failed", e));
+         }
+      }
+
+      toast.success("Result Published!");
+      fetchAttempts();
+    }
     catch (e) {} finally { setReleasing(null); }
   };
 
@@ -509,6 +536,7 @@ export default function Admin() {
                 <form onSubmit={handleCreateCandidate} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4 text-left">
                     <div className="space-y-1.5"><Label className="text-[12px] font-black opacity-40 uppercase">Full Name</Label><Input placeholder="FULL NAME" value={newCandidate.fullName} onChange={e => setNewCandidate({...newCandidate, fullName: e.target.value.toUpperCase()})} required className="h-12 text-[12px] rounded-xl font-bold border-2 border-primary/5 focus:border-primary uppercase" /></div>
+                    <div className="space-y-1.5"><Label className="text-[12px] font-black opacity-40 uppercase">Email Address</Label><Input type="email" placeholder="EMAIL@DOMAIN.COM" value={newCandidate.email} onChange={e => setNewCandidate({...newCandidate, email: e.target.value})} className="h-12 text-[12px] rounded-xl font-bold border-2 border-primary/5 focus:border-primary uppercase" /></div>
                     <div className="space-y-1.5"><Label className="text-[12px] font-black opacity-40 uppercase">Date of Birth</Label><Input type="date" value={newCandidate.dateOfBirth} onChange={e => setNewCandidate({...newCandidate, dateOfBirth: e.target.value})} required className="h-12 text-[12px] rounded-xl font-bold border-2 border-primary/5 focus:border-primary" /></div>
                     <div className="md:col-span-2 space-y-1.5"><Label className="text-[12px] font-black opacity-40 uppercase">Reg Number (System Assigned)</Label><Input value={newCandidate.examNumber || 'AUTO-GENERATED ON SAVE'} className="h-12 text-[12px] rounded-xl font-black bg-slate-50 border-none uppercase" disabled /></div>
                   </div>
@@ -793,7 +821,7 @@ export default function Admin() {
                                 return (
                                   <Card key={at.id} className="p-4 border-2 border-primary/5 bg-white flex justify-between items-center rounded-2xl shadow-sm">
                                     <div className="flex items-center gap-3"><div className="w-10 h-10 bg-primary/5 rounded-xl border-2 flex items-center justify-center font-black text-primary/40 uppercase">{c?.fullName?.charAt(0) || "U"}</div><div><p className="font-black text-xs uppercase truncate max-w-[150px]">{c?.fullName || "ANONYMOUS"}</p><p className="text-[8px] font-bold text-primary/20">{at.userId}</p></div></div>
-                                    <div className="flex items-center gap-4"><p className="text-xl font-black">{at.score}/{at.totalPossible}</p>{at.released ? <Badge className="bg-sky-400 text-white text-[7px] border-none font-black uppercase">SENT</Badge> : <Button onClick={() => handleReleaseResult(at.id)} disabled={releasing === at.id} className="h-8 text-[8px] font-black px-4 bg-primary text-white rounded-lg shadow-md uppercase">RELEASE</Button>}</div>
+                                    <div className="flex items-center gap-4"><p className="text-xl font-black">{at.score}/{at.totalPossible}</p>{at.released ? <Badge className="bg-sky-400 text-white text-[7px] border-none font-black uppercase">SENT</Badge> : <Button onClick={() => handleReleaseResult(at)} disabled={releasing === at.id} className="h-8 text-[8px] font-black px-4 bg-primary text-white rounded-lg shadow-md uppercase">RELEASE</Button>}</div>
                                   </Card>
                                 );
                               })}

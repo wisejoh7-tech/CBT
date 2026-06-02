@@ -18,11 +18,13 @@
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "nodemailer": "^6.9.16"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.1",
+    "@types/nodemailer": "^6.4.17",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",

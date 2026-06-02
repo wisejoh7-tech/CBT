@@ -9,6 +9,9 @@ export class Candidate {
   fullName!: string;
 
   @Column({ nullable: true })
+  email?: string;
+
+  @Column({ nullable: true })
   dateOfBirth?: string;
 
   @Column({ default: "active" })
