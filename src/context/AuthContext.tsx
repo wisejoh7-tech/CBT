@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, signOut, signInAnonymously } from 'firebase/auth';
+import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, signOut, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/src/lib/firebase';
 import { UserProfile, Candidate } from '@/src/types';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -10,8 +11,11 @@ interface AuthContextType {
   candidate: Candidate | null;
   loading: boolean;
   signIn: () => Promise<void>;
+  signInWithEmail: (email: string, pass: string) => Promise<void>;
+  signUpWithEmail: (email: string, pass: string, name: string, role: 'admin' | 'reg_admin' | 'super_admin') => Promise<void>;
   loginWithExamNumber: (examNumber: string) => Promise<void>;
   logOut: () => Promise<void>;
+  devAdminLogin: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,55 +57,114 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async () => {
     const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    
-    // Check/Create profile for Google users
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    if (!userDoc.exists()) {
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        const newProfile: UserProfile = {
+          uid: user.uid,
+          email: user.email!,
+          displayName: user.displayName || 'Staff User',
+          role: 'admin',
+          createdAt: new Date().toISOString(),
+        };
+        await setDoc(doc(db, 'users', user.uid), newProfile);
+        setProfile(newProfile);
+      } else {
+        setProfile(userDoc.data() as UserProfile);
+      }
+    } catch (e: any) {
+      if (e.code === 'auth/popup-blocked') {
+        toast.error("Login popup was blocked. Please enable popups.");
+      } else if (e.code === 'auth/cancelled-popup-request') {
+        return;
+      }
+      console.error("Sign-in error:", e);
+    }
+  };
+
+  const signInWithEmail = async (email: string, pass: string) => {
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (e: any) {
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signUpWithEmail = async (email: string, pass: string, name: string, role: 'admin' | 'reg_admin' | 'super_admin') => {
+    setLoading(true);
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, pass);
+      const user = result.user;
       const newProfile: UserProfile = {
         uid: user.uid,
-        email: user.email!,
-        displayName: user.displayName || 'Staff User',
-        role: 'admin', // First user could be admin, but let's default to student or handle admin differently
+        email,
+        displayName: name,
+        role,
         createdAt: new Date().toISOString(),
       };
-      // For this demo, let's make the first user an admin if they use Google
-      // Ideally, admins are set manually in Firestore
       await setDoc(doc(db, 'users', user.uid), newProfile);
       setProfile(newProfile);
-    } else {
-      setProfile(userDoc.data() as UserProfile);
+    } catch (e: any) {
+      throw e;
+    } finally {
+      setLoading(false);
     }
   };
 
   const loginWithExamNumber = async (examNumber: string) => {
     setLoading(true);
     try {
-      const q = query(collection(db, 'candidates'), where('examNumber', '==', examNumber));
-      const qSnap = await getDocs(q);
-      
-      if (qSnap.empty) {
-        throw new Error("Invalid Exam Number. Please contact the administrator.");
-      }
-      
-      const candidateData = { id: qSnap.docs[0].id, ...qSnap.docs[0].data() } as Candidate;
-      
-      if (candidateData.status === 'suspended') {
-        throw new Error("Your registration is suspended.");
-      }
-
-      // Perform anonymous sign in
+      // Step 1: Perform anonymous sign in FIRST
+      // This establishes a session so that Firestore rules like 'if request.auth != null' are satisfied.
       const signResult = await signInAnonymously(auth);
       const user = signResult.user;
 
-      // Link UID to this candidate in user profiles
+      // Step 2: Search for candidate record
+      let candidateData: Candidate | null = null;
+      
+      const directDoc = await getDoc(doc(db, 'candidates', examNumber));
+      if (directDoc.exists()) {
+        candidateData = { id: directDoc.id, ...directDoc.data() } as Candidate;
+      } else {
+        // Fallback for legacy records or cases where ID isn't the exam number
+        const q = query(collection(db, 'candidates'), where('examNumber', '==', examNumber));
+        const qSnap = await getDocs(q);
+        if (!qSnap.empty) {
+          candidateData = { id: qSnap.docs[0].id, ...qSnap.docs[0].data() } as Candidate;
+        }
+      }
+      
+      if (!candidateData) {
+        // If not found, log out the anonymous user to keep the environment clean
+        await signOut(auth);
+        throw new Error("Invalid Exam Number. Please contact the administrator.");
+      }
+      
+      if (candidateData.status === 'suspended') {
+        await signOut(auth);
+        throw new Error("Your registration is suspended.");
+      }
+
+      // Step 3: Link session to candidate identity
       const profileData: UserProfile = {
         uid: user.uid,
-        email: `${examNumber}@edutest.local`,
+        email: `${examNumber}@vivicbt.local`,
         displayName: candidateData.fullName,
         examNumber: candidateData.examNumber,
+        faceUrl: candidateData.faceUrl || '',
+        photoURL: candidateData.faceUrl || '',
         role: 'student',
+        thumbprinted: candidateData.thumbprinted || false,
+        subjectCombination: candidateData.subjectCombination || [],
+        dateOfBirth: candidateData.dateOfBirth || '',
         createdAt: new Date().toISOString(),
       };
 
@@ -109,6 +172,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(profileData);
       setCandidate(candidateData);
     } catch (e: any) {
+      console.error("Login Sequence Failure:", e);
+      if (e.code === 'permission-denied') {
+        throw new Error("Permission Denied: Your Firestore rules are blocking authenticated anonymous users. Check your console rules.");
+      }
       throw e;
     } finally {
       setLoading(false);
@@ -119,8 +186,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signOut(auth);
   };
 
+  const devAdminLogin = async () => {
+    setLoading(true);
+    try {
+      const signResult = await signInAnonymously(auth);
+      const user = signResult.user;
+      const profileData: UserProfile = {
+        uid: user.uid,
+        email: 'dev-admin@vivi-simulator.local',
+        displayName: 'System Administrator (Dev)',
+        role: 'super_admin',
+        createdAt: new Date().toISOString(),
+      };
+      await setDoc(doc(db, 'users', user.uid), profileData);
+      setProfile(profileData);
+    } catch (e) {
+      console.error(e);
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, candidate, loading, signIn, loginWithExamNumber, logOut }}>
+    <AuthContext.Provider value={{ user, profile, candidate, loading, signIn, signInWithEmail, signUpWithEmail, loginWithExamNumber, logOut, devAdminLogin }}>
       {children}
     </AuthContext.Provider>
   );

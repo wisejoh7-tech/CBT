@@ -3,8 +3,12 @@ export interface UserProfile {
   email: string;
   displayName: string;
   photoURL?: string;
+  faceUrl?: string;
   examNumber?: string;
-  role: 'student' | 'admin';
+  dateOfBirth?: string;
+  role: 'student' | 'super_admin' | 'reg_admin' | 'admin';
+  thumbprinted?: boolean;
+  subjectCombination?: string[];
   createdAt: string;
 }
 
@@ -12,7 +16,13 @@ export interface Candidate {
   id: string;
   examNumber: string;
   fullName: string;
+  dateOfBirth?: string;
   status: 'active' | 'suspended';
+  thumbprinted: boolean;
+  thumbprintData?: string;
+  faceUrl?: string;
+  subjectCombination: string[];
+  registrationDate: string;
   createdAt: string;
 }
 
@@ -43,7 +53,10 @@ export interface Attempt {
   score: number;
   totalPossible: number;
   answers: Record<string, number>;
-  startedAt: any; // ServerTimestamp
-  completedAt?: any; // ServerTimestamp
+  flagged?: string[];
+  timeLeft?: number;
+  currentQuestionIndex?: number;
+  startedAt: any;
+  completedAt?: any;
   status: 'in-progress' | 'completed';
 }

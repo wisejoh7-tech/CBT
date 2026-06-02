@@ -1,1144 +1,745 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '@/src/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, orderBy, updateDoc } from 'firebase/firestore';
-import { Exam, Question, Attempt, Candidate } from '@/src/types';
+import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, orderBy, updateDoc, onSnapshot, where, setDoc } from 'firebase/firestore';
+import { Exam, Question, Attempt, Candidate, UserProfile } from '@/src/types';
 import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
 import { Label } from '@/lib/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/lib/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/lib/ui/tabs';
+import { Card, CardContent } from '@/lib/ui/card';
 import { ScrollArea } from '@/lib/ui/scroll-area';
 import { Badge } from '@/lib/ui/badge';
 import { Separator } from '@/lib/ui/separator';
 import { toast } from 'sonner';
 import { 
-  Plus, 
-  Trash2, 
-  BookOpen, 
-  LayoutDashboard, 
-  Settings, 
-  PlusCircle, 
-  ChevronRight,
-  ArrowLeft,
-  Users,
-  Search,
-  UserPlus,
-  Library,
-  Copy,
-  Import,
-  CheckCircle2,
-  TrendingUp,
-  BarChart2,
-  PieChart as PieChartIcon,
-  AlertCircle
+  Trash2, BookOpen, LayoutDashboard, PlusCircle, Users, Search, UserPlus, Library, CheckCircle2, BarChart2, PieChart as PieChartIcon, AlertCircle, Fingerprint, Shield, LogOut, XCircle, Camera, Pencil, Upload, CheckCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
-  Cell,
-  Legend,
-  AreaChart,
-  Area
+import { useAuth } from '@/src/context/AuthContext';
+import { useSocket } from '@/src/context/SocketContext';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 import { cn } from '@/src/lib/utils/utils';
 
 export default function Admin() {
+  const { user, profile, logOut, loginWithExamNumber, signUpWithEmail } = useAuth();
+  const { socket } = useSocket();
   const [exams, setExams] = useState<Exam[]>([]);
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [staff, setStaff] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Form states for new exam
-  const [newExam, setNewExam] = useState({ title: '', subject: '', description: '', durationMinutes: 30 });
-  const [editingExamId, setEditingExamId] = useState<string | null>(null);
+  // Role Checks
+  const isSuperAdmin = profile?.role === 'super_admin';
+  const isStaff = profile?.role === 'reg_admin'; // Restricted access
+  const isExamAdmin = profile?.role === 'admin' || isSuperAdmin;
+  const isRegAdmin = isStaff || profile?.role === 'admin' || isSuperAdmin;
 
-  // Form states for new question
+  const [newExam, setNewExam] = useState<{title: string, subject: string, description: string, durationMinutes: number}>({ title: '', subject: '', description: '', durationMinutes: 30 });
+  const [editingExamId, setEditingExamId] = useState<string | null>(null);
   const [newQuestion, setNewQuestion] = useState({ text: '', options: ['', '', '', ''], correctOptionIndex: 0 });
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   
-  // Form states for candidate
-  const [newCandidate, setNewCandidate] = useState({ fullName: '', examNumber: '' });
-  const [activeTab, setActiveTab] = useState<'exams' | 'candidates' | 'bank' | 'analytics'>('exams');
-  
-  // Question Bank states
-  const [bankQuestions, setBankQuestions] = useState<Question[]>([]);
-  const [attempts, setAttempts] = useState<Attempt[]>([]);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [analyticsQuestions, setAnalyticsQuestions] = useState<Record<string, Question[]>>({});
-  const [selectedAnalyticsExam, setSelectedAnalyticsExam] = useState<string | null>(null);
+  const [newCandidate, setNewCandidate] = useState({
+    fullName: '', examNumber: '', dateOfBirth: '', subjects: [] as string[], faceUrl: '', fingerprintData: ''
+  });
+  const [editingCandidateId, setEditingCandidateId] = useState<string | null>(null);
+
+  const [newStaff, setNewStaff] = useState({ name: '', email: '', password: '', role: 'reg_admin' as 'admin' | 'reg_admin' });
+
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'exams' | 'candidates' | 'bank' | 'analytics' | 'monitor' | 'staff'>('overview');
 
   useEffect(() => {
+    if (isStaff) setActiveTab('candidates');
+    else if (isExamAdmin || isSuperAdmin) setActiveTab('overview');
+  }, [profile, isStaff, isExamAdmin, isSuperAdmin]);
+
+  useEffect(() => {
+    if (isCameraOpen && videoRef.current && cameraStream) {
+      videoRef.current.srcObject = cameraStream;
+    }
+  }, [isCameraOpen, cameraStream]);
+
+  const [liveSessions, setLiveSessions] = useState<Attempt[]>([]);
+  const [redisSessions, setRedisSessions] = useState<any[]>([]);
+  const VIVI_SUBJECTS = ["Use of English", "Mathematics", "Physics", "Chemistry", "Biology", "Economics", "Government", "Literature", "CRS", "IRS", "History", "Geography", "Agric Science", "Commerce"];
+
+  useEffect(() => {
+    const fetchRedisSessions = async () => {
+      try {
+        const res = await fetch('/api/active-sessions');
+        if (res.ok) {
+          const data = await res.json();
+          setRedisSessions(data);
+        }
+      } catch (e) {}
+    };
+
+    if (activeTab === 'monitor') {
+      fetchRedisSessions();
+      const interval = setInterval(fetchRedisSessions, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [activeTab]);
+
+  const [bankQuestions, setBankQuestions] = useState<Question[]>([]);
+  const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [releasing, setReleasing] = useState<string | null>(null);
+  const [analyticsQuestions, setAnalyticsQuestions] = useState<Record<string, Question[]>>({});
+  const [selectedAnalyticsExam, setSelectedAnalyticsExam] = useState<string | null>(null);
+  const [selectedBankQuestions, setSelectedBankQuestions] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!user || !profile) return;
+    if (isExamAdmin) fetchQuestionBank();
+    if (isRegAdmin) fetchCandidates(); fetchAttempts();
+    if (isSuperAdmin) fetchStaff();
     fetchExams();
-    fetchCandidates();
-    fetchQuestionBank();
-    fetchAttempts();
-  }, []);
+    const q = query(collection(db, 'attempts'), where('status', '==', 'in-progress'));
+    const unsubscribe = onSnapshot(q, (s) => setLiveSessions(s.docs.map(d => ({ id: d.id, ...d.data() } as Attempt))), (e) => {});
+
+    if (socket) {
+      socket.emit('join-exam', 'unified');
+      socket.on('progress-updated', (data: { userId: string, progress: any }) => {
+        setLiveSessions(prev => prev.map(s => {
+          if (s.userId === data.userId || s.id === data.userId) {
+            return { ...s, ...data.progress };
+          }
+          return s;
+        }));
+      });
+    }
+
+    return () => {
+      unsubscribe();
+      if (socket) socket.off('progress-updated');
+    };
+  }, [profile, user, isExamAdmin, isRegAdmin, isSuperAdmin, socket]);
 
   useEffect(() => {
     if (activeTab === 'analytics' && attempts.length > 0) {
-      const examIds = Array.from(new Set<string>(attempts.map(a => a.examId)));
-      examIds.forEach(id => {
-        if (!analyticsQuestions[id]) {
-          fetchQuestionsForAnalytics(id);
-        }
-      });
+      const ids = Array.from(new Set<string>(attempts.map(a => a.examId)));
+      ids.forEach(id => { if (!analyticsQuestions[id]) fetchQuestionsForAnalytics(id); });
     }
   }, [activeTab, attempts]);
 
-  async function fetchQuestionsForAnalytics(examId: string) {
-    try {
-      const qSnap = await getDocs(collection(db, 'exams', examId, 'questions'));
-      const qList = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Question));
-      setAnalyticsQuestions(prev => ({ ...prev, [examId]: qList }));
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  async function fetchAttempts() {
-    try {
-      const qSnap = await getDocs(collection(db, 'attempts'));
-      setAttempts(qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Attempt)));
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  async function fetchQuestionBank() {
-    try {
-      const q = query(collection(db, 'question_bank'), orderBy('createdAt', 'desc'));
-      const qSnap = await getDocs(q);
-      setBankQuestions(qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Question)));
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  const addToBank = async (q: Partial<Question>) => {
-    try {
-      const bankData = {
-        text: q.text,
-        options: q.options,
-        correctOptionIndex: q.correctOptionIndex,
-        explanation: q.explanation || '',
-        createdAt: serverTimestamp()
-      };
-      await addDoc(collection(db, 'question_bank'), bankData);
-      toast.success("Added to Question Bank!");
-      fetchQuestionBank();
-    } catch (e) {
-      toast.error("Failed to add to bank");
-    }
-  };
-
-  const importFromBank = async (bankQ: Question) => {
-    if (!selectedExamId) return;
-    try {
-      const qData = {
-        text: bankQ.text,
-        options: bankQ.options,
-        correctOptionIndex: bankQ.correctOptionIndex,
-        explanation: bankQ.explanation || '',
-        examId: selectedExamId
-      };
-      await addDoc(collection(db, 'exams', selectedExamId, 'questions'), qData);
-      
-      // Update exam question count
-      await updateDoc(doc(db, 'exams', selectedExamId), {
-        totalQuestions: questions.length + 1
-      });
-      
-      toast.success("Imported question!");
-      fetchQuestions(selectedExamId);
-    } catch (e) {
-      toast.error("Import failed");
-    }
-  };
-
-  async function fetchCandidates() {
-    try {
-      const q = query(collection(db, 'candidates'), orderBy('createdAt', 'desc'));
-      const qSnap = await getDocs(q);
-      setCandidates(qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Candidate)));
-    } catch (e) {
-      toast.error("Failed to load candidates");
-    }
-  }
-
-  const handleCreateCandidate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCandidate.fullName || !newCandidate.examNumber) {
-      toast.error("Full Name and Exam Number are required.");
-      return;
-    }
-    try {
-      await addDoc(collection(db, 'candidates'), {
-        ...newCandidate,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-      });
-      toast.success("Candidate Registered!");
-      setNewCandidate({ fullName: '', examNumber: '' });
-      fetchCandidates();
-    } catch (e) {
-      toast.error("Registration failed.");
-    }
-  };
-
-  const deleteCandidate = async (id: string) => {
-    if (!confirm("Remove this candidate?")) return;
-    try {
-      await deleteDoc(doc(db, 'candidates', id));
-      toast.success("Candidate removed.");
-      fetchCandidates();
-    } catch (e) {
-      toast.error("Delete failed.");
-    }
-  };
-
   useEffect(() => {
-    if (selectedExamId) {
-      fetchQuestions(selectedExamId);
-      const exam = exams.find(e => e.id === selectedExamId);
-      if (exam) {
-        setNewExam({ 
-          title: exam.title, 
-          subject: exam.subject, 
-          description: exam.description || '', 
-          durationMinutes: exam.durationMinutes 
-        });
-        setEditingExamId(exam.id);
-      }
-    } else {
-      setQuestions([]);
-      setNewExam({ title: '', subject: '', description: '', durationMinutes: 30 });
-      setEditingExamId(null);
+    if (selectedExamId) fetchQuestions(selectedExamId);
+  }, [selectedExamId]);
+
+  async function fetchStaff() {
+    try {
+      const s = await getDocs(query(collection(db, 'users'), where('role', 'in', ['admin', 'reg_admin', 'super_admin'])));
+      setStaff(s.docs.map(d => ({ id: d.id, ...d.data() } as UserProfile)));
+    } catch (e: any) {}
+  }
+
+  const handleCreateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStaff.email || !newStaff.password || !newStaff.name) { toast.error("Fill all fields"); return; }
+    try {
+      toast.loading("Creating Staff Account...");
+      await signUpWithEmail(newStaff.email, newStaff.password, newStaff.name, newStaff.role);
+      toast.dismiss();
+      toast.success("Staff Account Created.");
+      setNewStaff({ name: '', email: '', password: '', role: 'reg_admin' });
+      fetchStaff();
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error(err.message || "Failed to create staff account");
     }
-  }, [selectedExamId, exams]);
+  };
 
   async function fetchExams() {
     setLoading(true);
     try {
-      const q = query(collection(db, 'exams'), orderBy('createdAt', 'desc'));
-      const qSnap = await getDocs(q);
-      const examList = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
-      setExams(examList);
-    } catch (e) {
-      toast.error("Failed to load exams");
-    } finally {
-      setLoading(false);
-    }
+      const s = await getDocs(collection(db, 'exams'));
+      const list = s.docs.map(d => ({ id: d.id, ...d.data() } as Exam));
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setExams(list);
+    } catch (e: any) {} finally { setLoading(false); }
   }
 
-  async function fetchQuestions(examId: string) {
+  async function fetchCandidates() {
     try {
-      const qSnap = await getDocs(collection(db, 'exams', examId, 'questions'));
-      setQuestions(qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Question)));
-    } catch (e) {
-      toast.error("Failed to load questions");
-    }
+      const s = await getDocs(collection(db, 'candidates'));
+      setCandidates(s.docs.map(d => ({ id: d.id, ...d.data() } as Candidate)));
+    } catch (e: any) {}
+  }
+
+  async function fetchAttempts() {
+    try {
+      const s = await getDocs(collection(db, 'attempts'));
+      setAttempts(s.docs.map(d => ({ id: d.id, ...d.data() } as Attempt)));
+    } catch (e: any) {}
+  }
+
+  async function fetchQuestionBank() {
+    try {
+      const s = await getDocs(query(collection(db, 'question_bank'), orderBy('createdAt', 'desc')));
+      setBankQuestions(s.docs.map(d => ({ id: d.id, ...d.data() } as Question)));
+    } catch (e: any) {}
+  }
+
+  async function fetchQuestions(id: string) {
+    try {
+      const s = await getDocs(collection(db, 'exams', id, 'questions'));
+      setQuestions(s.docs.map(d => ({ id: d.id, ...d.data() } as Question)));
+    } catch (e) {}
+  }
+
+  async function fetchQuestionsForAnalytics(id: string) {
+    try {
+      const s = await getDocs(collection(db, 'exams', id, 'questions'));
+      setAnalyticsQuestions(p => ({ ...p, [id]: s.docs.map(d => ({ id: d.id, ...d.data() } as Question)) }));
+    } catch (e: any) {}
   }
 
   const handleCreateOrUpdateExam = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editingExamId) {
-        await updateDoc(doc(db, 'exams', editingExamId), {
-          ...newExam,
-          updatedAt: serverTimestamp(),
-        });
-        toast.success("Exam updated!");
-      } else {
-        await addDoc(collection(db, 'exams'), {
-          ...newExam,
-          totalQuestions: 0,
-          createdAt: serverTimestamp(),
-        });
-        toast.success("Exam created!");
-      }
-      setNewExam({ title: '', subject: '', description: '', durationMinutes: 30 });
-      setEditingExamId(null);
-      setSelectedExamId(null);
-      fetchExams();
-    } catch (e) {
-      toast.error("Error saving exam");
-    }
-  };
-
-  const handleDeleteExam = async (id: string) => {
-    if (!confirm("Are you sure? All questions will be lost.")) return;
-    try {
-      await deleteDoc(doc(db, 'exams', id));
-      toast.success("Exam deleted");
-      if (selectedExamId === id) setSelectedExamId(null);
-      fetchExams();
-    } catch (e) {
-      toast.error("Error deleting exam");
-    }
+      if (editingExamId) await updateDoc(doc(db, 'exams', editingExamId), { ...newExam, updatedAt: serverTimestamp() });
+      else await addDoc(collection(db, 'exams'), { ...newExam, totalQuestions: 0, createdAt: serverTimestamp() });
+      setNewExam({ title: '', subject: '', description: '', durationMinutes: 30 }); setEditingExamId(null); setSelectedExamId(null); fetchExams();
+    } catch (e) {}
   };
 
   const handleAddOrUpdateQuestion = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedExamId) return;
+    e.preventDefault(); if (!selectedExamId) return;
     try {
-      if (editingQuestionId) {
-        await updateDoc(doc(db, 'exams', selectedExamId, 'questions', editingQuestionId), newQuestion);
-        toast.success("Question updated!");
-      } else {
-        await addDoc(collection(db, 'exams', selectedExamId, 'questions'), newQuestion);
-        // Update exam question count
-        await updateDoc(doc(db, 'exams', selectedExamId), {
-          totalQuestions: questions.length + 1
-        });
-        toast.success("Question added!");
+      if (editingQuestionId) await updateDoc(doc(db, 'exams', selectedExamId, 'questions', editingQuestionId), newQuestion);
+      else { await addDoc(collection(db, 'exams', selectedExamId, 'questions'), newQuestion); await updateDoc(doc(db, 'exams', selectedExamId), { totalQuestions: questions.length + 1 }); }
+      setNewQuestion({ text: '', options: ['', '', '', ''], correctOptionIndex: 0 }); setEditingQuestionId(null); fetchQuestions(selectedExamId);
+    } catch (e) {}
+  };
+
+  const addToBank = async (q: Partial<Question>) => {
+    try {
+      await addDoc(collection(db, 'question_bank'), { ...q, createdAt: serverTimestamp() });
+      toast.success("Added to Bank!");
+      fetchQuestionBank();
+    } catch (e) { toast.error("Failed"); }
+  };
+
+  const handleQuestionBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const lines = (ev.target?.result as string).split('\n').filter(l => l.trim());
+      let count = 0; toast.loading("Processing Bank Upload...");
+      for (const line of lines) {
+        const parts = line.split(',').map(s => s.trim());
+        if (parts.length >= 6) {
+          const [qText, oA, oB, oC, oD, cIdx] = parts;
+          try { await addDoc(collection(db, 'question_bank'), { text: qText, options: [oA, oB, oC, oD], correctOptionIndex: parseInt(cIdx) || 0, createdAt: serverTimestamp() }); count++; } catch (err) {}
+        }
       }
-      setNewQuestion({ text: '', options: ['', '', '', ''], correctOptionIndex: 0 });
-      setEditingQuestionId(null);
-      fetchQuestions(selectedExamId);
-    } catch (e) {
-      toast.error("Error saving question");
+      toast.dismiss(); toast.success(`Injected ${count} items.`); fetchQuestionBank();
+    };
+    reader.readAsText(file);
+  };
+
+  const handleBatchImportToExam = async () => {
+    if (!selectedExamId || selectedBankQuestions.size === 0) { toast.error("Select exam and items."); return; }
+    toast.loading("Injecting selected items...");
+    let count = 0;
+    try {
+      for (const qId of Array.from(selectedBankQuestions)) {
+        const q = bankQuestions.find(bq => bq.id === qId);
+        if (q) { await addDoc(collection(db, 'exams', selectedExamId, 'questions'), { text: q.text, options: q.options, correctOptionIndex: q.correctOptionIndex, examId: selectedExamId }); count++; }
+      }
+      await updateDoc(doc(db, 'exams', selectedExamId), { totalQuestions: questions.length + count });
+      toast.dismiss(); toast.success(`Successfully assigned ${count} items.`); setSelectedBankQuestions(new Set()); fetchQuestions(selectedExamId);
+    } catch (e) { toast.dismiss(); toast.error("Batch assignment failed."); }
+  };
+
+  const handleCreateCandidate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCandidate.fullName || !newCandidate.dateOfBirth || newCandidate.subjects.length !== 4) { toast.error("Fill required fields"); return; }
+    if (!newCandidate.faceUrl || !newCandidate.fingerprintData) { toast.error("Biometrics required"); return; }
+    try {
+      let en = newCandidate.examNumber;
+      if (!editingCandidateId) {
+        const y = new Date().getFullYear();
+        const r = Math.floor(100000 + Math.random() * 900000);
+        const l = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        en = `${y}${r}${l[Math.floor(Math.random() * l.length)]}${l[Math.floor(Math.random() * l.length)]}`;
+      }
+      const data = {
+        fullName: newCandidate.fullName,
+        examNumber: en,
+        dateOfBirth: newCandidate.dateOfBirth,
+        subjectCombination: newCandidate.subjects,
+        faceUrl: newCandidate.faceUrl,
+        thumbprintData: newCandidate.fingerprintData,
+        status: 'active' as const,
+        thumbprinted: true,
+        updatedAt: serverTimestamp()
+      };
+      if (editingCandidateId) await updateDoc(doc(db, 'candidates', editingCandidateId), data);
+      else await setDoc(doc(db, 'candidates', en), { ...data, registrationDate: new Date().toISOString(), createdAt: new Date().toISOString() });
+      toast.success(editingCandidateId ? "Updated" : `Registered: ${en}`);
+      setNewCandidate({ fullName: '', examNumber: '', dateOfBirth: '', subjects: [], faceUrl: '', fingerprintData: '' });
+      setEditingCandidateId(null);
+      fetchCandidates();
+    } catch (err) { toast.error("Registration Failed"); }
+  };
+
+  const startEditCandidate = (c: Candidate) => {
+    setNewCandidate({ fullName: c.fullName, examNumber: c.examNumber, dateOfBirth: c.dateOfBirth || '', subjects: [...c.subjectCombination], faceUrl: c.faceUrl || '', fingerprintData: c.thumbprintData || '' });
+    setEditingCandidateId(c.id);
+  };
+
+  const captureFace = async () => {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 480, facingMode: "user" } });
+      setCameraStream(s);
+      setIsCameraOpen(true);
+    } catch (e) { toast.error("Camera Denied"); }
+  };
+
+  const snapPhoto = () => {
+    if (videoRef.current) {
+      const c = document.createElement('canvas');
+      c.width = videoRef.current.videoWidth; c.height = videoRef.current.videoHeight;
+      const ctx = c.getContext('2d');
+      if (ctx) { ctx.drawImage(videoRef.current, 0, 0); setNewCandidate(p => ({ ...p, faceUrl: c.toDataURL('image/jpeg', 0.8) })); closeCamera(); toast.success("Face Captured!"); }
     }
   };
 
-  const startEditQuestion = (q: Question) => {
-    setNewQuestion({
-      text: q.text,
-      options: [...q.options],
-      correctOptionIndex: q.correctOptionIndex
-    });
-    setEditingQuestionId(q.id);
+  const closeCamera = () => {
+    if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+    setCameraStream(null);
+    setIsCameraOpen(false);
+  };
+
+  const captureFingerprint = async () => {
+    toast.loading("Scanning Fingerprint...");
+    await new Promise(r => setTimeout(r, 1000));
+    setNewCandidate(p => ({ ...p, fingerprintData: "FP_" + Math.random().toString(36).slice(2, 9) }));
+    toast.dismiss(); toast.success("Biometrics Enrolled!");
+  };
+
+  const handleRemoteAction = async (id: string, a: 'terminate' | 'reset') => {
+    try {
+      if (a === 'terminate') await updateDoc(doc(db, 'attempts', id), { status: 'completed', terminatedByAdmin: true });
+      else await deleteDoc(doc(db, 'attempts', id));
+      toast.success("Command Executed.");
+    } catch (e) {}
+  };
+
+  const handleReleaseResult = async (id: string) => {
+    setReleasing(id);
+    try { await updateDoc(doc(db, 'attempts', id), { released: true, releasedAt: serverTimestamp() }); toast.success("Result Published!"); fetchAttempts(); }
+    catch (e) {} finally { setReleasing(null); }
+  };
+
+  const handleStartCandidateExam = async (en: string) => {
+    try { toast.loading("Switching to Terminal..."); await loginWithExamNumber(en); toast.dismiss(); navigate('/dashboard'); }
+    catch (e: any) { toast.dismiss(); toast.error(e.message); }
   };
 
   return (
-    <div className="min-h-screen flex flex-col font-sans text-primary bg-background">
-      <header className="bg-white border-b-2 border-primary/40 p-6 flex justify-between items-center shrink-0 shadow-sm">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="rounded-full text-primary hover:bg-primary/5">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-2xl font-black uppercase tracking-tighter text-primary">Admin Console</h1>
+    <div className="min-h-screen flex flex-col font-sans text-primary bg-background uppercase">
+      <header className="bg-white border-b-2 border-primary/40 p-3 flex justify-between items-center shrink-0 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20"><Shield className="w-4 h-4" /></div>
+          <h1 className="text-lg font-black tracking-tighter text-primary">Admin Control Center</h1>
         </div>
-        <div className="flex gap-2 bg-primary/5 p-1 rounded-2xl border-2 border-primary/40 shadow-sm">
-          <Button 
-            variant={activeTab === 'exams' ? 'default' : 'ghost'} 
-            onClick={() => setActiveTab('exams')}
-            className={cn("rounded-xl px-4 font-bold uppercase tracking-widest text-[10px] border-none", activeTab === 'exams' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}
-          >
-            <BookOpen className="w-3 h-3 mr-2" />
-            Exams
-          </Button>
-          <Button 
-            variant={activeTab === 'bank' ? 'default' : 'ghost'} 
-            onClick={() => setActiveTab('bank')}
-            className={cn("rounded-xl px-4 font-bold uppercase tracking-widest text-[10px] border-none", activeTab === 'bank' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}
-          >
-            <Library className="w-3 h-3 mr-2" />
-            Bank
-          </Button>
-          <Button 
-            variant={activeTab === 'candidates' ? 'default' : 'ghost'} 
-            onClick={() => setActiveTab('candidates')}
-            className={cn("rounded-xl px-4 font-bold uppercase tracking-widest text-[10px] border-none", activeTab === 'candidates' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}
-          >
-            <Users className="w-3 h-3 mr-2" />
-            Candidates
-          </Button>
-          <Button 
-            variant={activeTab === 'analytics' ? 'default' : 'ghost'} 
-            onClick={() => setActiveTab('analytics')}
-            className={cn("rounded-xl px-4 font-bold uppercase tracking-widest text-[10px] border-none", activeTab === 'analytics' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}
-          >
-            <BarChart2 className="w-3 h-3 mr-2" />
-            Analytics
-          </Button>
+        <div className="flex items-center gap-3">
+          <div className="text-right hidden md:block">
+            <p className="text-[9px] text-primary/30 font-black leading-none mb-1">Authenticated</p>
+            <p className="text-[11px] font-bold text-primary/60">{profile?.displayName}</p>
+          </div>
+          <Separator orientation="vertical" className="h-6 bg-primary/10 mx-1" />
+          <Button variant="ghost" size="icon" onClick={async () => { await logOut(); navigate('/'); }} className="rounded-full w-8 h-8 text-primary/40 hover:text-red-500 hover:bg-red-50"><LogOut className="w-4 h-4" /></Button>
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden flex flex-col md:flex-row">
-        {activeTab === 'exams' ? (
-          <>
-            {/* Left: Exams List */}
-            <aside className="w-full md:w-96 bg-white border-r-2 border-primary/40 flex flex-col shrink-0 overflow-hidden">
-          <div className="p-6 border-b-2 border-primary/40 bg-primary/5">
-            <h2 className="text-[10px] font-black text-primary/40 uppercase tracking-widest mb-4">
-              {editingExamId ? 'Edit Examination' : 'Exam Collections'}
-            </h2>
-            <form onSubmit={handleCreateOrUpdateExam} className="space-y-3">
-              <Input 
-                placeholder="Title (e.g. JAMB Physics)" 
-                value={newExam.title} 
-                onChange={e => setNewExam({...newExam, title: e.target.value})}
-                required
-                className="bg-white border-2 border-primary/30 rounded-xl h-11 text-xs font-bold text-primary placeholder:text-primary/30"
-              />
-              <Input 
-                placeholder="Subject" 
-                value={newExam.subject} 
-                onChange={e => setNewExam({...newExam, subject: e.target.value})}
-                required
-                className="bg-white border-2 border-primary/30 rounded-xl h-11 text-xs font-bold text-primary placeholder:text-primary/30"
-              />
-              <Input 
-                placeholder="Brief Description" 
-                value={newExam.description} 
-                onChange={e => setNewExam({...newExam, description: e.target.value})}
-                className="bg-white border-2 border-primary/30 rounded-xl h-11 text-xs font-bold text-primary placeholder:text-primary/30"
-              />
-              <Input 
-                type="number"
-                placeholder="Duration (min)" 
-                value={newExam.durationMinutes} 
-                onChange={e => setNewExam({...newExam, durationMinutes: parseInt(e.target.value)})}
-                required
-                className="bg-white border-2 border-primary/30 rounded-xl h-11 text-xs font-bold text-primary placeholder:text-primary/30"
-              />
-              <div className="flex gap-2">
-                <Button type="submit" className="flex-1 h-11 bg-primary text-white rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/90 border-none shadow-lg shadow-primary/20">
-                  <PlusCircle className="w-3.5 h-3.5" />
-                  {editingExamId ? 'Update Exam' : 'Add New Exam'}
-                </Button>
-                {editingExamId && (
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => { setSelectedExamId(null); setEditingExamId(null); setNewExam({ title: '', subject: '', description: '', durationMinutes: 30 }); }}
-                    className="h-11 rounded-xl border-2 border-primary/30 text-primary hover:bg-primary/5"
-                  >
-                    Cancel
-                  </Button>
-                )}
-              </div>
-            </form>
+      <div className="bg-primary/10 p-1.5 flex justify-center border-b border-primary/10 overflow-x-auto">
+        <div className="flex gap-1.5 p-1 rounded-xl whitespace-nowrap">
+          {isExamAdmin && (
+            <Button variant={activeTab === 'overview' ? 'default' : 'ghost'} onClick={() => setActiveTab('overview')} className={cn("rounded-lg h-9 px-4 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'overview' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}>
+              <LayoutDashboard className="w-3 h-3 mr-2" />Overview
+            </Button>
+          )}
+          {isExamAdmin && (
+            <Button variant={activeTab === 'monitor' ? 'default' : 'ghost'} onClick={() => setActiveTab('monitor')} className={cn("rounded-lg h-9 px-3 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'monitor' ? "bg-red-500 text-white" : "text-primary/40 hover:text-primary")}>
+              <Shield className="w-3 h-3 mr-2" />Monitor {liveSessions.length > 0 && <span className="ml-1.5 bg-white/20 rounded-full px-1 py-0.5 text-[7px]">{liveSessions.length}</span>}
+            </Button>
+          )}
+          {isExamAdmin && (
+            <>
+              <Button variant={activeTab === 'exams' ? 'default' : 'ghost'} onClick={() => setActiveTab('exams')} className={cn("rounded-lg h-9 px-3 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'exams' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}><BookOpen className="w-3 h-3 mr-2" />Exams</Button>
+              <Button variant={activeTab === 'bank' ? 'default' : 'ghost'} onClick={() => setActiveTab('bank')} className={cn("rounded-lg h-9 px-3 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'bank' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}><Library className="w-3 h-3 mr-2" />Bank</Button>
+            </>
+          )}
+          {isRegAdmin && (
+            <Button variant={activeTab === 'candidates' ? 'default' : 'ghost'} onClick={() => setActiveTab('candidates')} className={cn("rounded-lg h-9 px-3 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'candidates' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}><Users className="w-3 h-3 mr-2" />Registry</Button>
+          )}
+          {isSuperAdmin && (
+            <Button variant={activeTab === 'staff' ? 'default' : 'ghost'} onClick={() => setActiveTab('staff')} className={cn("rounded-lg h-9 px-3 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'staff' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}><UserPlus className="w-3 h-3 mr-2" />Staff</Button>
+          )}
+          {isSuperAdmin && (
+            <Button variant={activeTab === 'analytics' ? 'default' : 'ghost'} onClick={() => setActiveTab('analytics')} className={cn("rounded-lg h-9 px-3 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'analytics' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}><BarChart2 className="w-3 h-3 mr-2" />Analytics</Button>
+          )}
+        </div>
+      </div>
+
+      <main className="flex-1 overflow-hidden flex flex-col md:flex-row bg-slate-50">
+        {activeTab === 'overview' && isExamAdmin ? (
+          <div className="flex-1 overflow-y-auto p-4 max-w-4xl mx-auto w-full">
+             <div className="space-y-6">
+                <h2 className="text-2xl font-black text-primary tracking-tighter uppercase">Operations Summary</h2>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                   <Card className="p-6 rounded-[24px] border-2 border-primary/10 bg-white shadow-lg">
+                      <p className="text-[10px] font-black text-primary/40 mb-1">CANDIDATES</p>
+                      <h4 className="text-4xl font-black text-primary">{candidates.length}</h4>
+                   </Card>
+                   <Card className="p-6 rounded-[24px] border-2 border-primary/10 bg-white shadow-lg">
+                      <p className="text-[10px] font-black text-primary/40 mb-1">ACTIVE EXAMS</p>
+                      <h4 className="text-4xl font-black text-primary">{exams.length}</h4>
+                   </Card>
+                   <Card className="p-6 rounded-[24px] border-2 border-primary/10 bg-white shadow-lg">
+                      <p className="text-[10px] font-black text-primary/40 mb-1">QUESTION BANK</p>
+                      <h4 className="text-4xl font-black text-primary">{bankQuestions.length}</h4>
+                   </Card>
+                   <Card className="p-6 rounded-[24px] border-2 border-primary/10 bg-white shadow-lg">
+                      <p className="text-[10px] font-black text-primary/40 mb-1">ATTEMPTS</p>
+                      <h4 className="text-4xl font-black text-primary">{attempts.length}</h4>
+                   </Card>
+                </div>
+                <div className="p-8 rounded-[32px] bg-primary text-white flex justify-between items-center shadow-xl">
+                   <div><h3 className="text-xl font-black mb-1">LIVE MONITORING</h3><p className="text-white/60 text-xs uppercase">OVERSEE ACTIVE TERMINALS IN REAL-TIME.</p></div>
+                   <Button onClick={() => setActiveTab('monitor')} className="h-10 px-8 bg-white text-primary rounded-[16px] font-black text-[10px] uppercase">LAUNCH PANEL</Button>
+                </div>
+             </div>
           </div>
-
-          <ScrollArea className="flex-1 bg-white">
-            <div className="p-3">
-              {exams.map(exam => (
-                <button
-                  key={exam.id}
-                  onClick={() => setSelectedExamId(exam.id)}
-                  className={`w-full text-left p-4 rounded-2xl mb-2 transition-all group border-2 ${
-                    selectedExamId === exam.id ? 'bg-primary text-white border-primary border-transparent' : 'bg-primary/5 hover:bg-primary/10 text-primary/60 border-primary/10'
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-bold text-sm truncate ${selectedExamId === exam.id ? 'text-white' : 'text-primary'}`}>{exam.title}</p>
-                      <p className={`text-[10px] font-bold uppercase tracking-wider mt-1 ${selectedExamId === exam.id ? 'text-white/60' : 'text-primary/40'}`}>
-                        {exam.subject} &bull; {exam.durationMinutes}M
-                      </p>
-                    </div>
-                    {selectedExamId === exam.id ? (
-                      <Trash2 
-                        className="w-4 h-4 text-white hover:opacity-70 cursor-pointer" 
-                        onClick={(e) => { e.stopPropagation(); handleDeleteExam(exam.id); }}
-                      />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-primary/20 group-hover:text-primary" />
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
-        </aside>
-
-        {/* Right: Questions Manager */}
-        <section className="flex-1 overflow-y-auto p-8 bg-background">
-          {!selectedExamId ? (
-            <div className="h-full flex items-center justify-center text-center">
-              <div className="max-w-xs space-y-4">
-                <div className="w-16 h-16 bg-primary/5 border-2 border-primary/40 rounded-2xl flex items-center justify-center mx-auto">
-                  <BookOpen className="w-8 h-8 text-primary/20" />
-                </div>
-                <h3 className="text-xl font-black text-primary uppercase tracking-tighter">No Exam Selected</h3>
-                <p className="text-primary/40 text-sm font-medium">Select an exam from the left panel to manage its questions and settings.</p>
-              </div>
-            </div>
-          ) : (
-            <div className="max-w-3xl mx-auto space-y-8">
+        ) : activeTab === 'monitor' && isExamAdmin ? (
+          <div className="flex-1 overflow-y-auto p-4 max-w-4xl mx-auto w-full">
+            <div className="space-y-6">
               <div className="flex justify-between items-end">
-                <div>
-                  <h2 className="text-4xl font-black text-primary uppercase tracking-tighter leading-tight mb-2">Item <br /> Composer</h2>
-                  <p className="text-primary/40 font-bold uppercase tracking-widest text-[10px]">Manage assessment content for {exams.find(e => e.id === selectedExamId)?.title}</p>
-                </div>
-                <div className="flex gap-3">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsImportModalOpen(true)}
-                    className="h-10 rounded-full border-2 border-primary/20 text-primary font-black uppercase text-[10px] px-6 gap-2 hover:bg-primary/5"
-                  >
-                    <Import className="w-3.5 h-3.5" />
-                    Import from Bank
-                  </Button>
-                  <Badge variant="outline" className="h-10 rounded-full border-2 border-primary/40 text-primary font-black uppercase text-[10px] px-4 flex items-center">{questions.length} Items</Badge>
-                </div>
+                <div><h2 className="text-2xl font-black text-primary leading-tight uppercase">OVERSIGHT</h2><p className="text-primary/40 font-bold text-[8px] uppercase">ACTIVE TERMINALS</p></div>
+                <div className="px-3 py-1.5 bg-red-50 rounded-lg border border-red-100 flex items-center gap-2"><div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" /><span className="text-[8px] font-black text-red-600 uppercase">{liveSessions.length} Online</span></div>
               </div>
 
-              {/* Add Question Form */}
-              <Card className="rounded-[32px] border-2 border-primary/40 overflow-hidden bg-white shadow-xl shadow-primary/5">
-                <CardHeader className="bg-primary p-8 text-white">
-                  <CardTitle className="text-lg uppercase tracking-widest font-black flex items-center gap-3">
-                    <PlusCircle className={cn("w-5 h-5", editingQuestionId && "rotate-45")} />
-                    {editingQuestionId ? 'Update Item' : 'Create New Item'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-8 space-y-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black text-primary/40 uppercase tracking-widest">Question Body</Label>
-                    <textarea 
-                      className="w-full flex min-h-[100px] rounded-2xl border-2 border-primary/10 bg-primary/5 px-4 py-3 text-sm font-bold focus:border-primary outline-none transition-all text-primary placeholder:text-primary/20"
-                      placeholder="Type the question content here..."
-                      value={newQuestion.text}
-                      onChange={e => setNewQuestion({...newQuestion, text: e.target.value})}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {newQuestion.options.map((opt, i) => (
-                      <div key={i} className="space-y-2">
-                        <Label className="text-[10px] font-black text-primary/40 uppercase tracking-widest flex justify-between">
-                          Option {String.fromCharCode(65 + i)}
-                          {newQuestion.correctOptionIndex === i && <span className="text-primary">Correct Answer</span>}
-                        </Label>
-                        <div className="flex gap-2">
-                          <Input 
-                            value={opt} 
-                            onChange={e => {
-                              const opts = [...newQuestion.options];
-                              opts[i] = e.target.value;
-                              setNewQuestion({...newQuestion, options: opts});
-                            }}
-                            className="rounded-xl bg-primary/5 border-2 border-primary/10 h-12 text-primary font-bold placeholder:text-primary/20"
-                            placeholder={`Enter option ${String.fromCharCode(65 + i)}`}
-                            required
-                          />
-                          <Button 
-                            type="button"
-                            variant={newQuestion.correctOptionIndex === i ? 'default' : 'outline'}
-                            onClick={() => setNewQuestion({...newQuestion, correctOptionIndex: i})}
-                            className={cn("rounded-xl h-12 shrink-0 px-4 border-2 shadow-md transition-all", newQuestion.correctOptionIndex === i ? "bg-primary text-white border-primary" : "text-primary border-primary/20 hover:bg-primary/5")}
-                          >
-                            {newQuestion.correctOptionIndex === i ? '✓' : ''}
-                          </Button>
-                        </div>
-                      </div>
+              {redisSessions.length > 0 && (
+                <div className="p-4 bg-sky-50 rounded-2xl border border-sky-100 mb-4">
+                  <p className="text-[10px] font-black text-sky-600 mb-2 uppercase flex items-center gap-2">
+                    <div className="w-2 h-2 bg-sky-500 rounded-full" /> Redis Cached Sessions ({redisSessions.length})
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {redisSessions.map((rs, i) => (
+                      <Badge key={i} variant="outline" className="bg-white border-sky-200 text-sky-700 text-[8px] font-bold">
+                        {rs.userId}: {rs.progress?.answeredCount} Ans
+                      </Badge>
                     ))}
                   </div>
+                </div>
+              )}
 
-                  <div className="flex gap-3 pt-6">
-                    <Button onClick={handleAddOrUpdateQuestion} className="flex-1 h-14 bg-primary text-white hover:bg-primary/90 rounded-[20px] font-black uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 transition-all border-none">
-                      {editingQuestionId ? 'Update Item' : 'Store Question'}
-                    </Button>
-                    {!editingQuestionId && (
-                      <Button 
-                        type="button"
-                        onClick={() => addToBank(newQuestion)}
-                        variant="outline"
-                        className="h-14 rounded-[20px] px-8 font-black uppercase text-[10px] tracking-widest border-2 border-primary/20 text-primary hover:bg-primary/5"
-                      >
-                        <Library className="w-4 h-4 mr-2" />
-                        To Bank
-                      </Button>
-                    )}
-                    {editingQuestionId && (
-                      <Button 
-                        variant="outline" 
-                        onClick={() => { setEditingQuestionId(null); setNewQuestion({ text: '', options: ['', '', '', ''], correctOptionIndex: 0 }); }}
-                        className="h-14 rounded-[20px] px-8 font-black uppercase text-[10px] tracking-widest border-2 border-primary/20 text-primary hover:bg-primary/5"
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Current Questions List */}
-              <div className="space-y-6">
-                <h3 className="text-sm font-black text-primary/40 uppercase tracking-[0.2em] pl-4 border-l-4 border-primary">Live Preview Matrix</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  {questions.map((q, idx) => (
-                    <Card key={q.id} className="rounded-3xl border-2 border-primary/10 bg-white hover:border-primary/40 transition-all cursor-pointer overflow-hidden shadow-lg shadow-primary/5" onClick={() => startEditQuestion(q)}>
-                      <CardContent className="p-8">
-                        <div className="flex justify-between gap-8">
-                          <div className="flex-1 text-primary">
-                            <div className="flex items-center gap-4 mb-4">
-                              <Badge className="bg-primary/5 text-primary font-black border-2 border-primary/10 px-3">ITEM {idx + 1}</Badge>
-                              {editingQuestionId === q.id && <Badge className="bg-primary text-white border-none px-3">Editing</Badge>}
-                            </div>
-                            <p className="font-bold text-lg mb-6 leading-relaxed tracking-tight">{q.text}</p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              {q.options.map((opt, i) => (
-                                <div key={i} className={`p-4 rounded-xl text-xs font-bold border-2 transition-all ${q.correctOptionIndex === i ? 'bg-primary text-white border-primary shadow-md' : 'bg-primary/5 text-primary/60 border-primary/5'}`}>
-                                  <span className="opacity-40 mr-2">{String.fromCharCode(65 + i)}</span> {opt}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if(!confirm("Delete question?")) return;
-                              await deleteDoc(doc(db, 'exams', selectedExamId, 'questions', q.id));
-                              // Update exam question count
-                              await updateDoc(doc(db, 'exams', selectedExamId), {
-                                totalQuestions: questions.length - 1
-                              });
-                              fetchQuestions(selectedExamId);
-                            }}
-                            className="rounded-2xl text-primary/10 hover:text-red-500 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </Button>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {liveSessions.map(s => {
+                  const c = candidates.find(can => can.examNumber === s.userId || can.id === s.userId);
+                  const progress = s.totalPossible > 0 ? (Object.keys(s.answers || {}).length / s.totalPossible) * 100 : 0;
+                  return (
+                    <Card key={s.id} className="rounded-3xl border-2 border-primary/10 bg-white p-6 shadow-sm">
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center font-black text-primary/40">{c?.fullName?.charAt(0) || "U"}</div>
+                          <div><p className="font-black text-xs truncate max-w-[120px] uppercase">{c?.fullName || "ANONYMOUS"}</p><p className="text-[8px] font-bold text-primary/20">{s.userId}</p></div>
                         </div>
-                      </CardContent>
+                        <div className="text-right"><p className="text-lg font-black text-primary uppercase">{(s as any).timeLeft ? Math.floor((s as any).timeLeft / 60) : '--'}M</p></div>
+                      </div>
+                      <div className="space-y-4 mb-6">
+                        <div><div className="flex justify-between text-[8px] font-black mb-1.5"><span className="text-primary/40 uppercase">Progress</span><span className="text-primary">{Math.round(progress)}%</span></div><div className="h-1.5 w-full bg-primary/5 rounded-full overflow-hidden"><div className="h-full bg-primary" style={{ width: `${progress}%` }} /></div></div>
+                      </div>
+                      <div className="flex gap-2"><Button onClick={() => handleRemoteAction(s.id, 'reset')} className="flex-1 h-9 rounded-xl border border-primary/10 text-primary text-[8px] font-bold uppercase">Reset PC</Button><Button onClick={() => handleRemoteAction(s.id, 'terminate')} className="flex-1 h-9 rounded-xl border border-primary/10 text-primary text-[8px] font-bold uppercase">Terminate</Button></div>
                     </Card>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'candidates' && isRegAdmin ? (
+          <div className="flex-1 overflow-y-auto p-4 max-w-4xl mx-auto w-full">
+            <div className="space-y-6">
+              <div className="flex justify-between items-end"><div><h2 className="text-2xl font-black text-primary mb-0.5 uppercase">REGISTRY</h2><p className="text-primary/40 text-[12px] uppercase">CANDIDATE ENROLLMENT</p></div><Badge variant="outline" className="h-8 rounded-full border-2 text-[12px] px-4 font-black">{candidates.length} TOTAL</Badge></div>
+              <Card className="rounded-[32px] border-2 border-primary/20 bg-white p-6 shadow-xl">
+                <form onSubmit={handleCreateCandidate} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4 text-left">
+                    <div className="space-y-1.5"><Label className="text-[12px] font-black opacity-40 uppercase">Full Name</Label><Input placeholder="FULL NAME" value={newCandidate.fullName} onChange={e => setNewCandidate({...newCandidate, fullName: e.target.value.toUpperCase()})} required className="h-12 text-[12px] rounded-xl font-bold border-2 border-primary/5 focus:border-primary uppercase" /></div>
+                    <div className="space-y-1.5"><Label className="text-[12px] font-black opacity-40 uppercase">Date of Birth</Label><Input type="date" value={newCandidate.dateOfBirth} onChange={e => setNewCandidate({...newCandidate, dateOfBirth: e.target.value})} required className="h-12 text-[12px] rounded-xl font-bold border-2 border-primary/5 focus:border-primary" /></div>
+                    <div className="md:col-span-2 space-y-1.5"><Label className="text-[12px] font-black opacity-40 uppercase">Reg Number (System Assigned)</Label><Input value={newCandidate.examNumber || 'AUTO-GENERATED ON SAVE'} className="h-12 text-[12px] rounded-xl font-black bg-slate-50 border-none uppercase" disabled /></div>
+                  </div>
+                  <div className="space-y-2 text-left"><Label className="text-[12px] font-black opacity-40 uppercase">Subject Combination (Select 4)</Label><div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 p-3 border-2 rounded-xl bg-slate-50">{VIVI_SUBJECTS.map(sub => (<label key={sub} className="flex items-center gap-2 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors border border-transparent hover:border-primary/10"><input type="checkbox" checked={newCandidate.subjects.includes(sub)} onChange={(e) => { const s = e.target.checked ? [...newCandidate.subjects, sub] : newCandidate.subjects.filter(x => x !== sub); if (s.length <= 4) setNewCandidate({...newCandidate, subjects: s}); }} className="w-3 h-3 accent-primary" /><span className="text-[12px] font-black text-primary/60 uppercase">{sub}</span></label>))}</div></div>
+                  <div className="flex gap-4 pt-4 border-t-2 border-primary/5">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <div className="w-full h-44 rounded-2xl bg-slate-50 border-2 border-dashed border-primary/10 flex items-center justify-center overflow-hidden">{newCandidate.faceUrl ? <img src={newCandidate.faceUrl} className="w-full h-full object-cover" /> : <Camera className="w-8 h-8 opacity-10 text-primary" />}</div>
+                      <Button type="button" onClick={captureFace} className="h-9 text-[12px] font-black uppercase tracking-widest bg-white border-2 border-primary/10 text-primary hover:bg-primary hover:text-white">Capture Face</Button>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <div className={cn("w-full h-44 rounded-2xl border-2 flex items-center justify-center transition-all", newCandidate.fingerprintData ? "bg-sky-50 border-sky-400" : "bg-slate-50 border-dashed border-primary/10")}><Fingerprint className={cn("w-10 h-10", newCandidate.fingerprintData ? "text-sky-500" : "opacity-10")} /></div>
+                      <Button type="button" onClick={captureFingerprint} className="h-9 text-[12px] font-black uppercase tracking-widest bg-white border-2 border-primary/10 text-primary hover:bg-primary hover:text-white">Enroll Finger</Button>
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full h-14 bg-primary text-white rounded-2xl font-black text-[12px] shadow-xl uppercase tracking-widest">{editingCandidateId ? 'Update Record' : 'Finalize Registration'}</Button>
+                </form>
+              </Card>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">{candidates.map(c => (<Card key={c.id} className="p-4 border-2 border-primary/10 bg-white flex justify-between items-center group hover:border-primary transition-all rounded-2xl shadow-sm"><div className="flex items-center gap-3"><div className="w-12 h-12 bg-primary/5 rounded-xl border-2 overflow-hidden flex items-center justify-center">{c.faceUrl ? <img src={c.faceUrl} className="w-full h-full object-cover" /> : <p className="font-black opacity-20 uppercase text-[12px]">{c.fullName.charAt(0)}</p>}</div><div><h4 className="font-black text-[12px] truncate max-w-[120px] uppercase">{c.fullName}</h4><p className="text-[12px] font-bold text-primary/40 uppercase tracking-widest">{c.examNumber}</p></div></div><div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => startEditCandidate(c)} className="h-9 px-3 rounded-lg uppercase"><Pencil className="w-3 h-3" /></Button><Button variant="default" size="sm" onClick={() => handleStartCandidateExam(c.examNumber)} className="h-9 px-4 text-[12px] font-black uppercase">Run</Button><Button variant="ghost" size="icon" onClick={async () => { if(confirm("Permanently delete candidate?")) { await deleteDoc(doc(db, 'candidates', c.id)); fetchCandidates(); } }} className="h-9 w-9 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></Button></div></Card>))}</div>
+            </div>
+          </div>
+        ) : activeTab === 'staff' && isSuperAdmin ? (
+          <div className="flex-1 overflow-y-auto p-4 max-w-4xl mx-auto w-full">
+            <div className="space-y-6">
+              <div className="flex justify-between items-end">
+                <div><h2 className="text-2xl font-black text-primary mb-0.5 uppercase">STAFF MANAGEMENT</h2><p className="text-primary/40 text-[10px] uppercase">AUTHORIZED PERSONNEL DIRECTORY</p></div>
+                <Badge variant="outline" className="h-8 rounded-full border-2 text-[10px] px-4 font-black">{staff.length} ACTIVE OFFICERS</Badge>
+              </div>
+              <Card className="rounded-[32px] border-2 border-primary/20 bg-white p-8 shadow-xl">
+                <form onSubmit={handleCreateStaff} className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4 text-left">
+                    <div className="space-y-1.5"><Label className="text-[10px] font-black opacity-40 uppercase">Full Name</Label><Input placeholder="OFFICER NAME" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value.toUpperCase()})} required className="h-12 rounded-xl font-bold border-2 border-primary/5 focus:border-primary uppercase" /></div>
+                    <div className="space-y-1.5"><Label className="text-[10px] font-black opacity-40 uppercase">Email Address</Label><Input type="email" placeholder="EMAIL@VIVICBT.COM" value={newStaff.email} onChange={e => setNewStaff({...newStaff, email: e.target.value})} required className="h-12 rounded-xl font-bold border-2 border-primary/5 focus:border-primary uppercase" /></div>
+                    <div className="space-y-1.5"><Label className="text-[10px] font-black opacity-40 uppercase">Password</Label><Input type="password" placeholder="MIN 6 CHARACTERS" value={newStaff.password} onChange={e => setNewStaff({...newStaff, password: e.target.value})} required className="h-12 rounded-xl font-bold border-2 border-primary/5 focus:border-primary uppercase" /></div>
+                    <div className="space-y-1.5"><Label className="text-[10px] font-black opacity-40 uppercase">Operational Role</Label><select value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: e.target.value as any})} className="w-full h-12 px-4 rounded-xl border-2 border-primary/5 bg-slate-50 font-black text-[10px] focus:border-primary outline-none uppercase"><option value="reg_admin">REGISTRY ADMIN (RESTRICTED)</option><option value="admin">EXAM ADMIN (FULL ACCESS)</option></select></div>
+                  </div>
+                  <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 uppercase"><p className="text-[9px] text-amber-700 font-black leading-tight uppercase flex items-center gap-2"><AlertCircle className="w-3 h-3" /> Note: Only Super Admins can manage staff records.</p></div>
+                  <Button type="submit" className="w-full h-14 bg-primary text-white rounded-2xl font-black text-[11px] shadow-xl uppercase tracking-widest">Register Security Officer</Button>
+                </form>
+              </Card>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {staff.map(s => (
+                  <Card key={s.uid} className="p-4 border-2 border-primary/10 bg-white flex justify-between items-center rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-3"><div className="w-12 h-12 bg-primary/5 rounded-xl border-2 flex items-center justify-center font-black text-primary/40 uppercase">{s.displayName.charAt(0)}</div><div><h4 className="font-black text-xs truncate max-w-[120px] uppercase">{s.displayName}</h4><p className="text-[9px] font-bold text-primary/30 uppercase">{s.email}</p><Badge variant="outline" className="text-[7px] h-5 px-2 mt-1 uppercase font-black tracking-widest">{s.role.replace('_', ' ')}</Badge></div></div>
+                    <Button variant="ghost" size="icon" onClick={async () => { if(confirm("Revoke all access for this officer?")) { await deleteDoc(doc(db, 'users', s.uid)); fetchStaff(); } }} className="h-10 w-10 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></Button>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'exams' && isExamAdmin ? (
+          <>
+            <aside className="w-full md:w-80 bg-white border-r-2 border-primary/40 flex flex-col shrink-0 uppercase">
+              <div className="p-6 border-b-2 border-primary/40 bg-slate-50">
+                <h2 className="text-[11px] font-black text-primary mb-3">MANAGE SUBJECTS</h2>
+                <form onSubmit={handleCreateOrUpdateExam} className="space-y-3">
+
+                  <Input placeholder="SUBJECT" value={newExam.subject} onChange={e => setNewExam({...newExam, subject: e.target.value.toUpperCase()})} required className="h-11 text-xs rounded-lg font-black" />
+                  <Input placeholder="DURATION (MIN)" type="number" value={newExam.durationMinutes} onChange={e => setNewExam({...newExam, durationMinutes: parseInt(e.target.value) || 0})} required className="h-11 text-xs rounded-lg font-black" />
+                  <Button type="submit" className="w-full h-11 bg-primary text-white rounded-lg font-black text-[12px] shadow-lg">SAVE</Button>
+                </form>
+              </div>
+              <ScrollArea className="flex-1">
+                <div className="p-2 space-y-2">
+                  {exams.map(e => (
+                    <button key={e.id} onClick={() => setSelectedExamId(e.id)} className={cn("w-full text-left p-4 rounded-xl border-2 transition-all", selectedExamId === e.id ? 'bg-primary text-white border-primary shadow-md' : 'bg-white border-primary/5 hover:border-primary/20')}>
+                       <p className="font-black text-[14px] truncate">{e.title}</p>
+                       <p className={cn("text-[14px] font-bold mt-1", selectedExamId === e.id ? "text-white/60" : "text-primary/30")}>{e.subject} • {e.durationMinutes}M</p>
+                    </button>
                   ))}
                 </div>
-              </div>
-            </div>
-          )}
-        </section>
-          </>
-        ) : activeTab === 'analytics' ? (
-          <div className="flex-1 overflow-y-auto p-12 font-sans bg-background">
-            <div className="max-w-6xl mx-auto space-y-12">
-              <div className="flex justify-between items-end">
-                <div>
-                  <h2 className="text-5xl font-black text-primary uppercase tracking-tighter leading-tight mb-2">Performance <br /> Intelligence</h2>
-                  <p className="text-primary/40 font-bold uppercase tracking-widest text-[10px]">Real-time analytics across all examination cycles</p>
-                </div>
-                <div className="flex gap-4">
-                   <div className="flex flex-col items-end">
-                     <span className="text-2xl font-black text-primary">{attempts.length}</span>
-                     <span className="text-[9px] font-black text-primary/30 uppercase tracking-widest leading-none">Total Sessions</span>
-                   </div>
-                </div>
-              </div>
-
-              {/* Top Level Metrics */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <Card className="rounded-[40px] border-2 border-primary/40 bg-white p-10 shadow-2xl shadow-primary/5">
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className="w-10 h-10 bg-primary/5 rounded-2xl flex items-center justify-center border-2 border-primary/10">
-                      <TrendingUp className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-black text-primary uppercase tracking-widest leading-none mb-1">Pass Ratio Distribution</h4>
-                      <p className="text-xs font-bold text-primary/30">Aggregate student success rate across subjects</p>
-                    </div>
+              </ScrollArea>
+            </aside>
+            <section className="flex-1 overflow-y-auto p-6 bg-slate-50 uppercase">
+              {selectedExamId ? (
+                <div className="max-w-2xl mx-auto space-y-6 text-left">
+                  <div className="flex justify-between items-end">
+                    <div><h2 className="text-2xl font-black text-primary tracking-tighter">SUBJECTS</h2><p className="text-primary/40 text-[10px] font-bold">{exams.find(e => e.id === selectedExamId)?.title}</p></div>
+                    <Badge variant="outline" className="h-8 rounded-full border-2 text-[10px] px-4 font-black">{questions.length} QUESTIONS</Badge>
                   </div>
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={(() => {
-                        return exams.map(e => {
-                          const examAt = attempts.filter(a => a.examId === e.id);
-                          if (examAt.length === 0) return null;
-                          const passCount = examAt.filter(a => a.score >= (a.totalPossible / 2)).length;
-                          return {
-                            name: e.subject,
-                            rate: Math.round((passCount / examAt.length) * 100)
-                          };
-                        }).filter(Boolean);
-                      })()}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--primary) / 0.1)" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'oklch(var(--primary) / 0.4)', fontSize: 10, fontWeight: 900}} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{fill: 'oklch(var(--primary) / 0.4)', fontSize: 10, fontWeight: 900}} dx={-10} unit="%" />
-                        <Tooltip 
-                          contentStyle={{borderRadius: '16px', border: '2px solid oklch(var(--primary) / 0.1)', background: 'white'}}
-                          itemStyle={{fontSize: '10px', fontWeight: 900, textTransform: 'uppercase'}}
-                        />
-                        <Bar 
-                          dataKey="rate" 
-                          fill="oklch(var(--primary))" 
-                          radius={[8, 8, 8, 8]} 
-                          barSize={32}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </Card>
-
-                <Card className="rounded-[40px] border-2 border-primary/40 bg-white p-10 shadow-2xl shadow-primary/5">
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className="w-10 h-10 bg-primary/5 rounded-2xl flex items-center justify-center border-2 border-primary/10">
-                      <BarChart2 className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-black text-primary uppercase tracking-widest leading-none mb-1">Average Proficiency</h4>
-                      <p className="text-xs font-bold text-primary/30">Mean scores normalized across varied subjects</p>
-                    </div>
-                  </div>
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={(() => {
-                        return exams.map(e => {
-                          const examAt = attempts.filter(a => a.examId === e.id);
-                          if (examAt.length === 0) return null;
-                          const avgScore = examAt.reduce((acc, curr) => acc + curr.score, 0) / examAt.length;
-                          return {
-                            name: e.subject,
-                            score: parseFloat(avgScore.toFixed(1))
-                          };
-                        }).filter(Boolean);
-                      })()}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--primary) / 0.1)" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'oklch(var(--primary) / 0.4)', fontSize: 10, fontWeight: 900}} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{fill: 'oklch(var(--primary) / 0.4)', fontSize: 10, fontWeight: 900}} dx={-10} />
-                        <Tooltip 
-                          contentStyle={{borderRadius: '16px', border: '2px solid oklch(var(--primary) / 0.1)', background: 'white'}}
-                        />
-                        <Area type="monotone" dataKey="score" stroke="oklch(var(--primary))" fill="oklch(var(--primary) / 0.1)" strokeWidth={3} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </Card>
-              </div>
-
-              {/* Subject Drilldown */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-                <div className="md:col-span-1 space-y-4">
-                  <h3 className="text-sm font-black text-primary/40 uppercase tracking-[0.2em] pl-4 border-l-4 border-primary">Subject Inspector</h3>
-                  <ScrollArea className="h-[500px]">
-                    <div className="space-y-2">
-                       {exams.map(exam => {
-                          const attemptsCount = attempts.filter(a => a.examId === exam.id).length;
-                          return (
-                            <button
-                              key={exam.id}
-                              onClick={() => setSelectedAnalyticsExam(exam.id)}
-                              className={cn(
-                                "w-full text-left p-6 rounded-3xl transition-all border-2",
-                                selectedAnalyticsExam === exam.id ? "bg-primary border-primary shadow-xl" : "bg-white border-primary/10 hover:border-primary/40"
-                              )}
-                            >
-                              <p className={cn("font-black text-xs uppercase tracking-tight mb-2", selectedAnalyticsExam === exam.id ? "text-white" : "text-primary")}>{exam.title}</p>
-                              <div className="flex justify-between items-center">
-                                <Badge className={cn("px-2 py-0.5 text-[8px] font-black uppercase rounded-lg", selectedAnalyticsExam === exam.id ? "bg-white text-primary" : "bg-primary/5 text-primary/40")}>{exam.subject}</Badge>
-                                <span className={cn("text-[9px] font-black", selectedAnalyticsExam === exam.id ? "text-white/40" : "text-primary/20")}>{attemptsCount} SESSIONS</span>
-                              </div>
-                            </button>
-                          );
-                       })}
-                    </div>
-                  </ScrollArea>
-                </div>
-
-                <div className="md:col-span-3">
-                  {!selectedAnalyticsExam ? (
-                    <div className="h-full bg-primary/[0.02] border-2 border-dashed border-primary/20 rounded-[40px] flex flex-col items-center justify-center p-12 text-center">
-                       <PieChartIcon className="w-12 h-12 text-primary/10 mb-6" />
-                       <h4 className="text-xl font-black text-primary uppercase tracking-tighter mb-2">Detailed Selection Pending</h4>
-                       <p className="max-w-xs text-xs font-bold text-primary/30 uppercase leading-relaxed">Select a subject from the inspector matrix to generate granular failure analysis and item-level metrics.</p>
-                    </div>
-                  ) : (
-                    <motion.div 
-                      key={selectedAnalyticsExam}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="space-y-10"
-                    >
-                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                          {(() => {
-                            const exAt = attempts.filter(a => a.examId === selectedAnalyticsExam);
-                            const avg = exAt.length > 0 ? exAt.reduce((acc, curr) => acc + curr.score, 0) / exAt.length : 0;
-                            const passCount = exAt.filter(a => a.score >= (a.totalPossible / 2)).length;
-                            return (
-                              <>
-                                <div className="p-8 bg-white border-2 border-primary/10 rounded-[32px] shadow-sm">
-                                   <p className="text-[9px] font-black text-primary/30 uppercase tracking-[0.2em] mb-4">Mean Accuracy</p>
-                                   <h5 className="text-4xl font-black text-primary leading-none uppercase tracking-tighter">{avg.toFixed(1)} <span className="text-sm text-primary/20">pts</span></h5>
-                                </div>
-                                <div className="p-8 bg-white border-2 border-primary/10 rounded-[32px] shadow-sm">
-                                   <p className="text-[9px] font-black text-primary/30 uppercase tracking-[0.2em] mb-4">Success Ratio</p>
-                                   <h5 className="text-4xl font-black text-primary leading-none uppercase tracking-tighter">{exAt.length > 0 ? Math.round((passCount/exAt.length)*100) : 0} <span className="text-sm text-primary/20">%</span></h5>
-                                </div>
-                                <div className="p-8 bg-white border-2 border-primary/10 rounded-[32px] shadow-sm">
-                                   <p className="text-[9px] font-black text-primary/30 uppercase tracking-[0.2em] mb-4">Peak Attainment</p>
-                                   <h5 className="text-4xl font-black text-primary leading-none uppercase tracking-tighter">{exAt.length > 0 ? Math.max(...exAt.map(a => a.score)) : 0} <span className="text-sm text-primary/20">pts</span></h5>
-                                </div>
-                              </>
-                            );
-                          })()}
-                       </div>
-
-                       <div>
-                          <h3 className="text-sm font-black text-primary/40 uppercase tracking-[0.2em] pl-4 border-l-4 border-primary mb-8">Item Failure Matrix (Top Incorrects)</h3>
-                          <div className="grid grid-cols-1 gap-4">
-                            {(() => {
-                              const qs = analyticsQuestions[selectedAnalyticsExam] || [];
-                              const exAt = attempts.filter(a => a.examId === selectedAnalyticsExam);
-                              
-                              const failureMetrics = qs.map(q => {
-                                const incorrectAttempts = exAt.filter(a => a.answers[q.id] !== undefined && a.answers[q.id] !== q.correctOptionIndex);
-                                
-                                // Count which wrong option was picked most
-                                const wrongOptionCounts: Record<number, number> = {};
-                                incorrectAttempts.forEach(a => {
-                                  const ans = a.answers[q.id];
-                                  wrongOptionCounts[ans] = (wrongOptionCounts[ans] || 0) + 1;
-                                });
-                                
-                                const topWrongOption = Object.entries(wrongOptionCounts).sort((a,b) => b[1] - a[1])[0];
-
-                                return {
-                                  question: q,
-                                  failureCount: incorrectAttempts.length,
-                                  totalResponses: exAt.filter(a => a.answers[q.id] !== undefined).length,
-                                  topWrongOption: topWrongOption ? parseInt(topWrongOption[0]) : null
-                                };
-                              })
-                              .sort((a,b) => b.failureCount - a.failureCount)
-                              .slice(0, 5); // Top 5 most missed
-
-                              return failureMetrics.map((f, i) => (
-                                <Card key={f.question.id} className="rounded-3xl border-2 border-primary/10 bg-white p-8">
-                                   <div className="flex justify-between items-start mb-6">
-                                      <div className="flex gap-4 items-center">
-                                         <Badge className="bg-red-50 text-red-600 border-red-100 font-black px-3 uppercase text-[9px] tracking-widest">CRITICAL LOSS POINT</Badge>
-                                         <span className="text-xs font-black text-primary/20 uppercase tracking-widest">FAILURE RANK {i+1}</span>
-                                      </div>
-                                      <div className="text-right">
-                                         <p className="text-xl font-black text-red-600 leading-none mb-1">{f.totalResponses > 0 ? Math.round((f.failureCount/f.totalResponses)*100) : 0}%</p>
-                                         <p className="text-[8px] font-black text-primary/30 uppercase tracking-[0.2em]">INCORRECT RATE</p>
-                                      </div>
-                                   </div>
-                                   <p className="font-bold text-sm text-primary mb-6 leading-relaxed tracking-tight">{f.question.text}</p>
-                                   
-                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                      <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                                         <p className="text-[8px] font-black text-primary/40 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
-                                            <CheckCircle2 className="w-2 h-2 text-primary" />
-                                            Expected Resolution
-                                         </p>
-                                         <p className="text-xs font-black text-primary uppercase">{f.question.options[f.question.correctOptionIndex]}</p>
-                                      </div>
-                                      {f.topWrongOption !== null && (
-                                        <div className="p-4 bg-red-50/50 rounded-2xl border border-red-100">
-                                           <p className="text-[8px] font-black text-red-600/40 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
-                                              <AlertCircle className="w-2 h-2 text-red-600" />
-                                              Common Misconception
-                                           </p>
-                                           <p className="text-xs font-black text-red-600 uppercase">{f.question.options[f.topWrongOption]}</p>
-                                        </div>
-                                      )}
-                                   </div>
-                                </Card>
-                              ));
-                            })()}
-                          </div>
-                       </div>
-                    </motion.div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : activeTab === 'candidates' ? (
-          <div className="flex-1 overflow-y-auto p-12 font-sans bg-background">
-            <div className="max-w-4xl mx-auto space-y-12">
-              <div className="flex justify-between items-end">
-                <div>
-                  <h2 className="text-5xl font-black text-primary uppercase tracking-tighter leading-tight mb-2">Student <br /> Directory</h2>
-                  <p className="text-primary/40 font-bold uppercase tracking-widest text-[10px]">Onboard and monitor examinees for live subjects</p>
-                </div>
-                <Badge variant="outline" className="h-10 rounded-full border-2 border-primary/40 text-primary font-black px-6 uppercase text-[10px] tracking-widest leading-none flex items-center">{candidates.length} Registered</Badge>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                {/* Registration Form */}
-                <Card className="rounded-[40px] border-2 border-primary/40 bg-white shadow-2xl shadow-primary/5 overflow-hidden h-fit">
-                  <CardHeader className="bg-primary text-white p-10">
-                    <CardTitle className="text-lg uppercase tracking-widest font-black flex items-center gap-4">
-                      <UserPlus className="w-6 h-6" />
-                      Add Entry
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-10">
-                    <form onSubmit={handleCreateCandidate} className="space-y-6">
+                  <Card className="rounded-[24px] border-2 border-primary/20 bg-white p-6 shadow-xl">
+                    <form onSubmit={handleAddOrUpdateQuestion} className="space-y-6">
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-primary/40 uppercase tracking-widest">Candidate Signature</Label>
-                        <Input 
-                          placeholder="Legal Full Name"
-                          value={newCandidate.fullName}
-                          onChange={e => setNewCandidate({...newCandidate, fullName: e.target.value})}
-                          className="h-14 rounded-2xl bg-primary/5 border-2 border-primary/10 text-primary font-bold placeholder:text-primary/20 px-6"
-                          required
-                        />
+                        <Label className="text-[10px] font-black opacity-40">QUESTION CONTENT</Label>
+                        <textarea className="w-full min-h-[100px] rounded-xl border-2 border-primary/5 bg-slate-50 p-4 text-sm font-bold focus:border-primary outline-none" placeholder="TYPE QUESTIONS HERE..." value={newQuestion.text} onChange={e => setNewQuestion({...newQuestion, text: e.target.value.toUpperCase()})} required />
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-primary/40 uppercase tracking-widest">Exam Serial Identity</Label>
-                        <Input 
-                          placeholder="ET-1000-XYZ"
-                          value={newCandidate.examNumber}
-                          onChange={e => setNewCandidate({...newCandidate, examNumber: e.target.value})}
-                          className="h-14 rounded-2xl bg-primary/5 border-2 border-primary/10 font-black uppercase tracking-widest text-primary placeholder:text-primary/20 px-6"
-                          required
-                        />
-                      </div>
-                      <Button type="submit" className="w-full h-14 bg-primary text-white hover:bg-primary/90 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 border-none transition-all mt-4">
-                        Lock Record
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-
-                {/* Candidate Table */}
-                <div className="md:col-span-2 space-y-8">
-                  <div className="flex items-center gap-x-6 bg-white p-6 rounded-[32px] border-2 border-primary/40 shadow-xl shadow-primary/5">
-                    <Search className="w-6 h-6 text-primary/20" />
-                    <input 
-                      type="text" 
-                      placeholder="Search registry by name or index..."
-                      className="bg-transparent border-none outline-none text-sm font-bold w-full text-primary placeholder:text-primary/20"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    {candidates.map(candidate => (
-                      <div key={candidate.id} className="group flex items-center justify-between p-6 bg-white border-2 border-primary/10 rounded-3xl hover:border-primary/40 transition-all shadow-sm hover:shadow-xl hover:shadow-primary/5">
-                        <div className="flex items-center gap-5 text-primary">
-                          <div className="w-14 h-14 bg-primary/5 rounded-2xl border-2 border-primary/10 flex items-center justify-center font-black text-primary/30 group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all uppercase text-xl">
-                            {candidate.fullName.charAt(0)}
-                          </div>
-                          <div>
-                            <h4 className="font-black text-lg group-hover:text-primary transition-colors leading-tight uppercase tracking-tight">{candidate.fullName}</h4>
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/30">{candidate.examNumber}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <Badge className="bg-primary/5 text-primary border-2 border-primary/10 font-black uppercase tracking-widest text-[8px] px-3 py-1">{candidate.status}</Badge>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => deleteCandidate(candidate.id)}
-                            className="h-10 w-10 text-primary/10 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                    {candidates.length === 0 && (
-                      <div className="py-20 text-center bg-primary/5 rounded-[40px] border-2 border-dashed border-primary/20">
-                        <Users className="w-12 h-12 text-primary/10 mx-auto mb-4" />
-                        <p className="text-primary/20 font-black uppercase tracking-widest text-[10px]">No Subject Records Found</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex-1 overflow-y-auto p-12 font-sans bg-background">
-            <div className="max-w-4xl mx-auto space-y-12">
-              <div className="flex justify-between items-end">
-                <div>
-                  <h2 className="text-5xl font-black text-primary uppercase tracking-tighter leading-tight mb-2">Question <br /> Library</h2>
-                  <p className="text-primary/40 font-bold uppercase tracking-widest text-[10px]">Global repository of reusable assessment items</p>
-                </div>
-                <Badge variant="outline" className="h-10 rounded-full border-2 border-primary/40 text-primary font-black px-6 uppercase text-[10px] tracking-widest leading-none flex items-center">{bankQuestions.length} Library Items</Badge>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                {/* Bank Entry Form */}
-                <Card className="rounded-[40px] border-2 border-primary/40 bg-white shadow-2xl shadow-primary/5 overflow-hidden h-fit">
-                  <CardHeader className="bg-primary text-white p-10">
-                    <CardTitle className="text-lg uppercase tracking-widest font-black flex items-center gap-4">
-                      <PlusCircle className="w-6 h-6" />
-                      Add to Bank
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-10 space-y-6">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-primary/40 uppercase tracking-widest">Question Text</Label>
-                        <textarea 
-                          className="w-full flex min-h-[100px] rounded-2xl border-2 border-primary/10 bg-primary/5 px-4 py-3 text-sm font-bold focus:border-primary outline-none transition-all text-primary placeholder:text-primary/20"
-                          placeholder="Global question content..."
-                          value={newQuestion.text}
-                          onChange={e => setNewQuestion({...newQuestion, text: e.target.value})}
-                        />
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-black text-primary/40 uppercase tracking-widest">Options Matrix</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {newQuestion.options.map((opt, i) => (
                           <div key={i} className="flex gap-2">
-                            <Input 
-                              value={opt} 
-                              onChange={e => {
-                                const opts = [...newQuestion.options];
-                                opts[i] = e.target.value;
-                                setNewQuestion({...newQuestion, options: opts});
-                              }}
-                              className="rounded-xl bg-primary/5 border-2 border-primary/10 h-11 text-xs font-bold text-primary placeholder:text-primary/20"
-                              placeholder={`Option ${String.fromCharCode(65 + i)}`}
-                            />
-                            <Button 
-                              type="button"
-                              onClick={() => setNewQuestion({...newQuestion, correctOptionIndex: i})}
-                              className={cn("w-11 h-11 rounded-xl shrink-0 p-0 border-2", newQuestion.correctOptionIndex === i ? "bg-primary text-white border-primary" : "text-primary border-primary/10 hover:bg-primary/5")}
-                            >
-                              {newQuestion.correctOptionIndex === i ? '✓' : ''}
+                            <Input value={opt} onChange={e => { const o = [...newQuestion.options]; o[i] = e.target.value.toUpperCase(); setNewQuestion({...newQuestion, options: o}); }} className="h-12 text-xs font-black rounded-lg" placeholder={`OPTION ${String.fromCharCode(65 + i)}`} required />
+                            <Button type="button" onClick={() => setNewQuestion({...newQuestion, correctOptionIndex: i})} className={cn("h-12 px-4 rounded-lg border-2", newQuestion.correctOptionIndex === i ? "bg-primary text-white border-primary shadow-md" : "text-primary border-primary/5")}>
+                              {newQuestion.correctOptionIndex === i ? <CheckCircle className="w-4 h-4" /> : i+1}
                             </Button>
                           </div>
                         ))}
                       </div>
-
-                      <Button 
-                        onClick={() => addToBank(newQuestion)}
-                        className="w-full h-14 bg-primary text-white hover:bg-primary/90 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 border-none transition-all mt-4"
-                      >
-                        Establish Item
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Bank List */}
-                <div className="md:col-span-2 space-y-8">
-                  <div className="flex items-center gap-x-6 bg-white p-6 rounded-[32px] border-2 border-primary/40 shadow-xl shadow-primary/5">
-                    <Search className="w-6 h-6 text-primary/20" />
-                    <input 
-                      type="text" 
-                      placeholder="Search library by content or tags..."
-                      className="bg-transparent border-none outline-none text-sm font-bold w-full text-primary placeholder:text-primary/20"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-6">
-                    {bankQuestions.map((q, idx) => (
-                      <Card key={q.id} className="rounded-3xl border-2 border-primary/10 bg-white hover:border-primary/40 shadow-sm transition-all overflow-hidden">
-                        <CardContent className="p-8">
-                          <div className="flex justify-between gap-8">
-                            <div className="flex-1 text-primary">
-                              <div className="flex items-center gap-4 mb-4">
-                                <Badge className="bg-primary/5 text-primary font-black border-2 border-primary/10 px-3 uppercase text-[8px] tracking-widest">BANK_ITEM_{idx + 1}</Badge>
-                              </div>
-                              <p className="font-bold text-lg mb-6 leading-relaxed tracking-tight">{q.text}</p>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {q.options.map((opt, i) => (
-                                  <div key={i} className={`p-4 rounded-xl text-xs font-bold border-2 transition-all ${q.correctOptionIndex === i ? 'bg-primary text-white border-primary shadow-md' : 'bg-primary/5 text-primary/60 border-primary/5'}`}>
-                                    <span className="opacity-40 mr-2">{String.fromCharCode(65 + i)}</span> {opt}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if(!confirm("Delete from bank?")) return;
-                                await deleteDoc(doc(db, 'question_bank', q.id));
-                                fetchQuestionBank();
-                              }}
-                              className="h-10 w-10 text-primary/10 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </Button>
-                          </div>
-                        </CardContent>
+                      <Button type="submit" className="w-full h-14 bg-primary text-white rounded-xl font-black text-[11px] shadow-xl">COMMIT TO MODULE</Button>
+                    </form>
+                  </Card>
+                  <div className="space-y-2">
+                    {questions.map((q, idx) => (
+                      <Card key={q.id} className="p-4 border-2 border-primary/5 bg-white hover:border-primary/10 rounded-2xl shadow-sm">
+                         <div className="flex justify-between items-start gap-4">
+                            <div className="flex-1"><Badge className="bg-primary/5 text-primary text-[8px] mb-2 font-black">ITEM {idx + 1}</Badge><p className="font-bold text-xs leading-relaxed">{q.text}</p></div>
+                            <Button variant="ghost" size="icon" onClick={async () => { if(confirm("Delete item?")) { await deleteDoc(doc(db, 'exams', selectedExamId, 'questions', q.id)); await updateDoc(doc(db, 'exams', selectedExamId), { totalQuestions: questions.length - 1 }); fetchQuestions(selectedExamId); } }} className="text-red-200 hover:text-red-500"><Trash2 className="w-4 h-4" /></Button>
+                         </div>
                       </Card>
                     ))}
-                    {bankQuestions.length === 0 && (
-                      <div className="py-20 text-center bg-primary/5 rounded-[40px] border-2 border-dashed border-primary/20">
-                        <Library className="w-12 h-12 text-primary/10 mx-auto mb-4" />
-                        <p className="text-primary/20 font-black uppercase tracking-widest text-[10px]">No Library Items Discovered</p>
-                      </div>
-                    )}
                   </div>
                 </div>
+              ) : (
+                <div className="h-full flex items-center justify-center opacity-20"><div className="text-center"><BookOpen className="w-16 h-16 mx-auto mb-4" /><p className="font-black text-xs">SELECT A MODULE FROM THE SIDEBAR</p></div></div>
+              )}
+            </section>
+          </>
+        ) : activeTab === 'bank' && isExamAdmin ? (
+          <div className="flex-1 overflow-y-auto p-4 max-w-4xl mx-auto w-full uppercase">
+            <div className="space-y-6">
+              <div className="flex justify-between items-end">
+                <div><h2 className="text-2xl font-black text-primary tracking-tighter uppercase">QUESTION BANK</h2><p className="text-primary/40 text-[8px] font-bold">CENTRAL REPOSITORY</p></div>
+                <div className="flex gap-2">
+                  {selectedBankQuestions.size > 0 && <Button onClick={handleBatchImportToExam} className="h-8 bg-sky-500 text-white rounded-lg font-black text-[8px] px-4 shadow-lg">ASSIGN {selectedBankQuestions.size} ITEMS TO {selectedExamId ? 'MODULE' : '...'}</Button>}
+                  <Badge variant="outline" className="h-8 rounded-full border-2 text-[10px] px-4 font-black">{bankQuestions.length} TOTAL ITEMS</Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <Card className="p-6 rounded-[24px] border-2 border-primary/10 bg-white shadow-xl">
+                    <h3 className="text-[10px] font-black text-primary mb-4 flex items-center gap-2"><PlusCircle className="w-4 h-4" /> MANUAL ENTRY</h3>
+                    <div className="space-y-4">
+                       <textarea className="w-full min-h-[80px] rounded-xl border-2 border-primary/5 bg-slate-50 p-4 text-xs font-bold focus:border-primary outline-none" placeholder="QUESTION TEXT..." value={newQuestion.text} onChange={e => setNewQuestion({...newQuestion, text: e.target.value.toUpperCase()})} />
+                       <div className="grid grid-cols-2 gap-2">
+                          {newQuestion.options.map((opt, i) => <Input key={i} placeholder={`OPT ${i+1}`} value={opt} onChange={e => { const o = [...newQuestion.options]; o[i] = e.target.value.toUpperCase(); setNewQuestion({...newQuestion, options: o}); }} className="h-10 text-[9px] font-black" />)}
+                       </div>
+                       <Button onClick={() => addToBank(newQuestion)} className="w-full h-11 bg-primary text-white rounded-xl font-black text-[9px] shadow-lg">STORE IN BANK</Button>
+                    </div>
+                 </Card>
+                 <Card className="p-6 rounded-[24px] border-2 border-primary/10 bg-white shadow-xl flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-[10px] font-black text-primary mb-2 flex items-center gap-2"><Upload className="w-4 h-4" /> BULK UPLOAD</h3>
+                      <p className="text-[8px] text-primary/40 font-bold mb-4">UPLOAD CSV (Q, A, B, C, D, KEY)</p>
+                      <div className="relative group">
+                        <Input type="file" accept=".csv" onChange={handleQuestionBulkUpload} className="h-24 border-2 border-dashed border-primary/20 rounded-2xl cursor-pointer pt-14 text-center text-[7px] font-black" />
+                        <div className="absolute top-6 left-0 right-0 pointer-events-none flex flex-col items-center"><Upload className="w-8 h-8 text-primary/10 mb-1" /><span className="text-[8px] font-black text-primary/30 uppercase tracking-tighter">SELECT ASSESSMENT FILE</span></div>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-2"><AlertCircle className="w-4 h-4 text-amber-500" /><p className="text-[7px] text-amber-600 font-black">ENSURE PROPER CSV FORMATTING BEFORE UPLOAD.</p></div>
+                 </Card>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                {bankQuestions.map((q, idx) => {
+                  const isSelected = selectedBankQuestions.has(q.id);
+                  return (
+                    <Card key={q.id} className={cn("p-4 border-2 transition-all cursor-pointer rounded-2xl", isSelected ? "border-primary bg-primary/5 shadow-md" : "border-primary/5 bg-white hover:border-primary/20")} onClick={() => { const n = new Set(selectedBankQuestions); if(n.has(q.id)) n.delete(q.id); else n.add(q.id); setSelectedBankQuestions(n); }}>
+                      <div className="flex justify-between items-start gap-4">
+                         <div className="flex-1"><div className="flex items-center gap-2 mb-2"><div className={cn("w-4 h-4 rounded border-2 flex items-center justify-center", isSelected ? "bg-primary border-primary" : "border-primary/20")}>{isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}</div><Badge className="bg-primary/5 text-primary text-[8px] font-black">ITEM {idx + 1}</Badge></div><p className="font-black text-xs leading-relaxed">{q.text}</p></div>
+                         <Button variant="ghost" size="icon" onClick={async (e) => { e.stopPropagation(); if(confirm("Remove from bank?")) { await deleteDoc(doc(db, 'question_bank', q.id)); fetchQuestionBank(); } }} className="text-red-200 hover:text-red-500"><Trash2 className="w-4 h-4" /></Button>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
+          </div>
+        ) : activeTab === 'analytics' && isSuperAdmin ? (
+          <div className="flex-1 overflow-y-auto p-4 max-w-5xl mx-auto w-full uppercase">
+            <div className="space-y-8">
+              <div className="flex justify-between items-end"><div><h2 className="text-2xl font-black text-primary tracking-tighter uppercase">INTELLIGENCE</h2><p className="text-primary/40 text-[10px] font-bold">SYSTEM ANALYTICS</p></div><Badge className="h-8 rounded-full border-2 bg-primary text-white text-[10px] px-4 font-black">{attempts.length} RECORDS</Badge></div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="rounded-[32px] border-2 border-primary/10 p-6 bg-white shadow-xl">
+                  <h3 className="text-[10px] font-black text-primary/40 mb-6">PASS RATE DISTRIBUTION</h3>
+                  <div className="h-[250px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={exams.map(e => { const at = attempts.filter(a => a.examId === e.id); if (at.length === 0) return null; return { name: e.subject, rate: Math.round((at.filter(a => a.score >= (a.totalPossible / 2)).length / at.length) * 100) }; }).filter(Boolean)}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--primary) / 0.05)" /><XAxis dataKey="name" hide /><YAxis axisLine={false} tickLine={false} tick={{fill: 'oklch(var(--primary))', fontSize: 10, fontWeight: 900}} unit="%" /><Tooltip contentStyle={{borderRadius: '16px', border: 'none', background: 'white', fontWeight: 900, fontSize: 10}} /><Bar dataKey="rate" fill="oklch(var(--primary))" radius={[8, 8, 8, 8]} barSize={40} /></BarChart></ResponsiveContainer></div>
+                </Card>
+                <Card className="rounded-[32px] border-2 border-primary/10 p-6 bg-white shadow-xl">
+                  <h3 className="text-[10px] font-black text-primary/40 mb-6">PERFORMANCE TREND</h3>
+                  <div className="h-[250px] w-full"><ResponsiveContainer width="100%" height="100%"><AreaChart data={exams.map(e => { const at = attempts.filter(a => a.examId === e.id); if (at.length === 0) return null; return { name: e.subject, score: parseFloat((at.reduce((acc, c) => acc + c.score, 0) / at.length).toFixed(1)) }; }).filter(Boolean)}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--primary) / 0.05)" /><XAxis dataKey="name" hide /><YAxis axisLine={false} tickLine={false} tick={{fill: 'oklch(var(--primary))', fontSize: 10, fontWeight: 900}} /><Tooltip contentStyle={{borderRadius: '16px', border: 'none', background: 'white', fontWeight: 900, fontSize: 10}} /><Area type="monotone" dataKey="score" stroke="oklch(var(--primary))" fill="oklch(var(--primary) / 0.1)" strokeWidth={3} /></AreaChart></ResponsiveContainer></div>
+                </Card>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                 <aside className="space-y-2">
+                    <p className="text-[10px] font-black text-primary/30 tracking-widest px-2 mb-4">MODULES</p>
+                    {exams.map(e => (
+                      <button key={e.id} onClick={() => setSelectedAnalyticsExam(e.id)} className={cn("w-full text-left p-4 rounded-xl border-2 transition-all", selectedAnalyticsExam === e.id ? "bg-primary text-white border-primary shadow-md" : "bg-white border-primary/5 hover:border-primary/10")}>
+                        <p className="font-black text-[10px] truncate uppercase">{e.title}</p>
+                      </button>
+                    ))}
+                 </aside>
+                 <div className="md:col-span-3">
+                   {selectedAnalyticsExam ? (
+                     <div className="space-y-4">
+                        <div className="grid grid-cols-3 gap-4">
+                           {(() => {
+                             const at = attempts.filter(a => a.examId === selectedAnalyticsExam);
+                             const avg = at.length > 0 ? at.reduce((acc, c) => acc + c.score, 0) / at.length : 0;
+                             return (<><Card className="p-4 bg-white border-2 border-primary/5 rounded-2xl"><p className="text-[8px] font-black text-primary/40 mb-1 uppercase">AVG SCORE</p><h5 className="text-2xl font-black">{avg.toFixed(1)}</h5></Card><Card className="p-4 bg-white border-2 border-primary/5 rounded-2xl"><p className="text-[8px] font-black text-primary/40 mb-1 uppercase">PASS RATE</p><h5 className="text-2xl font-black">{at.length > 0 ? Math.round((at.filter(a => a.score >= a.totalPossible/2).length/at.length)*100) : 0}%</h5></Card><Card className="p-4 bg-white border-2 border-primary/5 rounded-2xl"><p className="text-[8px] font-black text-primary/40 mb-1 uppercase">HIGHEST</p><h5 className="text-2xl font-black">{at.length > 0 ? Math.max(...at.map(a => a.score)) : 0}</h5></Card></>);
+                           })()}
+                        </div>
+                        <div className="space-y-2">
+                          {attempts.filter(a => a.examId === selectedAnalyticsExam).map(at => {
+                            const c = candidates.find(can => can.examNumber === at.userId || can.id === at.userId);
+                            return (
+                              <Card key={at.id} className="p-4 border-2 border-primary/5 bg-white flex justify-between items-center rounded-2xl shadow-sm">
+                                <div className="flex items-center gap-3"><div className="w-10 h-10 bg-primary/5 rounded-xl border-2 flex items-center justify-center font-black text-primary/40 uppercase">{c?.fullName?.charAt(0) || "U"}</div><div><p className="font-black text-xs uppercase truncate max-w-[150px]">{c?.fullName || "ANONYMOUS"}</p><p className="text-[8px] font-bold text-primary/20">{at.userId}</p></div></div>
+                                <div className="flex items-center gap-4"><p className="text-xl font-black">{at.score}/{at.totalPossible}</p>{at.released ? <Badge className="bg-sky-400 text-white text-[7px] border-none font-black uppercase">SENT</Badge> : <Button onClick={() => handleReleaseResult(at.id)} disabled={releasing === at.id} className="h-8 text-[8px] font-black px-4 bg-primary text-white rounded-lg shadow-md uppercase">RELEASE</Button>}</div>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                     </div>
+                   ) : (
+                     <div className="h-[400px] bg-slate-50 border-2 border-dashed border-primary/10 rounded-[32px] flex flex-col items-center justify-center p-8 text-center opacity-30"><PieChartIcon className="w-10 h-10 mb-4" /><p className="text-[10px] font-black uppercase">SELECT A MODULE TO VIEW ANALYTICS</p></div>
+                   )}
+                 </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+            <XCircle className="w-16 h-16 text-red-200 mb-6" />
+            <h2 className="text-3xl font-black text-primary tracking-tighter uppercase">Access Denied</h2>
+            <p className="text-primary/40 font-bold max-w-sm mx-auto leading-relaxed mt-4 uppercase">YOUR ACCOUNT PRIVILEGES ARE RESTRICTED TO THE CANDIDATE REGISTRY MODULE ONLY. PLEASE CONTACT A SUPER ADMIN FOR FULL ACCESS.</p>
+            <Button onClick={() => setActiveTab('candidates')} className="mt-8 h-12 px-10 bg-primary text-white rounded-xl font-black text-[10px] uppercase tracking-widest">Return to Registry</Button>
           </div>
         )}
       </main>
 
-      {/* Import Modal */}
+      {/* Biometric Capture Overlay */}
       <AnimatePresence>
-        {isImportModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-primary/20 backdrop-blur-md">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-full max-w-4xl bg-white rounded-[40px] border-2 border-primary/40 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
-            >
-            <div className="p-8 border-b-2 border-primary/10 flex justify-between items-center bg-white sticky top-0 bg-white/80 backdrop-blur-md z-10">
-              <div>
-                <h2 className="text-2xl font-black uppercase tracking-tighter text-primary">Library Selective Import</h2>
-                <p className="text-[10px] text-primary/40 font-bold uppercase tracking-widest mt-1">Select items to inject into this assessment cycle</p>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setIsImportModalOpen(false)}
-                className="rounded-full text-primary/20 hover:text-primary hover:bg-primary/5"
-              >
-                <PlusCircle className="w-6 h-6 rotate-45" />
-              </Button>
-            </div>
-            
-            <ScrollArea className="flex-1 p-8">
-              <div className="grid grid-cols-1 gap-6">
-                {bankQuestions.length === 0 ? (
-                  <div className="py-20 text-center border-2 border-dashed border-primary/10 rounded-3xl">
-                    <p className="text-primary/20 font-bold uppercase tracking-widest text-xs">The Question Bank is empty.</p>
+        {isCameraOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-primary/20 backdrop-blur-md">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-sm bg-white rounded-[32px] border-2 border-primary/40 shadow-2xl overflow-hidden uppercase">
+              <div className="bg-primary p-4 text-white flex justify-between items-center"><div className="flex items-center gap-2"><Camera className="w-4 h-4" /><h3 className="text-sm font-black tracking-widest uppercase">Identity Capture</h3></div><Button variant="ghost" size="icon" onClick={closeCamera} className="text-white h-8 w-8"><XCircle className="w-5 h-5" /></Button></div>
+              <div className="p-6 space-y-6">
+                <div className="relative aspect-square max-w-[280px] mx-auto rounded-full bg-black overflow-hidden border-4 border-primary/10 shadow-2xl">
+                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover grayscale brightness-110" />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-full h-full border-[12px] border-white/10 rounded-full" />
                   </div>
-                ) : (
-                  bankQuestions.map((q) => (
-                    <div 
-                      key={q.id}
-                      className="p-8 border-2 border-primary/10 rounded-3xl hover:border-primary/40 transition-all bg-white shadow-sm flex flex-col md:flex-row gap-8 items-start"
-                    >
-                      <div className="flex-1">
-                        <p className="font-bold text-lg mb-4 leading-tight">{q.text}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {q.options.map((opt, i) => (
-                            <Badge key={i} variant="outline" className={cn("text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg", q.correctOptionIndex === i ? "bg-green-50 text-green-600 border-green-200" : "bg-primary/5 text-primary/40 border-primary/5")}>
-                              {String.fromCharCode(65 + i)}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <Button 
-                        onClick={() => importFromBank(q)}
-                        className="h-12 px-6 bg-primary text-white hover:bg-primary/90 rounded-xl font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 shrink-0"
-                      >
-                        <Copy className="w-4 h-4 mr-2" />
-                        Inject Item
-                      </Button>
-                    </div>
-                  ))
-                )}
+                </div>
+                <div className="flex gap-3">
+                  <Button onClick={snapPhoto} className="flex-1 h-12 bg-primary text-white rounded-xl font-black shadow-lg border-none uppercase tracking-widest text-[10px] flex items-center justify-center gap-2">
+                    <Camera className="w-4 h-4" /> Snap Photo
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      toast.loading("Scanning Fingerprint...");
+                      await new Promise(r => setTimeout(r, 1500));
+                      setNewCandidate(p => ({ ...p, fingerprintData: "FP_" + Math.random().toString(36).slice(2, 9) }));
+                      toast.dismiss();
+                      toast.success("Fingerprint Linked!");
+                    }}
+                    className="flex-1 h-12 bg-sky-500 text-white rounded-xl font-black shadow-lg border-none uppercase tracking-widest text-[10px] flex items-center justify-center gap-2"
+                  >
+                    <Fingerprint className="w-4 h-4" /> Scan Finger
+                  </Button>
+                </div>
+                <Button variant="outline" onClick={closeCamera} className="w-full h-10 rounded-xl border-2 border-primary/20 font-black uppercase text-[9px]">Close Terminal</Button>
               </div>
-            </ScrollArea>
-            
-            <div className="p-6 bg-primary/5 border-t-2 border-primary/10 text-center">
-              <p className="text-[10px] font-black text-primary/30 uppercase tracking-[0.3em]">Unified Examination Center &bull; Question Repository Access</p>
-            </div>
-          </motion.div>
-        </div>
-      )}
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
+
+      <footer className="py-6 z-10 w-full text-center border-t border-primary/5 bg-white uppercase">
+        <p className="text-[10px] font-bold text-primary/20 tracking-widest uppercase">&copy; {new Date().getFullYear()} VIVI CBT Systems. Secure Administrative Terminal.</p>
+      </footer>
     </div>
   );
 }

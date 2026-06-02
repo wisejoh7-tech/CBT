@@ -1,0 +1,136 @@
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
+import { useAuth } from '@/src/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/lib/ui/button';
+import { Input } from '@/lib/ui/input';
+import { Label } from '@/lib/ui/label';
+import { Card, CardContent } from '@/lib/ui/card';
+import { ShieldCheck, Mail, Lock, Eye, EyeOff, Shield, User } from 'lucide-react';
+import { toast } from 'sonner';
+import { Separator } from '@/lib/ui/separator';
+
+export default function StaffLogin() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const { user, profile, signInWithEmail, loading } = useAuth();
+  const navigate = useNavigate();
+
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'reg_admin';
+
+  React.useEffect(() => {
+    if (user && !loading && profile) {
+      if (isAdmin) navigate('/admin');
+    }
+  }, [user, profile, loading, navigate, isAdmin]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error("Credentials required.");
+      return;
+    }
+
+    try {
+      await signInWithEmail(email, password);
+      toast.success("Identity Verified. Staff Session Active.");
+      navigate('/admin');
+    } catch (error: any) {
+      toast.error(error.message || "Authentication failed.");
+    }
+  };
+
+  return (
+    <div className="relative min-h-screen flex flex-col bg-slate-50 selection:bg-primary/10 uppercase">
+      {/* Navigation */}
+      <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b-2 border-primary/10 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
+        <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>
+          <span className="font-black text-xl tracking-tighter text-primary">VIVI CBT</span>
+        </div>
+
+        <div className="hidden md:flex items-center gap-8">
+          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Home</button>
+          <button onClick={() => navigate('/candidate-login')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Candidate Login</button>
+          <button onClick={() => navigate('/results')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Check Results</button>
+          <Separator orientation="vertical" className="h-4 bg-primary/10" />
+          <button onClick={() => navigate('/staff')} className="text-[14px] font-black tracking-widest text-primary transition-colors flex items-center gap-2">
+            <User className="w-3 h-3" /> Staff Login
+          </button>
+        </div>
+      </nav>
+
+      <div className="flex-1 flex flex-col items-center justify-center relative px-6 py-20">
+        <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px]" />
+        </div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-md">
+          <div className="text-center mb-10">
+            <div className="w-16 h-16 bg-white border-2 border-primary/20 rounded-[32px] flex items-center justify-center mx-auto mb-6 shadow-xl">
+              <ShieldCheck className="w-10 h-10 text-primary" />
+            </div>
+            <h1 className="text-2xl font-black tracking-tighter text-primary leading-none mb-2">Staff Authorization</h1>
+            <p className="text-[10px] font-black text-primary/40 tracking-[0.3em]">SECURE PORTAL</p>
+          </div>
+
+          <Card className="rounded-[40px] border-2 border-primary/10 bg-white shadow-2xl shadow-primary/5 overflow-hidden">
+            <CardContent className="p-10 bg-white">
+              <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-primary/40 tracking-widest px-1">Institutional Email</Label>
+                  <div className="relative group">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                    <Input
+                      type="email"
+                      placeholder="STAFF@VIVICBT.COM"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-primary transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-primary/40 tracking-widest px-1">Access Password</Label>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      className="h-14 pl-12 pr-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-primary transition-all"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/20 hover:text-primary"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-16 bg-primary text-white hover:bg-primary/90 rounded-[24px] font-black tracking-widest text-[11px] shadow-2xl shadow-primary/20 border-none transition-all active:scale-95 mt-4"
+                >
+                  {loading ? "VERIFYING..." : "INITIALIZE SESSION"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      <footer className="py-12 z-10 w-full text-center border-t border-primary/5 bg-white">
+        <p className="text-[10px] font-bold text-primary/20 tracking-widest uppercase">&copy; {new Date().getFullYear()} VIVI CBT Systems. All Rights Reserved.</p>
+      </footer>
+    </div>
+  );
+}

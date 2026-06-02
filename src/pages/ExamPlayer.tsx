@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, getDocs, setDoc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, setDoc, updateDoc, serverTimestamp, addDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '@/src/lib/firebase';
 import { Exam, Question, Attempt } from '@/src/types';
 import { useAuth } from '@/src/context/AuthContext';
+import { useSocket } from '@/src/context/SocketContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/lib/ui/button';
 import { ScrollArea } from '@/lib/ui/scroll-area';
@@ -26,7 +27,9 @@ import {
   Shield,
   Info,
   MousePointer2,
-  RefreshCw
+  RefreshCw,
+  Printer,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils/utils';
 import { GoogleGenAI } from "@google/genai";
@@ -34,8 +37,9 @@ import { shuffleArray } from '@/src/lib/utils/shuffle';
 
 export default function ExamPlayer() {
   const { examId } = useParams<{ examId: string }>();
-  const [exam, setExam] = useState<Exam | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [activeExamIndex, setActiveExamIndex] = useState(0);
+  const [questionsByExam, setQuestionsByExam] = useState<Record<string, Question[]>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<string>>(new Set());
@@ -43,25 +47,87 @@ export default function ExamPlayer() {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [score, setScore] = useState(0);
+  const [sessionResults, setSessionResults] = useState<any[]>([]);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [explaining, setExplaining] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [calcDisplay, setCalcDisplay] = useState('0');
   const [acceptedInstructions, setAcceptedInstructions] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [lastSaved, setLastSaved] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   
-  const { profile, user } = useAuth();
+  const { profile, user, logOut } = useAuth();
+  const { socket } = useSocket();
   const navigate = useNavigate();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const timerKey = user ? `exam_timer_${user.uid}_${examId}` : null;
-  const startedKey = user ? `exam_started_${user.uid}_${examId}` : null;
-  const answersKey = user ? `exam_answers_${user.uid}_${examId}` : null;
+  // Socket.io real-time reporting
+  useEffect(() => {
+    if (socket && user && examId) {
+      socket.emit('join-exam', 'unified');
+    }
+  }, [socket, user, examId]);
 
-  // Initialize GenAI
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const reportProgress = useCallback((currentAnswers: Record<string, number>) => {
+    if (socket && user && profile) {
+      socket.emit('update-progress', {
+        userId: profile.examNumber || user.uid,
+        examId: 'unified',
+        progress: {
+          answeredCount: Object.keys(currentAnswers).length,
+          lastUpdated: new Date()
+        }
+      });
+    }
+  }, [socket, user, profile]);
+
+  const handleSuspendSession = async () => {
+    if (!confirm("SUSPEND SESSION: Your progress will be saved. You can log back in later to resume. Proceed?")) return;
+
+    // Save one last time
+    await saveStateToFirestore(answers, activeExamIndex, currentQuestionIndex, flaggedQuestions, timeLeft || 0);
+
+    // Force exit fullscreen if active
+    if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(() => {});
+    }
+
+    if (logOut) await logOut();
+    navigate('/');
+  };
+
+  // Persistence to Firestore
+  const saveStateToFirestore = useCallback(async (currentAnswers: Record<string, number>, currentExamIdx: number, currentQIdx: number, currentFlags: Set<string>, currentTimer: number) => {
+    if (!user || !profile || isCompleted) return;
+    setIsSaving(true);
+    try {
+      const attemptRef = doc(db, 'attempts', `${user.uid}_unified`);
+      await setDoc(attemptRef, {
+        userId: user.uid,
+        examId: 'unified',
+        userId: profile.examNumber || user.uid, // Unified search ID
+        userUid: user.uid, // Authentication reference
+        userName: profile.displayName,
+        examNumber: profile.examNumber || '',
+        answers: currentAnswers,
+        activeExamIndex: currentExamIdx,
+        currentQuestionIndex: currentQIdx,
+        flagged: Array.from(currentFlags),
+        timeLeft: currentTimer,
+        status: 'in-progress',
+        lastUpdated: serverTimestamp()
+      }, { merge: true });
+      setLastSaved(new Date());
+    } catch (e) {
+      console.error("Save failed", e);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [user, profile, isCompleted]);
+
+  // Initialize GenAI safely
+  const aiKey = process.env.GEMINI_API_KEY;
+  const ai = (aiKey && aiKey !== "undefined") ? new GoogleGenAI(aiKey) : null;
 
   // Anti-cheat states
   const [cheatingAttempts, setCheatingAttempts] = useState(0);
@@ -73,111 +139,192 @@ export default function ExamPlayer() {
     setIsSubmitting(true);
 
     try {
-      let finalScore = 0;
-      questions.forEach(q => {
-        if (answers[q.id] === q.correctOptionIndex) {
-          finalScore++;
-        }
-      });
-      setScore(finalScore);
+      const results: any[] = [];
 
-      const attemptData = {
-        userId: user!.uid,
-        examId: examId!,
-        score: finalScore,
-        totalPossible: questions.length,
+      // Calculate scores for each exam separately
+      exams.forEach(exam => {
+        const qs = questionsByExam[exam.id] || [];
+        let examScore = 0;
+        qs.forEach(q => {
+          if (answers[q.id] === q.correctOptionIndex) {
+            examScore++;
+          }
+        });
+        results.push({
+          examId: exam.id,
+          title: exam.title,
+          subject: exam.subject,
+          score: examScore,
+          totalPossible: qs.length
+        });
+
+        // Also save individual attempts for individual result checking
+        const indRef = doc(db, 'attempts', `${user!.uid}_${exam.id}`);
+        setDoc(indRef, {
+          userId: profile?.examNumber || user!.uid,
+          examId: exam.id,
+          score: examScore,
+          totalPossible: qs.length,
+          answers,
+          completedAt: serverTimestamp(),
+          status: 'completed',
+          released: false // Default to not released until admin sends it
+        }, { merge: true });
+      });
+
+      setSessionResults(results);
+
+      const attemptRef = doc(db, 'attempts', `${user!.uid}_unified`);
+      await setDoc(attemptRef, {
+        userId: profile?.examNumber || user!.uid,
+        examId: 'unified',
+        results,
         answers,
-        startedAt: serverTimestamp(),
         completedAt: serverTimestamp(),
         status: 'completed'
-      };
-
-      await addDoc(collection(db, 'attempts'), attemptData);
-      
-      // Clear persistence keys
-      if (timerKey) localStorage.removeItem(timerKey);
-      if (startedKey) localStorage.removeItem(startedKey);
-      if (answersKey) localStorage.removeItem(answersKey);
+      }, { merge: true });
 
       setIsCompleted(true);
-      toast.success("Examination submitted successfully!");
+      toast.success("All examinations submitted successfully!");
     } catch (error) {
       console.error("Error submitting exam:", error);
       toast.error("An error occurred during submission.");
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, isCompleted, questions, answers, user, examId, timerKey, startedKey, answersKey]);
+  }, [isSubmitting, isCompleted, exams, questionsByExam, answers, user]);
 
+  // Load exams
   useEffect(() => {
     async function initExam() {
-      if (!examId) return;
+      if (!user || !profile) return;
       try {
-        const examDoc = await getDoc(doc(db, 'exams', examId));
-        if (!examDoc.exists()) throw new Error("Exam not found");
+        setLoading(true);
         
-        const examData = { id: examDoc.id, ...examDoc.data() } as Exam;
-        setExam(examData);
-        
-        // Restore from Local Storage
-        const storedEndTime = timerKey ? localStorage.getItem(timerKey) : null;
-        const storedStarted = startedKey ? localStorage.getItem(startedKey) : null;
-        const storedAnswers = answersKey ? localStorage.getItem(answersKey) : null;
+        // 1. Determine which exams to load
+        // Strict filtering: Only load subjects registered by the candidate
+        const subjectNames = (profile?.role === 'student' && profile.subjectCombination)
+          ? [...profile.subjectCombination]
+          : [];
 
-        if (storedStarted === 'true' && storedEndTime) {
-          setHasStarted(true);
-          const endTimestamp = parseInt(storedEndTime);
-          const now = Date.now();
-          const remaining = Math.max(0, Math.floor((endTimestamp - now) / 1000));
-          
-          if (remaining <= 0) {
-            setTimeLeft(0);
-            // This will trigger auto-submit in the timer effect
-          } else {
-            setTimeLeft(remaining);
-          }
-        } else {
-          setTimeLeft(examData.durationMinutes * 60);
+        console.log("Loading modules for subjects:", subjectNames);
+
+        // Fetch all exams - removing orderBy to eliminate index dependency for now
+        const allExamsSnap = await getDocs(collection(db, 'exams'));
+        const allExams = allExamsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Exam));
+
+        console.log("Found total exams in DB:", allExams.length);
+
+        let examList: Exam[] = [];
+
+        if (subjectNames.length > 0) {
+          // Filter by subject names using case-insensitive matching
+          examList = allExams.filter(e =>
+            subjectNames.some(s => s.toLowerCase() === e.subject.toLowerCase()) ||
+            e.id === examId
+          );
+
+          // Deduplication: Only keep the most recent exam for each subject
+          // First sort allExams by date so we pick the latest
+          examList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          const uniqueSubjectsMap = new Map<string, Exam>();
+          examList.forEach(e => {
+            const lowerSubject = e.subject.toLowerCase();
+            if (!uniqueSubjectsMap.has(lowerSubject)) {
+              uniqueSubjectsMap.set(lowerSubject, e);
+            }
+          });
+          examList = Array.from(uniqueSubjectsMap.values());
+        } else if (examId && examId !== 'unified') {
+          // Just the one from URL
+          examList = allExams.filter(e => e.id === examId);
         }
 
-        if (storedAnswers) {
-          try {
-            setAnswers(JSON.parse(storedAnswers));
-          } catch (e) {
-            console.error("Failed to restore answers", e);
-          }
+        if (examList.length === 0) {
+           console.error("No matching exams found for criteria.");
+           toast.error("No examination modules matched your registry combination.");
+           navigate('/dashboard');
+           return;
         }
 
-        const qSnap = await getDocs(collection(db, 'exams', examId, 'questions'));
-        let qList = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Question));
-        
-        // Anti-cheat: Shuffle questions for each session
-        qList = shuffleArray(qList);
-        
-        // Anti-cheat: Shuffle options for each question
-        qList = qList.map(q => {
-          const originalOptions = [...q.options];
-          const correctText = originalOptions[q.correctOptionIndex];
-          const shuffledOptions = shuffleArray(originalOptions);
-          const newCorrectIndex = shuffledOptions.indexOf(correctText);
-          return { ...q, options: shuffledOptions, correctOptionIndex: newCorrectIndex };
+        // Remove duplicates and ensure order (e.g. English first if present)
+        const uniqueExams = Array.from(new Map(examList.map(e => [e.id, e])).values());
+        uniqueExams.sort((a, b) => {
+          if (a.subject.toLowerCase() === 'use of english') return -1;
+          if (b.subject.toLowerCase() === 'use of english') return 1;
+          return 0;
         });
 
-        setQuestions(qList);
-      } catch (error) {
-        console.error("Error setting up exam:", error);
-        toast.error("Failed to load examination.");
-        navigate('/dashboard');
-      } finally {
+        setExams(uniqueExams);
         setLoading(false);
+      } catch (error: any) {
+        console.error("Error setting up exam:", error);
+        toast.error(`Failed to load examination modules: ${error.message || 'Unknown error'}`);
+        navigate('/dashboard');
       }
     }
     initExam();
-  }, [examId, navigate]);
+  }, [examId, navigate, user, profile]);
 
+  // Load questions and handle session restoration
+  useEffect(() => {
+    if (exams.length === 0 || !user || isCompleted) return;
+
+    async function loadQuestionsAndSession() {
+      try {
+        console.log("Fetching questions for exams:", exams.map(e => e.subject));
+        // Fetch all questions for all loaded exams
+        const qMap: Record<string, Question[]> = {};
+        for (const exam of exams) {
+          try {
+            const qSnap = await getDocs(collection(db, 'exams', exam.id, 'questions'));
+            let qList = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Question));
+
+            if (qList.length === 0) {
+               console.warn(`No questions found for subject: ${exam.subject}`);
+            }
+
+            qMap[exam.id] = qList;
+          } catch (qErr) {
+            console.error(`Error loading questions for ${exam.subject}:`, qErr);
+          }
+        }
+        setQuestionsByExam(qMap);
+
+        // Restore active session from Firestore
+        const attemptRef = doc(db, 'attempts', `${user.uid}_unified`);
+        const attemptDoc = await getDoc(attemptRef);
+
+        if (attemptDoc.exists()) {
+          const data = attemptDoc.data();
+          if (data.status === 'completed') {
+            setIsCompleted(true);
+            setSessionResults(data.results || []);
+            return;
+          }
+          setHasStarted(true);
+          setAnswers(data.answers || {});
+          setActiveExamIndex(data.activeExamIndex || 0);
+          setCurrentQuestionIndex(data.currentQuestionIndex || 0);
+          setFlaggedQuestions(new Set(data.flagged || []));
+          if (data.timeLeft !== undefined) setTimeLeft(data.timeLeft);
+        } else {
+          // Initialize time
+          const totalMinutes = exams.reduce((acc, curr) => acc + (parseInt(curr.durationMinutes as any) || 30), 0);
+          setTimeLeft(totalMinutes * 60);
+        }
+      } catch (e) {
+        console.error("Critical session restoration error:", e);
+        toast.error("Security session encountered an integrity error. Restarting...");
+      }
+    }
+    loadQuestionsAndSession();
+  }, [exams, user, isCompleted]);
+
+  const questions = questionsByExam[exams[activeExamIndex]?.id] || [];
   const currentQuestion = questions[currentQuestionIndex];
 
-  // JAMB Keyboard Navigation
+  // VIVI Keyboard Navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isCompleted || !hasStarted) return;
@@ -285,13 +432,21 @@ export default function ExamPlayer() {
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen();
       }
-      
-      const endTime = Date.now() + (timeLeft || 0) * 1000;
-      if (timerKey) localStorage.setItem(timerKey, endTime.toString());
-      if (startedKey) localStorage.setItem(startedKey, 'true');
-      
+
       setHasStarted(true);
       setIsFullscreen(true);
+
+      // Initialize Firestore attempt doc
+      if (user) {
+        await setDoc(doc(db, 'attempts', `${user.uid}_unified`), {
+          userId: user.uid,
+          examId: 'unified',
+          startedAt: serverTimestamp(),
+          status: 'in-progress',
+          activeExamIndex: 0,
+          currentQuestionIndex: 0
+        }, { merge: true });
+      }
     } catch (e) {
       toast.error("Fullscreen needed to start the exam.");
     }
@@ -299,36 +454,24 @@ export default function ExamPlayer() {
 
   const handleSelectOption = (optionIndex: number) => {
     if (isCompleted) return;
-    setIsSaving(true);
-    setAnswers(prev => {
-      const newAnswers = {
-        ...prev,
-        [currentQuestion.id]: optionIndex
-      };
-      if (answersKey) {
-        localStorage.setItem(answersKey, JSON.stringify(newAnswers));
-        setLastSaved(new Date());
-      }
-      return newAnswers;
-    });
-    // Visual feedback delay
-    setTimeout(() => setIsSaving(false), 800);
+    const newAnswers = {
+      ...answers,
+      [currentQuestion.id]: optionIndex
+    };
+    setAnswers(newAnswers);
+    saveStateToFirestore(newAnswers, activeExamIndex, currentQuestionIndex, flaggedQuestions, timeLeft || 0);
+    reportProgress(newAnswers);
   };
 
   useEffect(() => {
     if (isCompleted || !hasStarted) return;
 
     const autoSaveInterval = setInterval(() => {
-      if (answersKey && Object.keys(answers).length > 0) {
-        setIsSaving(true);
-        localStorage.setItem(answersKey, JSON.stringify(answers));
-        setLastSaved(new Date());
-        setTimeout(() => setIsSaving(false), 1000);
-      }
-    }, 60000); // 60 seconds
+      saveStateToFirestore(answers, activeExamIndex, currentQuestionIndex, flaggedQuestions, timeLeft || 0);
+    }, 30000); // 30 seconds
 
     return () => clearInterval(autoSaveInterval);
-  }, [answers, answersKey, isCompleted, hasStarted]);
+  }, [answers, activeExamIndex, currentQuestionIndex, flaggedQuestions, timeLeft, hasStarted, isCompleted, saveStateToFirestore]);
 
   const toggleFlag = (questionId: string) => {
     setFlaggedQuestions(prev => {
@@ -344,16 +487,18 @@ export default function ExamPlayer() {
 
 
   const handleExplain = async () => {
-    if (!currentQuestion) return;
+    if (!currentQuestion || !ai) {
+      toast.error("AI Assistant is not configured. Please add GEMINI_API_KEY.");
+      return;
+    }
     setExplaining(true);
     setExplanation(null);
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Explain clearly why the correct answer to this question is option ${currentQuestion.correctOptionIndex + 1}: ${currentQuestion.text}. Options: ${currentQuestion.options.join(', ')}`,
-      });
-      setExplanation(response.text || "No explanation available.");
+      const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const response = await model.generateContent(`Explain clearly why the correct answer to this question is option ${currentQuestion.correctOptionIndex + 1}: ${currentQuestion.text}. Options: ${currentQuestion.options.join(', ')}`);
+      setExplanation(response.response.text() || "No explanation available.");
     } catch (error) {
+      console.error(error);
       toast.error("Gemini AI failed to explain.");
     } finally {
       setExplaining(false);
@@ -396,21 +541,22 @@ export default function ExamPlayer() {
               <motion.div 
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
-                className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-8 border-2 border-primary/40 shadow-xl shadow-primary/5"
+                className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-8 border-2 border-primary/40 shadow-xl shadow-primary/5 text-primary text-4xl font-black"
               >
-                <Lock className="w-8 h-8 text-primary" />
+                V
               </motion.div>
-              <h2 className="text-3xl font-black mb-4 uppercase tracking-tighter text-primary">Secure Portal</h2>
-              <p className="text-primary/40 font-bold uppercase tracking-widest text-[10px] mb-8">Candidate Integrity Protocol v2.4</p>
+              <h2 className="text-3xl font-black mb-4  tracking-tighter text-primary">SECURE PORTAL</h2>
+              <p className="text-primary/40 font-bold  tracking-widest text-[10px] mb-8">Candidate Integrity</p>
+
               
               <div className="space-y-3 w-full text-left">
                 <div className="p-4 bg-white rounded-2xl border border-primary/10 flex gap-3">
                   <Shield className="w-4 h-4 text-primary shrink-0" />
-                  <p className="text-[9px] font-black uppercase text-primary/60 tracking-wider">Fullscreen Enforcement Active</p>
+                  <p className="text-[9px] font-black  text-primary/60 tracking-wider">Fullscreen Enforcement Active</p>
                 </div>
                 <div className="p-4 bg-white rounded-2xl border border-primary/10 flex gap-3">
                   <Info className="w-4 h-4 text-primary shrink-0" />
-                  <p className="text-[9px] font-black uppercase text-primary/60 tracking-wider">Tab-Switching Prohibited</p>
+                  <p className="text-[9px] font-black  text-primary/60 tracking-wider">Tab-Switching Prohibited</p>
                 </div>
               </div>
             </div>
@@ -419,38 +565,38 @@ export default function ExamPlayer() {
             <div className="md:w-7/12 p-12 flex flex-col">
               <div className="flex-1 overflow-y-auto pr-4 max-h-[500px] mb-8 custom-scrollbar">
                 <div className="flex items-center gap-3 mb-6">
-                  <FileText className="w-5 h-5 text-primary" />
-                  <h3 className="text-xl font-black uppercase tracking-tight text-primary">Examination Instructions</h3>
+                  <FileText className="w-6 h-6 text-primary" />
+                  <h3 className="text-2xl font-black  tracking-tight text-primary uppercase">Examination Instructions</h3>
                 </div>
 
                 <div className="space-y-8">
                   <section>
-                    <h4 className="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em] mb-3">01. Assessment Format</h4>
-                    <p className="text-xs font-bold text-primary/60 leading-relaxed uppercase tracking-wide">
+                    <h4 className="text-[12px] font-black text-primary/40  tracking-[0.2em] mb-3 uppercase">01. Assessment Format</h4>
+                    <p className="text-sm font-bold text-primary/60 leading-relaxed  tracking-wide">
                       This is a multi-item objective assessment. Question order and option sequences are randomized for each candidate to ensure maximum integrity.
                     </p>
                   </section>
 
                   <section>
-                    <h4 className="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em] mb-3">02. Temporal Constraints</h4>
-                    <p className="text-xs font-bold text-primary/60 leading-relaxed uppercase tracking-wide">
-                      You have <strong>{exam?.durationMinutes} minutes</strong> to complete the session. The system will <strong>automatically finalize</strong> and submit your progress upon duration expiration.
+                    <h4 className="text-[12px] font-black text-primary/40  tracking-[0.2em] mb-3 uppercase">02. Temporal Constraints</h4>
+                    <p className="text-sm font-bold text-primary/60 leading-relaxed  tracking-wide">
+                      You have <strong>{exams.reduce((acc, curr) => acc + (curr.durationMinutes || 30), 0)} minutes</strong> to complete the session. The system will <strong>automatically finalize</strong> and submit your progress upon duration expiration.
                     </p>
                   </section>
 
                   <section>
-                    <h4 className="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em] mb-3">03. Navigation Controls</h4>
+                    <h4 className="text-[12px] font-black text-primary/40  tracking-[0.2em] mb-3 uppercase">03. Navigation Controls</h4>
                     <div className="flex flex-wrap gap-2 pt-2">
-                      <Badge variant="outline" className="bg-primary/5 text-[9px] font-black uppercase py-1 border-primary/20">Next [N]</Badge>
-                      <Badge variant="outline" className="bg-primary/5 text-[9px] font-black uppercase py-1 border-primary/20">Prev [P]</Badge>
-                      <Badge variant="outline" className="bg-primary/5 text-[9px] font-black uppercase py-1 border-primary/20">A, B, C, D to Answer</Badge>
-                      <Badge variant="outline" className="bg-primary/5 text-[9px] font-black uppercase py-1 border-primary/20">Calculator [C]</Badge>
+                      <Badge variant="outline" className="bg-primary/5 text-[11px] font-black  py-1 border-primary/20">Next [N]</Badge>
+                      <Badge variant="outline" className="bg-primary/5 text-[11px] font-black  py-1 border-primary/20">Prev [P]</Badge>
+                      <Badge variant="outline" className="bg-primary/5 text-[11px] font-black  py-1 border-primary/20">A, B, C, D to Answer</Badge>
+                      <Badge variant="outline" className="bg-primary/5 text-[11px] font-black  py-1 border-primary/20">Calculator [C]</Badge>
                     </div>
                   </section>
 
                   <section>
-                    <h4 className="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em] mb-3">04. Submission Policy</h4>
-                    <p className="text-xs font-bold text-primary/60 leading-relaxed uppercase tracking-wide">
+                    <h4 className="text-[12px] font-black text-primary/40  tracking-[0.2em] mb-3 uppercase">04. Submission Policy</h4>
+                    <p className="text-sm font-bold text-primary/60 leading-relaxed  tracking-wide">
                       Once submitted, your session cannot be resumed. Ensure all flagged items have been reviewed via the Navigation Console.
                     </p>
                   </section>
@@ -462,15 +608,15 @@ export default function ExamPlayer() {
                   <div className="relative mt-1">
                     <input 
                       type="checkbox" 
-                      className="peer h-5 w-5 opacity-0 absolute inset-0 cursor-pointer z-10"
+                      className="peer h-6 w-6 opacity-0 absolute inset-0 cursor-pointer z-10"
                       checked={acceptedInstructions}
                       onChange={(e) => setAcceptedInstructions(e.target.checked)}
                     />
-                    <div className="h-5 w-5 border-2 border-primary/40 rounded-md bg-white transition-all peer-checked:bg-primary peer-checked:border-primary group-hover:border-primary shrink-0 flex items-center justify-center">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                    <div className="h-6 w-6 border-2 border-primary/40 rounded-md bg-white transition-all peer-checked:bg-primary peer-checked:border-primary group-hover:border-primary shrink-0 flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                     </div>
                   </div>
-                  <span className="text-[10px] font-black text-primary uppercase tracking-widest leading-loose">
+                  <span className="text-[14px] font-black text-primary  tracking-widest leading-loose uppercase">
                     I acknowledge that I have read and understood the examination protocols and system requirements.
                   </span>
                 </label>
@@ -479,7 +625,7 @@ export default function ExamPlayer() {
                   onClick={startExam} 
                   disabled={!acceptedInstructions}
                   className={cn(
-                    "w-full h-16 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl transition-all border-none",
+                    "w-full h-16 rounded-2xl font-black  tracking-[0.2em] shadow-xl transition-all border-none",
                     acceptedInstructions 
                       ? "bg-primary hover:bg-primary/90 text-white shadow-primary/20" 
                       : "bg-primary/10 text-primary/30 cursor-not-allowed shadow-none"
@@ -503,34 +649,31 @@ export default function ExamPlayer() {
           animate={{ opacity: 1, scale: 1 }}
           className="max-w-2xl w-full bg-white rounded-[48px] shadow-2xl shadow-primary/10 border border-primary/10 overflow-hidden"
         >
-          <div className="p-16 text-center text-primary">
-            <motion.div 
+          <div className="p-12 text-center text-primary">
+            <motion.div
               initial={{ rotate: -10, scale: 0.8 }}
               animate={{ rotate: 0, scale: 1 }}
-              className="w-24 h-24 bg-primary/5 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-primary/10 shadow-lg shadow-primary/5"
+              className="w-12 h-12 bg-primary/5 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-primary/10 shadow-lg shadow-primary/5"
             >
-              <CheckCircle2 className="w-12 h-12 text-primary" />
+              <CheckCircle2 className="w-8 h-8 text-primary" />
             </motion.div>
-            <h2 className="text-5xl font-black mb-3 uppercase tracking-tighter text-primary">Result Summary</h2>
-            <p className="text-primary/40 font-bold uppercase tracking-widest text-[10px] mb-12">Examination completed successfully.</p>
+            <h2 className="text-3xl font-black mb-3  tracking-tighter text-primary">Submit</h2>
+            <p className="text-primary/40 font-bold  tracking-widest text-[10px] mb-12">Your examination has been Saved.</p>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-              <div className="p-10 bg-primary/5 rounded-[32px] border border-primary/10 transition-transform hover:scale-[1.02]">
-                <span className="block text-5xl font-black text-primary leading-none mb-3">{score} / {questions.length}</span>
-                <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em]">Total Items Answered</span>
-              </div>
-              <div className="p-10 bg-primary/5 rounded-[32px] border border-primary/10 transition-transform hover:scale-[1.02]">
-                <span className="block text-5xl font-black text-primary leading-none mb-3">{Math.round((score / questions.length) * 100)}%</span>
-                <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em]">Final Percentage Score</span>
-              </div>
+            <div className="p-6 bg-primary/5 rounded-[20px] border border-primary/10 mb-12">
+              <span className="block text-xl font-black text-primary  tracking-widest mb-3">Successful Submitted</span>
+              <span className="text-[10px] font-black text-primary/20  tracking-[0.2em]">The administration will review your session. Results will be released according to the official schedule.</span>
             </div>
 
             <div className="flex flex-col gap-3">
               <Button 
-                onClick={() => navigate('/dashboard')} 
-                className="h-16 bg-primary text-white hover:bg-primary/90 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] border-none shadow-xl shadow-primary/20"
+                onClick={async () => {
+                  if (logOut) await logOut();
+                  navigate('/');
+                }}
+                className="h-16 bg-primary text-white hover:bg-primary/40 rounded-2xl font-black  tracking-[0.2em] text-[10px] border-none shadow-xl shadow-primary/20"
               >
-                Return to Portal Dashboard
+                Logout
               </Button>
             </div>
           </div>
@@ -541,370 +684,307 @@ export default function ExamPlayer() {
 
   return (
     <div 
-  className="h-screen flex flex-col overflow-hidden font-sans select-none bg-background text-primary"
-  onContextMenu={(e) => e.preventDefault()}
->
-      {/* Header: Official Exam Navigation Bar */}
-      <header className="h-auto px-8 py-5 flex items-center justify-between shrink-0 border-b-2 border-primary/40 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center gap-5">
-          <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">
-            {exam?.title.charAt(0) || 'E'}
-          </div>
+      className="h-screen flex flex-col overflow-hidden font-sans select-none bg-background text-primary"
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      {/* Header: Official Unified Exam Bar */}
+      <header className="h-auto px-6 py-4 flex items-center justify-between shrink-0 border-b-2 border-primary/40 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white font-black text-lg shadow-lg shadow-primary/20">V</div>
           <div>
-            <h1 className="text-lg font-black uppercase tracking-tight leading-none mb-1">{exam?.title}</h1>
-            <p className="text-[10px] text-primary/40 font-bold uppercase tracking-widest">{exam?.subject} &bull; UNIFIED EXAMINATION</p>
+            <h1 className="text-base font-black  tracking-tight leading-none mb-1">CBT Examination</h1>
+            <p className="text-[9px] text-primary/40 font-bold  tracking-widest">Official Portal &bull; Session Active</p>
           </div>
         </div>
         
-        <div className="flex gap-10 items-center">
-          <div className="flex items-center gap-4 text-right pr-4 border-r border-primary/10">
+        <div className="flex gap-8 items-center">
+          <div className="flex items-center gap-3 text-right pr-4 border-r border-primary/10">
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-2">
-                <div className={cn(
-                  "w-1.5 h-1.5 rounded-full transition-colors",
-                  isSaving ? "bg-green-500 animate-pulse" : "bg-primary/20"
-                )} />
-                <p className="text-[9px] font-black uppercase tracking-widest text-primary/30">
-                  {isSaving ? "Syncing..." : lastSaved ? `Autosaved ${lastSaved.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : "Pending Sync"}
+                <div className={cn("w-1 h-1 rounded-full", isSaving ? "bg-sky-400 animate-pulse" : "bg-primary/20")} />
+                <p className="text-[8px] font-black  text-primary/30">
+                  {isSaving ? "Syncing" : "Cloud Active"}
                 </p>
               </div>
-              <p className="text-[10px] font-bold text-primary/20 uppercase tracking-tighter">Secure Backup Active</p>
             </div>
-            {isSaving && (
-              <motion.div 
-                initial={{ opacity: 0, rotate: 0 }}
-                animate={{ opacity: 1, rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              >
-                <RefreshCw className="w-3 h-3 text-primary/40" />
-              </motion.div>
-            )}
           </div>
 
           <div className="text-right">
-            <p className={cn(
-              "text-[10px] font-black uppercase tracking-widest leading-none mb-1 transition-colors",
-              timeLeft !== null && timeLeft <= 300 ? "text-red-500" : "text-primary/30"
-            )}>Time Remaining</p>
-            <p className={cn(
-              "text-3xl font-mono font-black tracking-tighter transition-colors",
-              timeLeft !== null && timeLeft <= 300 ? "text-red-500 animate-pulse" : "text-primary"
-            )}>
-              {timeLeft !== null ? formatTime(timeLeft) : "--:--:--"}
+            <p className={cn("text-[9px] font-black  tracking-widest leading-none mb-1", timeLeft !== null && timeLeft <= 300 ? "text-red-500" : "text-primary/30")}>Time</p>
+            <p className={cn("text-2xl font-mono font-black tracking-tighter", timeLeft !== null && timeLeft <= 300 ? "text-red-500 animate-pulse" : "text-primary")}>
+              {timeLeft !== null ? formatTime(timeLeft) : "--:--"}
             </p>
           </div>
-          <Separator orientation="vertical" className="h-10 bg-primary/10 hidden md:block" />
-          <div className="hidden lg:flex items-center space-x-4">
+
+          <div className="hidden md:flex items-center space-x-3 pl-4 border-l border-primary/10">
             <div className="text-right">
-              <p className="text-sm font-black tracking-tight leading-none mb-1 uppercase">{profile?.displayName}</p>
-              <p className="text-[10px] text-primary/40 font-bold uppercase tracking-widest leading-none">Reg No: {user?.uid.slice(0, 12).toUpperCase()}</p>
+              <p className="text-xs font-black tracking-tight leading-none mb-1  truncate max-w-[100px]">{profile?.displayName}</p>
+              <p className="text-[8px] text-primary/40 font-bold  tracking-widest">{user?.uid.slice(0, 10)}</p>
             </div>
-            <div className="w-12 h-12 bg-primary/5 rounded-xl overflow-hidden flex items-center justify-center border border-primary/10 shadow-md">
+            <div className="w-10 h-10 bg-primary/5 rounded-lg overflow-hidden flex items-center justify-center border border-primary/10 shadow-sm mr-2">
               {profile?.photoURL ? (
                 <img src={profile.photoURL} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-[10px] font-black text-primary/20 uppercase tracking-tighter">PH</span>
+                <span className="text-[8px] font-black text-primary/20 ">PH</span>
               )}
             </div>
           </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSuspendSession}
+            className="rounded-xl text-primary/30 hover:text-red-500 hover:bg-red-50 transition-all border border-transparent hover:border-red-100"
+            title="Suspend & Logout"
+          >
+            <LogOut className="w-5 h-5" />
+          </Button>
         </div>
       </header>
 
       {/* Visual Progress Bar */}
-      <div className="h-1.5 bg-primary/5 w-full relative shrink-0 overflow-hidden border-b border-primary/5">
-        {/* Navigation Progress */}
-        <motion.div 
-          initial={{ width: 0 }}
-          animate={{ width: `${currentPercentage}%` }}
-          className="absolute inset-y-0 left-0 bg-primary/5 z-0 transition-all duration-300"
-        />
-        {/* Answered Progress (Solid) */}
+      <div className="h-1 bg-primary/5 w-full relative shrink-0 overflow-hidden border-b border-primary/5">
         <motion.div 
           initial={{ width: 0 }}
           animate={{ width: `${answeredPercentage}%` }}
-          className="absolute inset-y-0 left-0 bg-primary shadow-[0_0_15px_oklch(var(--primary)_/_0.3)] z-10 transition-all duration-500"
-        />
-        {/* Marker for Current Question */}
-        <motion.div 
-          animate={{ left: `${currentPercentage}%` }}
-          className="absolute top-0 -translate-x-1/2 w-1.5 h-full bg-primary z-20 shadow-[0_0_8px_oklch(var(--primary))]"
+          className="absolute inset-y-0 left-0 bg-primary z-10 transition-all duration-500 shadow-[0_0_10px_oklch(var(--primary))] "
         />
       </div>
 
-      {/* Subject Selector Nav */}
-      <nav className="bg-primary/[0.02] border-b-2 border-primary/40 flex px-8 shrink-0 h-14 items-center">
-        <button className="h-full px-8 text-[11px] font-black bg-primary text-white uppercase whitespace-nowrap shadow-xl shadow-primary/20">
-          {exam?.subject || 'SUBJECT 1'}
-        </button>
-        <button className="h-full px-8 text-[11px] font-bold text-primary/30 cursor-not-allowed uppercase whitespace-nowrap hover:text-primary/50 transition-colors">
-          Use of English
-        </button>
-        <button className="h-full px-8 text-[11px] font-bold text-primary/30 cursor-not-allowed uppercase whitespace-nowrap hover:text-primary/50 transition-colors">
-          Mathematics
-        </button>
-        <button className="h-full px-8 text-[11px] font-bold text-primary/30 cursor-not-allowed uppercase whitespace-nowrap hover:text-primary/50 transition-colors">
-          Physics
-        </button>
+      {/* Subject Selector Nav (Unified Page Requirement) */}
+      <nav className="bg-primary/[0.02] border-b-2 border-primary/40 flex px-6 shrink-0 h-12 items-center overflow-x-auto custom-scrollbar no-scrollbar">
+        {exams.map((ex, idx) => (
+          <button
+            key={ex.id}
+            onClick={() => { setActiveExamIndex(idx); setCurrentQuestionIndex(0); }}
+            className={cn(
+              "h-full px-6 text-[12px] font-black  whitespace-nowrap transition-all border-r-2 border-primary/10",
+              activeExamIndex === idx
+                ? "bg-primary text-white shadow-lg"
+                : "text-primary/40 hover:text-primary/60 hover:bg-primary/5"
+            )}
+          >
+            {ex.subject}
+            <span className="ml-2 text-[10px] opacity-60">
+              ({Object.keys(answers).filter(id => questionsByExam[ex.id]?.some(q => q.id === id)).length}/{questionsByExam[ex.id]?.length || 0})
+            </span>
+          </button>
+        ))}
         
         <div className="flex-1" />
         
         <button 
           onClick={() => setShowCalculator(!showCalculator)}
-          className="h-10 px-6 bg-primary/5 hover:bg-primary/10 text-primary border-2 border-primary/40 rounded-xl font-black text-[10px] flex items-center gap-3 uppercase tracking-widest transition-all"
+          className="h-8 px-4 bg-primary/5 hover:bg-primary/10 text-primary border-2 border-primary/40 rounded-lg font-black text-[9px] flex items-center gap-2  tracking-widest transition-all ml-4"
         >
-          <CalcIcon className="w-3.5 h-3.5" />
-          On-Screen Calculator (C)
+          <CalcIcon className="w-3 h-3" />
+          Calculator (C)
         </button>
       </nav>
 
-      {/* Main Exam Body */}
       <main className="flex-1 flex overflow-hidden">
-        {/* Question Section */}
-        <section className="flex-1 p-8 md:p-12 overflow-y-auto flex justify-center selection:bg-primary/10">
-          <div className="max-w-4xl w-full">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentQuestionIndex}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-12"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <span className="bg-primary text-white px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20">
-                      Question {currentQuestionIndex + 1}
-                    </span>
-                    <span className="text-primary/30 text-xs font-bold uppercase tracking-widest">of {questions.length} Items</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    onClick={() => toggleFlag(currentQuestion.id)}
-                    className={cn(
-                      "h-10 rounded-xl px-4 font-black uppercase text-[10px] tracking-widest gap-2 transition-all",
-                      flaggedQuestions.has(currentQuestion.id) 
-                        ? "bg-amber-50 text-amber-600 hover:bg-amber-100" 
-                        : "text-primary/40 hover:text-primary hover:bg-primary/5"
-                    )}
-                  >
-                    <AlertTriangle className={cn("w-3.5 h-3.5", flaggedQuestions.has(currentQuestion.id) && "fill-current")} />
-                    {flaggedQuestions.has(currentQuestion.id) ? "Flagged for Review" : "Flag for Review"}
-                  </Button>
-                </div>
-                
-                <h3 className="text-2xl md:text-3xl leading-[1.3] font-bold text-primary tracking-tight">
-                  {currentQuestion?.text}
-                </h3>
-
-                <div className="grid grid-cols-1 gap-4">
-                  {currentQuestion?.options.map((option, idx) => {
-                    const isSelected = answers[currentQuestion.id] === idx;
-                    return (
-                      <motion.button
-                        key={idx}
-                        whileHover={{ x: 8 }}
-                        whileTap={{ scale: 0.99 }}
-                        onClick={() => handleSelectOption(idx)}
-                        className={cn(
-                          "group relative flex items-center p-6 rounded-3xl border-2 transition-all text-left overflow-hidden",
-                          isSelected 
-                            ? "border-primary bg-primary/5 shadow-xl shadow-primary/5" 
-                            : "border-primary/40 bg-white hover:border-primary/60 hover:shadow-lg"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg mr-6 shrink-0 transition-colors",
-                          isSelected ? "bg-primary text-white" : "bg-primary/5 text-primary group-hover:bg-primary/10"
-                        )}>
-                          {String.fromCharCode(65 + idx)}
-                        </div>
-                        <span className={cn(
-                          "text-lg font-semibold transition-colors",
-                          isSelected ? "text-primary" : "text-primary/70"
-                        )}>{option}</span>
-                        
-                        {isSelected && (
-                          <motion.div 
-                            layoutId="check"
-                            className="absolute right-8"
-                          >
-                            <CheckCircle2 className="w-6 h-6 text-primary" />
-                          </motion.div>
-                        )}
-                      </motion.button>
-                    );
-                  })}
-                </div>
-
-                {explanation && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-8 bg-primary/[0.03] border-2 border-primary/30 rounded-[32px]"
-                  >
-                    <div className="flex items-center gap-3 text-primary font-black uppercase tracking-[0.2em] text-[10px] mb-4">
-                      <Lightbulb className="w-4 h-4" />
-                      Assistance Insight
+        {/* Question Area */}
+        <section className="flex-1 p-6 md:p-10 overflow-y-auto flex justify-center selection:bg-primary/10">
+          <div className="max-w-3xl w-full">
+            {!currentQuestion ? (
+              <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
+                 <HelpCircle className="w-16 h-16 mb-4" />
+                 <h3 className="text-xl font-black ">No Item Loaded</h3>
+              </div>
+            ) : (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`${activeExamIndex}-${currentQuestionIndex}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.15 }}
+                  className="space-y-8"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="bg-primary/5 text-primary border-2 border-primary/20 px-4 py-1.5 rounded-lg text-[12px] font-black  tracking-widest">
+                        {exams[activeExamIndex]?.subject} &bull; Item {currentQuestionIndex + 1}
+                      </span>
                     </div>
-                    <p className="text-primary/60 text-lg leading-relaxed italic font-medium">{explanation}</p>
-                  </motion.div>
-                )}
-              </motion.div>
-            </AnimatePresence>
+                    <Button
+                      variant="ghost"
+                      onClick={() => toggleFlag(currentQuestion.id)}
+                      className={cn(
+                        "h-8 rounded-lg px-3 font-black  text-[9px] tracking-widest gap-2 transition-all",
+                        flaggedQuestions.has(currentQuestion.id)
+                          ? "bg-amber-50 text-amber-600 hover:bg-amber-100"
+                          : "text-primary/30 hover:text-primary hover:bg-primary/5"
+                      )}
+                    >
+                      <AlertTriangle className={cn("w-3 h-3", flaggedQuestions.has(currentQuestion.id) && "fill-current")} />
+                      {flaggedQuestions.has(currentQuestion.id) ? "Flagged" : "Flag"}
+                    </Button>
+                  </div>
+
+                  <h3 className="text-3xl md:text-4xl leading-snug font-black text-primary tracking-tight mb-8">
+                    {currentQuestion.text}
+                  </h3>
+
+                  <div className="grid grid-cols-1 gap-3">
+                    {currentQuestion.options.map((option, idx) => {
+                      const isSelected = answers[currentQuestion.id] === idx;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => handleSelectOption(idx)}
+                          className={cn(
+                            "group flex items-center p-4 rounded-2xl border-2 transition-all text-left",
+                            isSelected
+                              ? "border-primary bg-primary/[0.03] shadow-md shadow-primary/5"
+                              : "border-primary/20 bg-white hover:border-primary/40"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl mr-8 shrink-0 transition-colors shadow-lg",
+                            isSelected ? "bg-primary text-white" : "bg-primary/5 text-primary"
+                          )}>
+                            {String.fromCharCode(65 + idx)}
+                          </div>
+                          <span className={cn("text-2xl font-black", isSelected ? "text-primary" : "text-primary/70")}>{option}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            )}
           </div>
         </section>
 
-        {/* Sidebar: Status & Navigation */}
-        <aside className="w-80 border-l-2 border-primary/40 bg-white flex flex-col shrink-0 text-primary h-full">
-          <div className="p-8 flex flex-col h-full">
-            <h3 className="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em] mb-8">Navigation Console</h3>
+        {/* Sidebar: Navigation Console */}
+        <aside className="w-64 border-l-2 border-primary/40 bg-white flex flex-col shrink-0">
+          <div className="p-6 flex flex-col h-full">
+            <h3 className="text-[9px] font-black text-primary/30  tracking-[0.2em] mb-6">Subject Progress</h3>
             
-            <ScrollArea className="flex-1 pr-4">
-              <div className="grid grid-cols-4 gap-3 mb-12">
+            <ScrollArea className="flex-1 pr-2">
+              <div className="grid grid-cols-4 gap-2 mb-8">
                 {questions.map((q, idx) => {
                   const isAnswered = answers[q.id] !== undefined;
                   const isCurrent = idx === currentQuestionIndex;
                   const isFlagged = flaggedQuestions.has(q.id);
                   return (
-                    <motion.button
+                    <button
                       key={q.id}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
                       onClick={() => setCurrentQuestionIndex(idx)}
                       className={cn(
-                        "aspect-square rounded-xl flex items-center justify-center text-xs font-black transition-all border-2 relative",
+                        "aspect-square rounded-xl flex items-center justify-center text-[14px] font-black transition-all border-2 relative",
                         isCurrent 
-                          ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" 
+                          ? "bg-primary text-white border-primary shadow-xl scale-110 z-10"
                           : isAnswered 
-                          ? "bg-primary/5 text-primary border-primary/20" 
-                          : "bg-white text-primary/30 border-primary/5 hover:border-primary/20"
+                          ? "bg-primary/5 text-primary border-primary/10"
+                          : "bg-white text-primary/20 border-primary/5 hover:border-primary/20"
                       )}
                     >
                       {idx + 1}
-                      {isFlagged && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full border-2 border-white" />
-                      )}
-                    </motion.button>
+                      {isFlagged && <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white" />}
+                    </button>
                   );
                 })}
               </div>
             </ScrollArea>
             
-            <div className="mt-8 space-y-4 pt-10 border-t-2 border-primary/10">
-              <div className="flex items-center justify-between text-[10px] text-primary/60 font-black uppercase tracking-widest">
-                <span>Completed</span>
-                <span>{Object.keys(answers).length} / {questions.length}</span>
+            <div className="pt-6 border-t-2 border-primary/10 space-y-4">
+              <div className="flex items-center justify-between text-[8px] font-black  text-primary/40 tracking-widest">
+                <span>Total Answered</span>
+                <span>{Object.keys(answers).length} Items</span>
               </div>
-              <div className="h-2 bg-primary/5 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary transition-all duration-500" 
-                  style={{ width: `${answeredPercentage}%` }}
-                />
+              <div className="h-1.5 bg-primary/5 rounded-full overflow-hidden">
+                <div className="h-full bg-primary transition-all duration-500" style={{ width: `${answeredPercentage}%` }} />
               </div>
-              
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-4">
-                <div className="flex items-center gap-2 text-[9px] text-primary/40 font-black uppercase tracking-widest">
-                  <div className="w-3 h-3 bg-primary rounded shadow-sm"></div> Current
-                </div>
-                <div className="flex items-center gap-2 text-[9px] text-primary/40 font-black uppercase tracking-widest">
-                  <div className="w-3 h-3 bg-primary/5 border border-primary/10 rounded"></div> Answered
-                </div>
-                <div className="flex items-center gap-2 text-[9px] text-primary/40 font-black uppercase tracking-widest">
-                  <div className="w-3 h-3 border border-primary/5 rounded bg-white"></div> Unvisited
-                </div>
-                <div className="flex items-center gap-2 text-[9px] text-primary/40 font-black uppercase tracking-widest">
-                  <div className="w-3 h-3 bg-amber-500 rounded"></div> Flagged
-                </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                 <div className="flex items-center gap-1.5 text-[7px] font-black  text-primary/30">
+                    <div className="w-2 h-2 bg-primary rounded-sm" /> Current
+                 </div>
+                 <div className="flex items-center gap-1.5 text-[7px] font-black  text-primary/30">
+                    <div className="w-2 h-2 bg-primary/5 border border-primary/10 rounded-sm" /> Answered
+                 </div>
+                 <div className="flex items-center gap-1.5 text-[7px] font-black  text-primary/30">
+                    <div className="w-2 h-2 bg-amber-500 rounded-sm" /> Flagged
+                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="p-8 border-t-2 border-primary/40 flex flex-col gap-4">
-            <Button 
-              variant="outline" 
-              className="w-full h-14 rounded-2xl text-primary border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 font-black uppercase text-[10px] tracking-widest gap-3"
-              onClick={handleExplain}
-              disabled={explaining}
-            >
-              <Lightbulb className={cn("w-4 h-4", explaining && "animate-spin text-primary")} />
-              {explaining ? "Consulting AI..." : "Explain This Option"}
-            </Button>
           </div>
         </aside>
       </main>
 
-      {/* Bottom Control Bar */}
-      <footer className="border-t border-primary/10 p-8 flex justify-between items-center shrink-0 bg-white/80 backdrop-blur-md">
-        <div className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em] hidden xl:block">
-          Keyboard Shortcuts: [A-D] Select &bull; [N] Next &bull; [P] Prev &bull; [S] Submit &bull; [C] Calc
+      {/* Footer Controls */}
+      <footer className="border-t border-primary/10 p-6 flex justify-between items-center bg-white/80 backdrop-blur-md">
+        <div className="text-[9px] font-black text-primary/20  tracking-widest hidden lg:block">
+          Use [A-D] to Select &bull; [N] Next &bull; [P] Prev
         </div>
         
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <Button
             variant="outline"
-            disabled={currentQuestionIndex === 0}
-            onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
-            className="px-10 h-16 bg-primary/5 text-primary font-black rounded-2xl border-2 border-primary/10 hover:bg-primary/10 uppercase tracking-widest text-[10px] shadow-lg shadow-primary/5 transition-all"
+            disabled={currentQuestionIndex === 0 && activeExamIndex === 0}
+            onClick={() => {
+               if (currentQuestionIndex > 0) {
+                 setCurrentQuestionIndex(prev => prev - 1);
+               } else if (activeExamIndex > 0) {
+                 const prevIdx = activeExamIndex - 1;
+                 setActiveExamIndex(prevIdx);
+                 setCurrentQuestionIndex((questionsByExam[exams[prevIdx].id]?.length || 1) - 1);
+               }
+            }}
+            className="px-6 h-12 bg-primary/5 text-primary font-black rounded-xl border-2 border-primary/10 hover:bg-primary/10  tracking-widest text-[9px] transition-all"
           >
             [P] Previous
           </Button>
           <Button
-            disabled={currentQuestionIndex === questions.length - 1}
-            onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
-            className="px-12 h-16 bg-primary text-white font-black rounded-2xl shadow-2xl shadow-primary/20 hover:bg-primary/90 uppercase tracking-widest text-[10px] border-none transition-all"
+            onClick={() => {
+               if (currentQuestionIndex < questions.length - 1) {
+                 setCurrentQuestionIndex(prev => prev + 1);
+               } else if (activeExamIndex < exams.length - 1) {
+                 setActiveExamIndex(prev => prev + 1);
+                 setCurrentQuestionIndex(0);
+               }
+            }}
+            className="px-8 h-12 bg-primary text-white font-black rounded-xl shadow-xl shadow-primary/20 hover:bg-primary/90  tracking-widest text-[9px] border-none transition-all"
           >
-            [N] Next Item
+            {currentQuestionIndex === questions.length - 1 && activeExamIndex < exams.length - 1 ? "Next Subject" : "[N] Next Item"}
           </Button>
         </div>
-        <Button 
-          onClick={() => { if(confirm("Are you sure you want to finalize your exam?")) handleSubmit() }}
+
+        <Button
+          onClick={() => { if(confirm("FINAL SUBMISSION: Are you sure you want to end all subject assessments?")) handleSubmit() }}
           disabled={isSubmitting}
-          className="px-10 h-16 bg-primary/5 hover:bg-primary/10 text-primary border-2 border-primary/10 font-black rounded-2xl uppercase tracking-widest text-[10px] transition-all"
+          className="px-6 h-12 bg-red-500 text-white font-black rounded-xl  tracking-widest text-[9px] shadow-lg shadow-red-200 transition-all border-none hover:bg-red-600"
         >
-          [S] Submit Examination
+          [S] Final Submit
         </Button>
       </footer>
 
-      {/* Calculator Modal */}
+      {/* Scientific Calculator */}
       <AnimatePresence>
         {showCalculator && (
           <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowCalculator(false)}
-              className="absolute inset-0 bg-primary/10 backdrop-blur-sm z-[100]"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 bg-white rounded-[40px] shadow-2xl border border-primary/10 z-[101] overflow-hidden"
-            >
-              <div className="bg-primary p-10 text-right">
-                <div className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Scientific Calc</div>
-                <div className="text-4xl font-mono font-black text-white truncate leading-none">{calcDisplay}</div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCalculator(false)} className="fixed inset-0 bg-primary/20 backdrop-blur-sm z-[100]" />
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 bg-white rounded-[32px] shadow-2xl border-2 border-primary/20 z-[101] overflow-hidden">
+              <div className="bg-primary p-8 text-right">
+                <div className="text-white/40 text-[9px] font-black  tracking-widest mb-1">Standard Calc</div>
+                <div className="text-3xl font-mono font-black text-white truncate leading-none">{calcDisplay}</div>
               </div>
-              <div className="p-8 grid grid-cols-4 gap-3">
+              <div className="p-6 grid grid-cols-4 gap-2 bg-white">
                 {['7','8','9','/','4','5','6','*','1','2','3','-','0','.','=','+','C'].map((btn) => (
                   <Button
                     key={btn}
                     variant={btn === '=' ? 'default' : 'secondary'}
                     onClick={() => {
                       if (btn === 'C') setCalcDisplay('0');
-                      else if (btn === '=') {
-                        try { setCalcDisplay(eval(calcDisplay).toString()); } catch { setCalcDisplay('Error'); }
-                      }
-                      else {
-                        setCalcDisplay(prev => prev === '0' ? btn : prev + btn);
-                      }
+                      else if (btn === '=') { try { setCalcDisplay(eval(calcDisplay).toString()); } catch { setCalcDisplay('Error'); } }
+                      else { setCalcDisplay(prev => prev === '0' ? btn : prev + btn); }
                     }}
                     className={cn(
-                      "h-14 font-black rounded-2xl text-base transition-all",
+                      "h-12 font-black rounded-xl text-sm transition-all",
                       btn === 'C' ? "col-span-2 bg-destructive/10 text-destructive hover:bg-destructive/20 border-none" : "",
-                      btn === '=' ? "col-span-2 bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 border-none" : "bg-primary/5 text-primary hover:bg-primary/10 border-none"
+                      btn === '=' ? "col-span-2 bg-primary text-white hover:bg-primary/90 border-none" : "bg-primary/5 text-primary hover:bg-primary/10 border-none"
                     )}
                   >
                     {btn}
@@ -913,6 +993,46 @@ export default function ExamPlayer() {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Unified Completion Summary */}
+      <AnimatePresence>
+        {isCompleted && (
+          <div className="fixed inset-0 z-[200] bg-background flex items-center justify-center p-6 overflow-y-auto">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-xl w-full bg-white rounded-[40px] shadow-2xl border border-primary/10 overflow-hidden my-auto">
+              <div className="p-10 text-center">
+                <div className="w-16 h-16 bg-primary/5 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-primary/10 shadow-lg shadow-primary/5">
+                  <CheckCircle2 className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-3xl font-black mb-2  tracking-tighter">Session Finalized</h2>
+                <p className="text-primary/40 font-bold  tracking-widest text-[8px] mb-10">Data transmitted to secure server</p>
+
+                <div className="space-y-3 mb-10 text-left">
+                   <p className="text-[9px] font-black text-primary/30  tracking-[0.2em] px-4">Subject Summary</p>
+                   {sessionResults.map((res, i) => (
+                     <div key={i} className="p-4 bg-primary/5 rounded-2xl flex justify-between items-center border border-primary/5">
+                        <div>
+                          <p className="text-[10px] font-black  text-primary leading-none mb-1">{res.subject}</p>
+                          <p className="text-[8px] font-bold text-primary/40 ">{res.title}</p>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-lg font-black text-primary leading-none">{res.score}/{res.totalPossible}</p>
+                           <p className="text-[7px] font-black text-primary/30 ">Raw pts</p>
+                        </div>
+                     </div>
+                   ))}
+                </div>
+
+                <Button
+                  onClick={async () => { if (logOut) await logOut(); navigate('/'); }}
+                  className="w-full h-16 bg-primary text-white hover:bg-primary/90 rounded-2xl font-black  tracking-widest text-[10px] border-none shadow-xl shadow-primary/20"
+                >
+                  Terminate and Logout
+                </Button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
