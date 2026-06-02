@@ -24,6 +24,7 @@ export interface Candidate {
   subjectCombination: string[];
   registrationDate: string;
   createdAt: string;
+  pin?: string;
 }
 
 export interface Exam {

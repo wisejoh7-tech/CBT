@@ -267,7 +267,7 @@ export default function Admin() {
     if (!newCandidate.fullName || !newCandidate.dateOfBirth || newCandidate.subjects.length !== 4) { toast.error("Fill required fields"); return; }
     if (!newCandidate.faceUrl || !newCandidate.fingerprintData) { toast.error("Biometrics required"); return; }
     try {
-      let en = newCandidate.examNumber;
+      const en = newCandidate.examNumber;
       if (!editingCandidateId) {
         const y = new Date().getFullYear();
         const r = Math.floor(100000 + Math.random() * 900000);
@@ -283,7 +283,8 @@ export default function Admin() {
         thumbprintData: newCandidate.fingerprintData,
         status: 'active' as const,
         thumbprinted: true,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        pin: Math.floor(1000 + Math.random() * 9000).toString() // Generate PIN
       };
       if (editingCandidateId) await updateDoc(doc(db, 'candidates', editingCandidateId), data);
       else await setDoc(doc(db, 'candidates', en), { ...data, registrationDate: new Date().toISOString(), createdAt: new Date().toISOString() });
@@ -554,6 +555,7 @@ export default function Admin() {
                             const [name, dob, s1, s2, s3, s4] = line.split(',').map(s => s.trim());
                             if (name && dob && s1 && s2 && s3 && s4) {
                               const en = `${new Date().getFullYear()}${Math.floor(100000 + Math.random() * 900000)}XY`;
+                              const pin = Math.floor(100000 + Math.random() * 900000).toString();
                               try {
                                 await setDoc(doc(db, 'candidates', en), {
                                   fullName: name.toUpperCase(),
@@ -563,7 +565,8 @@ export default function Admin() {
                                   status: 'active',
                                   thumbprinted: false, // Must be verified in person
                                   registrationDate: new Date().toISOString(),
-                                  createdAt: new Date().toISOString()
+                                  createdAt: new Date().toISOString(),
+                                  pin: pin
                                 });
                                 successCount++;
                               } catch (err) {}

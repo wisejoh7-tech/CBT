@@ -14,6 +14,7 @@ import { useAuth } from '@/src/context/AuthContext';
 
 export default function ResultChecker() {
   const [targetExamNumber, setTargetExamNumber] = useState('');
+  const [pin, setPin] = useState('');
   const [checkingResult, setCheckingResult] = useState(false);
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -23,9 +24,10 @@ export default function ResultChecker() {
   const handleCheckResult = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanId = targetExamNumber.trim().toUpperCase();
+    const cleanPin = pin.trim();
 
-    if (!cleanId) {
-      toast.error("Please enter an Examination Number.");
+    if (!cleanId || !cleanPin) {
+      toast.error("Please enter both Examination Number and PIN.");
       return;
     }
 
@@ -56,6 +58,13 @@ export default function ResultChecker() {
         toast.error("RECORD NOT FOUND: registration index '" + cleanId + "' does not exist in our database.", {
           icon: <AlertCircle className="text-red-500" />
         });
+        setCheckingResult(false);
+        return;
+      }
+
+      // PIN Verification
+      if (candidate.pin && candidate.pin !== cleanPin && !isAdmin) {
+        toast.error("INVALID PIN: The access PIN provided does not match our records.");
         setCheckingResult(false);
         return;
       }
@@ -151,6 +160,18 @@ export default function ResultChecker() {
                 />
                 <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary/40 transition-colors" />
               </div>
+
+              <div className="relative group">
+                <Input
+                  type="password"
+                  value={pin}
+                  onChange={e => setPin(e.target.value)}
+                  placeholder="ENTER 6-DIGIT PIN"
+                  className="h-16 rounded-2xl bg-white border-2 border-primary/20 focus:border-primary px-6 font-black tracking-[0.2em] text-center text-primary text-sm placeholder:text-primary/20 transition-all group-hover:border-primary/40 shadow-xl"
+                />
+                <Lock className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary/40 transition-colors" />
+              </div>
+
               <Button
                 type="submit"
                 disabled={checkingResult}
