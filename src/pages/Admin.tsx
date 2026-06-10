@@ -243,7 +243,8 @@ export default function Admin() {
   }, [profile, activeTab, filteredTabs]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 uppercase">
+    <div className="min-h-screen flex flex-col bg-slate-50 uppercase relative">
+      <div className="cbt-background opacity-[0.03]" />
       <header className="h-16 bg-white border-b-2 border-primary/10 px-8 flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">

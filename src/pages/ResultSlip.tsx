@@ -93,8 +93,9 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans uppercase">
-      <nav className="max-w-4xl mx-auto mb-10 bg-white/80 backdrop-blur-md border-2 border-primary/10 px-8 py-4 rounded-[24px] flex justify-between items-center shadow-sm">
+    <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans uppercase relative">
+      <div className="cbt-background opacity-[0.03]" />
+      <nav className="max-w-4xl mx-auto mb-10 bg-white/80 backdrop-blur-md border-2 border-primary/10 px-8 py-4 rounded-[24px] flex justify-between items-center shadow-sm relative z-10">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>

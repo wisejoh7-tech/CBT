@@ -407,7 +407,8 @@ export default function ExamPlayer() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background text-primary selection:bg-primary/10">
+    <div className="h-screen flex flex-col bg-background text-primary selection:bg-primary/10 relative">
+      <div className="cbt-background opacity-[0.03]" />
       <header className="h-20 px-8 flex items-center justify-between border-b-2 border-primary/10 bg-white sticky top-0 z-50">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
