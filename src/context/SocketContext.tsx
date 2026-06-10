@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { SOCKET_URL } from '@/src/lib/api-config';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -15,12 +16,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    // In production, we connect to the same host. In development, we use the env var or localhost.
-    const socketUrl = import.meta.env.PROD
-      ? window.location.origin
-      : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000');
-
-    const socketInstance = io(socketUrl, {
+    const socketInstance = io(SOCKET_URL, {
       path: '/socket.io',
       transports: ['websocket', 'polling']
     });

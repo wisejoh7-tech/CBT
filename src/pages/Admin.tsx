@@ -1,610 +1,472 @@
-import React, { useState, useEffect } from 'react';
-import { db } from '@/src/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, orderBy, updateDoc, onSnapshot, where, setDoc } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Exam, Question, Attempt, Candidate, UserProfile } from '@/src/types';
 import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
-import { Label } from '@/lib/ui/label';
-import { Card, CardContent } from '@/lib/ui/card';
+import { Card } from '@/lib/ui/card';
 import { ScrollArea } from '@/lib/ui/scroll-area';
 import { Badge } from '@/lib/ui/badge';
-import { Separator } from '@/lib/ui/separator';
 import { toast } from 'sonner';
 import { 
-  Trash2, BookOpen, LayoutDashboard, PlusCircle, Users, Search, UserPlus, Library, CheckCircle2, BarChart2, PieChart as PieChartIcon, AlertCircle, Fingerprint, Shield, LogOut, XCircle, Camera, Pencil, Upload, CheckCircle
+  Trash2, BookOpen, PlusCircle, Users, Search, BarChart2, Shield, LogOut, Camera, Printer, Upload, Database, CameraOff, User, Eye, XCircle, Monitor
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/src/context/AuthContext';
 import { useSocket } from '@/src/context/SocketContext';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
-} from 'recharts';
 import { cn } from '@/src/lib/utils/utils';
+import { getApiUrl } from '@/src/lib/api-config';
 
 export default function Admin() {
-  const { user, profile, logOut, loginWithExamNumber, signUpWithEmail } = useAuth();
+  const { profile, logOut } = useAuth();
   const { socket } = useSocket();
   const [exams, setExams] = useState<Exam[]>([]);
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [staff, setStaff] = useState<UserProfile[]>([]);
+  const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Role Checks
-  const isSuperAdmin = profile?.role === 'super_admin';
-  const isStaff = profile?.role === 'reg_admin'; // Restricted access
-  const isExamAdmin = profile?.role === 'admin' || isSuperAdmin;
-  const isRegAdmin = isStaff || profile?.role === 'admin' || isSuperAdmin;
-
-  const [newExam, setNewExam] = useState<{title: string, subject: string, description: string, durationMinutes: number}>({ title: '', subject: '', description: '', durationMinutes: 30 });
-  const [editingExamId, setEditingExamId] = useState<string | null>(null);
-  const [newQuestion, setNewQuestion] = useState({ text: '', options: ['', '', '', ''], correctOptionIndex: 0, imageUrl: '', audioUrl: '' });
-  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
-  
-  const [newCandidate, setNewCandidate] = useState({
-    fullName: '', email: '', examNumber: '', dateOfBirth: '', subjects: [] as string[], faceUrl: '', fingerprintData: ''
-  });
-  const [editingCandidateId, setEditingCandidateId] = useState<string | null>(null);
-
-  const [newStaff, setNewStaff] = useState({ name: '', email: '', password: '', role: 'reg_admin' as 'admin' | 'reg_admin' });
-
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const videoRef = React.useRef<HTMLVideoElement>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'exams' | 'candidates' | 'bank' | 'analytics' | 'monitor' | 'staff'>('overview');
-
-  useEffect(() => {
-    if (isStaff) setActiveTab('candidates');
-    else if (isExamAdmin || isSuperAdmin) setActiveTab('overview');
-  }, [profile, isStaff, isExamAdmin, isSuperAdmin]);
-
-  useEffect(() => {
-    if (isCameraOpen && videoRef.current && cameraStream) {
-      videoRef.current.srcObject = cameraStream;
-    }
-  }, [isCameraOpen, cameraStream]);
-
-  const [liveSessions, setLiveSessions] = useState<Attempt[]>([]);
-  const [redisSessions, setRedisSessions] = useState<any[]>([]);
-  const VIVI_SUBJECTS = ["Use of English", "Mathematics", "Physics", "Chemistry", "Biology", "Economics", "Government", "Literature", "CRS", "IRS", "History", "Geography", "Agric Science", "Commerce"];
-
-  useEffect(() => {
-    const fetchRedisSessions = async () => {
-      try {
-        const res = await fetch('/api/active-sessions');
-        if (res.ok) {
-          const data = await res.json();
-          setRedisSessions(data);
-        }
-      } catch (e) {}
-    };
-
-    if (activeTab === 'monitor') {
-      fetchRedisSessions();
-      const interval = setInterval(fetchRedisSessions, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [activeTab]);
-
-  const [bankQuestions, setBankQuestions] = useState<Question[]>([]);
-  const [attempts, setAttempts] = useState<Attempt[]>([]);
-  const [releasing, setReleasing] = useState<string | null>(null);
-  const [analyticsQuestions, setAnalyticsQuestions] = useState<Record<string, Question[]>>({});
-  const [selectedAnalyticsExam, setSelectedAnalyticsExam] = useState<string | null>(null);
-  const [selectedBankQuestions, setSelectedBankQuestions] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<'overview' | 'exams' | 'candidates' | 'monitor' | 'staff' | 'analytics' | 'center' | 'audit' | 'security'>('overview');
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [seats, setSeats] = useState<any[]>([]);
+  const [logs, setLogs] = useState<any[]>([]);
   const [viewingSnaps, setViewingSnaps] = useState<string | null>(null);
-  const [analyticsMode, setAnalyticsMode] = useState<'performance' | 'items'>('performance');
+
+  const getHeaders = useCallback(() => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
+  }), []);
+
+  const fetchAnalytics = useCallback(async () => {
+    const res = await fetch(getApiUrl('/analytics/summary'), { headers: getHeaders() });
+    if (res.ok) setAnalytics(await res.json());
+  }, [getHeaders]);
+
+  const fetchExams = useCallback(async () => {
+    const res = await fetch(getApiUrl('/exams'), { headers: getHeaders() });
+    if (res.ok) setExams(await res.json());
+  }, [getHeaders]);
+
+  const fetchCandidates = useCallback(async () => {
+    const res = await fetch(getApiUrl('/candidates'), { headers: getHeaders() });
+    if (res.ok) setCandidates(await res.json());
+  }, [getHeaders]);
+
+  const fetchStaff = useCallback(async () => {
+    const res = await fetch(getApiUrl('/auth/staff'), { headers: getHeaders() });
+    if (res.ok) setStaff(await res.json());
+  }, [getHeaders]);
+
+  const fetchAttempts = useCallback(async () => {
+    const res = await fetch(getApiUrl('/exams/attempts/all'), { headers: getHeaders() });
+    if (res.ok) setAttempts(await res.json());
+  }, [getHeaders]);
+
+  const fetchSeats = useCallback(async () => {
+    const res = await fetch(getApiUrl('/center/seats'), { headers: getHeaders() });
+    if (res.ok) setSeats(await res.json());
+  }, [getHeaders]);
+
+  const fetchLogs = useCallback(async () => {
+    const res = await fetch(getApiUrl('/analytics/logs'), { headers: getHeaders() });
+    if (res.ok) setLogs(await res.json());
+  }, [getHeaders]);
 
   useEffect(() => {
-    if (!user || !profile) return;
-    if (isExamAdmin) fetchQuestionBank();
-    if (isRegAdmin) fetchCandidates(); fetchAttempts();
-    if (isSuperAdmin) fetchStaff();
-    fetchExams();
-    const q = query(collection(db, 'attempts'), where('status', '==', 'in-progress'));
-    const unsubscribe = onSnapshot(q, (s) => setLiveSessions(s.docs.map(d => ({ id: d.id, ...d.data() } as Attempt))), (e) => {});
-
-    if (socket) {
-      socket.emit('join-exam', 'unified');
-      socket.on('progress-updated', (data: { userId: string, progress: any }) => {
-        setLiveSessions(prev => prev.map(s => {
-          if (s.userId === data.userId || s.id === data.userId) {
-            return { ...s, ...data.progress };
-          }
-          return s;
-        }));
-      });
-    }
-
+    if (!socket) return;
+    socket.on('progress-updated', () => fetchAttempts());
+    socket.on('security-alert', (data: any) => {
+      toast.error(`SECURITY ALERT: ${data.userId} trust score dropped to ${Math.round(data.trustScore)}% - ${data.reason}`, { duration: 5000 });
+      fetchAttempts();
+    });
     return () => {
-      unsubscribe();
-      if (socket) socket.off('progress-updated');
+      socket.off('progress-updated');
+      socket.off('security-alert');
     };
-  }, [profile, user, isExamAdmin, isRegAdmin, isSuperAdmin, socket]);
+  }, [socket, fetchAttempts]);
 
   useEffect(() => {
-    if (activeTab === 'analytics' && attempts.length > 0) {
-      const ids = Array.from(new Set<string>(attempts.map(a => a.examId)));
-      ids.forEach(id => { if (!analyticsQuestions[id]) fetchQuestionsForAnalytics(id); });
-    }
-  }, [activeTab, attempts]);
-
-  useEffect(() => {
-    if (selectedExamId) fetchQuestions(selectedExamId);
-  }, [selectedExamId]);
-
-  async function fetchStaff() {
-    try {
-      const s = await getDocs(query(collection(db, 'users'), where('role', 'in', ['admin', 'reg_admin', 'super_admin'])));
-      setStaff(s.docs.map(d => ({ id: d.id, ...d.data() } as UserProfile)));
-    } catch (e: any) {}
-  }
-
-  const handleCreateStaff = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newStaff.email || !newStaff.password || !newStaff.name) { toast.error("Fill all fields"); return; }
-    try {
-      toast.loading("Creating Staff Account...");
-      await signUpWithEmail(newStaff.email, newStaff.password, newStaff.name, newStaff.role);
-      toast.dismiss();
-      toast.success("Staff Account Created.");
-      setNewStaff({ name: '', email: '', password: '', role: 'reg_admin' });
-      fetchStaff();
-    } catch (err: any) {
-      toast.dismiss();
-      toast.error(err.message || "Failed to create staff account");
-    }
-  };
-
-  async function fetchExams() {
+    if (!profile) return;
     setLoading(true);
-    try {
-      const s = await getDocs(collection(db, 'exams'));
-      const list = s.docs.map(d => ({ id: d.id, ...d.data() } as Exam));
-      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setExams(list);
-    } catch (e: any) {} finally { setLoading(false); }
-  }
+    Promise.all([
+      fetchExams(),
+      fetchCandidates(),
+      fetchAttempts(),
+      fetchAnalytics(),
+      fetchSeats(),
+      fetchLogs()
+    ]).then(() => {
+       if (profile.role === 'super_admin') fetchStaff();
+       setLoading(false);
+    });
+  }, [profile, fetchExams, fetchCandidates, fetchAttempts, fetchStaff, fetchAnalytics, fetchSeats, fetchLogs]);
 
-  async function fetchCandidates() {
-    try {
-      const s = await getDocs(collection(db, 'candidates'));
-      setCandidates(s.docs.map(d => ({ id: d.id, ...d.data() } as Candidate)));
-    } catch (e: any) {}
-  }
+  useEffect(() => {
+    if (selectedExamId) {
+      fetch(getApiUrl(`/exams/${selectedExamId}`), { headers: getHeaders() })
+        .then(res => res.json())
+        .then(data => setQuestions(data.questions || []));
+    }
+  }, [selectedExamId, getHeaders]);
 
-  async function fetchAttempts() {
-    try {
-      const s = await getDocs(collection(db, 'attempts'));
-      setAttempts(s.docs.map(d => ({ id: d.id, ...d.data() } as Attempt)));
-    } catch (e: any) {}
-  }
+  const [newExam, setNewExam] = useState({ title: '', subject: '', durationMinutes: 30, startTime: '', endTime: '' });
+  const [newQuestion, setNewQuestion] = useState({ text: '', options: ['', '', '', ''], correctOptionIndex: 0, topic: 'General' });
+  const [newCandidate, setNewCandidate] = useState({ fullName: '', email: '', examNumber: '', subjects: [] as string[], assignedIp: '', assignedSeatNumber: '', faceUrl: '' });
 
-  async function fetchQuestionBank() {
-    try {
-      const s = await getDocs(query(collection(db, 'question_bank'), orderBy('createdAt', 'desc')));
-      setBankQuestions(s.docs.map(d => ({ id: d.id, ...d.data() } as Question)));
-    } catch (e: any) {}
-  }
+  const [isCapturing, setIsCapturing] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  async function fetchQuestions(id: string) {
+  const startCapture = async () => {
+    setIsCapturing(true);
     try {
-      const s = await getDocs(collection(db, 'exams', id, 'questions'));
-      setQuestions(s.docs.map(d => ({ id: d.id, ...d.data() } as Question)));
-    } catch (e) {}
-  }
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) videoRef.current.srcObject = stream;
+    } catch(e) { toast.error("Camera access denied."); setIsCapturing(false); }
+  };
 
-  async function fetchQuestionsForAnalytics(id: string) {
-    try {
-      const s = await getDocs(collection(db, 'exams', id, 'questions'));
-      setAnalyticsQuestions(p => ({ ...p, [id]: s.docs.map(d => ({ id: d.id, ...d.data() } as Question)) }));
-    } catch (e: any) {}
-  }
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
+      setNewCandidate({ ...newCandidate, faceUrl: canvas.toDataURL('image/jpeg') });
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      setIsCapturing(false);
+    }
+  };
 
-  const handleCreateOrUpdateExam = async (e: React.FormEvent) => {
+  const handleCreateExam = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (editingExamId) await updateDoc(doc(db, 'exams', editingExamId), { ...newExam, updatedAt: serverTimestamp() });
-      else await addDoc(collection(db, 'exams'), { ...newExam, totalQuestions: 0, createdAt: serverTimestamp() });
-      setNewExam({ title: '', subject: '', description: '', durationMinutes: 30 }); setEditingExamId(null); setSelectedExamId(null); fetchExams();
-    } catch (e) {}
+    const res = await fetch(getApiUrl('/exams'), {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ ...newExam, createdBy: profile?.displayName, totalQuestions: 0 })
+    });
+    if (res.ok) {
+      toast.success("Exam Created");
+      setNewExam({ title: '', subject: '', durationMinutes: 30, startTime: '', endTime: '' });
+      fetchExams();
+    }
   };
 
-  const handleAddOrUpdateQuestion = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!selectedExamId) return;
-    try {
-      if (editingQuestionId) await updateDoc(doc(db, 'exams', selectedExamId, 'questions', editingQuestionId), newQuestion);
-      else { await addDoc(collection(db, 'exams', selectedExamId, 'questions'), newQuestion); await updateDoc(doc(db, 'exams', selectedExamId), { totalQuestions: questions.length + 1 }); }
-      setNewQuestion({ text: '', options: ['', '', '', ''], correctOptionIndex: 0 }); setEditingQuestionId(null); fetchQuestions(selectedExamId);
-    } catch (e) {}
-  };
-
-  const addToBank = async (q: Partial<Question>) => {
-    try {
-      await addDoc(collection(db, 'question_bank'), { ...q, createdAt: serverTimestamp() });
-      toast.success("Added to Bank!");
-      fetchQuestionBank();
-    } catch (e) { toast.error("Failed"); }
-  };
-
-  const handleQuestionBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const lines = (ev.target?.result as string).split('\n').filter(l => l.trim());
-      let count = 0; toast.loading("Processing Bank Upload...");
-      for (const line of lines) {
-        const parts = line.split(',').map(s => s.trim());
-        if (parts.length >= 6) {
-          const [qText, oA, oB, oC, oD, cIdx] = parts;
-          try { await addDoc(collection(db, 'question_bank'), { text: qText, options: [oA, oB, oC, oD], correctOptionIndex: parseInt(cIdx) || 0, createdAt: serverTimestamp() }); count++; } catch (err) {}
-        }
-      }
-      toast.dismiss(); toast.success(`Injected ${count} items.`); fetchQuestionBank();
-    };
-    reader.readAsText(file);
-  };
-
-  const handleBatchImportToExam = async () => {
-    if (!selectedExamId || selectedBankQuestions.size === 0) { toast.error("Select exam and items."); return; }
-    toast.loading("Injecting selected items...");
-    let count = 0;
-    try {
-      for (const qId of Array.from(selectedBankQuestions)) {
-        const q = bankQuestions.find(bq => bq.id === qId);
-        if (q) { await addDoc(collection(db, 'exams', selectedExamId, 'questions'), { text: q.text, options: q.options, correctOptionIndex: q.correctOptionIndex, examId: selectedExamId }); count++; }
-      }
-      await updateDoc(doc(db, 'exams', selectedExamId), { totalQuestions: questions.length + count });
-      toast.dismiss(); toast.success(`Successfully assigned ${count} items.`); setSelectedBankQuestions(new Set()); fetchQuestions(selectedExamId);
-    } catch (e) { toast.dismiss(); toast.error("Batch assignment failed."); }
+  const handleAddQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedExamId) return;
+    const res = await fetch(getApiUrl(`/exams/${selectedExamId}/questions`), {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(newQuestion)
+    });
+    if (res.ok) {
+      toast.success("Question Added");
+      setNewQuestion({ text: '', options: ['', '', '', ''], correctOptionIndex: 0, topic: 'General' });
+      fetch(getApiUrl(`/exams/${selectedExamId}`), { headers: getHeaders() })
+        .then(res => res.json())
+        .then(data => setQuestions(data.questions || []));
+    }
   };
 
   const handleCreateCandidate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCandidate.fullName || !newCandidate.dateOfBirth || newCandidate.subjects.length !== 4) { toast.error("Fill required fields"); return; }
-    if (!newCandidate.faceUrl || !newCandidate.fingerprintData) { toast.error("Biometrics required"); return; }
-    try {
-      const en = newCandidate.examNumber;
-      if (!editingCandidateId) {
-        const y = new Date().getFullYear();
-        const r = Math.floor(100000 + Math.random() * 900000);
-        const l = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-        en = `${y}${r}${l[Math.floor(Math.random() * l.length)]}${l[Math.floor(Math.random() * l.length)]}`;
-      }
-      const data = {
-        fullName: newCandidate.fullName,
-        email: newCandidate.email,
-        examNumber: en,
-        dateOfBirth: newCandidate.dateOfBirth,
+    const res = await fetch(getApiUrl('/candidates'), {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        ...newCandidate,
+        status: 'active',
+        thumbprinted: false,
         subjectCombination: newCandidate.subjects,
-        faceUrl: newCandidate.faceUrl,
-        thumbprintData: newCandidate.fingerprintData,
-        status: 'active' as const,
-        thumbprinted: true,
-        updatedAt: serverTimestamp(),
-        pin: Math.floor(100000 + Math.random() * 900000).toString() // Generate 6-digit PIN
-      };
-      if (editingCandidateId) await updateDoc(doc(db, 'candidates', editingCandidateId), data);
-      else await setDoc(doc(db, 'candidates', en), { ...data, registrationDate: new Date().toISOString(), createdAt: new Date().toISOString() });
-      toast.success(editingCandidateId ? "Updated" : `Registered: ${en}`);
-      setNewCandidate({ fullName: '', email: '', examNumber: '', dateOfBirth: '', subjects: [], faceUrl: '', fingerprintData: '' });
-      setEditingCandidateId(null);
+        registrationDate: new Date().toISOString()
+      })
+    });
+    if (res.ok) {
+      toast.success("Candidate Registered");
+      setNewCandidate({ fullName: '', email: '', examNumber: '', subjects: [], assignedIp: '', assignedSeatNumber: '', faceUrl: '' });
       fetchCandidates();
-    } catch (err) { toast.error("Registration Failed"); }
-  };
-
-  const startEditCandidate = (c: Candidate) => {
-    setNewCandidate({ fullName: c.fullName, email: c.email || '', examNumber: c.examNumber, dateOfBirth: c.dateOfBirth || '', subjects: [...c.subjectCombination], faceUrl: c.faceUrl || '', fingerprintData: c.thumbprintData || '' });
-    setEditingCandidateId(c.id);
-  };
-
-  const captureFace = async () => {
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 480, facingMode: "user" } });
-      setCameraStream(s);
-      setIsCameraOpen(true);
-    } catch (e) { toast.error("Camera Denied"); }
-  };
-
-  const snapPhoto = () => {
-    if (videoRef.current) {
-      const c = document.createElement('canvas');
-      c.width = videoRef.current.videoWidth; c.height = videoRef.current.videoHeight;
-      const ctx = c.getContext('2d');
-      if (ctx) { ctx.drawImage(videoRef.current, 0, 0); setNewCandidate(p => ({ ...p, faceUrl: c.toDataURL('image/jpeg', 0.8) })); closeCamera(); toast.success("Face Captured!"); }
     }
   };
 
-  const closeCamera = () => {
-    if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
-    setCameraStream(null);
-    setIsCameraOpen(false);
-  };
-
-  const captureFingerprint = async () => {
-    toast.loading("Scanning Fingerprint...");
-    await new Promise(r => setTimeout(r, 1000));
-    setNewCandidate(p => ({ ...p, fingerprintData: "FP_" + Math.random().toString(36).slice(2, 9) }));
-    toast.dismiss(); toast.success("Biometrics Enrolled!");
-  };
-
-  const handleRemoteAction = async (id: string, a: 'terminate' | 'reset') => {
-    try {
-      if (a === 'terminate') await updateDoc(doc(db, 'attempts', id), { status: 'completed', terminatedByAdmin: true });
-      else await deleteDoc(doc(db, 'attempts', id));
-      toast.success("Command Executed.");
-    } catch (e) {}
-  };
-
-  const handleReleaseResult = async (at: Attempt) => {
-    setReleasing(at.id);
-    try {
-      await updateDoc(doc(db, 'attempts', at.id), { released: true, releasedAt: serverTimestamp() });
-
-      // Attempt to send email notification
-      const c = candidates.find(can => can.examNumber === at.userId || can.id === at.userId);
-      const candidateEmail = (c as any)?.email;
-
-      if (candidateEmail) {
-        fetch('/api/notify-result', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: candidateEmail,
-            candidateName: c.fullName,
-            examNumber: c.examNumber,
-            pin: (c as any).pin || "N/A",
-            totalScore: at.score
-          })
-        }).catch(e => console.error("Notification failed", e));
+  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const lines = (ev.target?.result as string).split('\n').filter(l => l.trim());
+      const payload: any[] = [];
+      for (const line of lines) {
+        const [name, dob, s1, s2, s3, s4] = line.split(',').map(s => s.trim());
+        if (name && dob) {
+          payload.push({
+            fullName: name.toUpperCase(),
+            examNumber: `${new Date().getFullYear()}${Math.floor(Math.random()*1000000)}`,
+            dateOfBirth: dob,
+            subjectCombination: [s1, s2, s3, s4],
+            status: 'active',
+            thumbprinted: false,
+            registrationDate: new Date().toISOString()
+          });
+        }
       }
+      const res = await fetch(getApiUrl('/candidates/bulk'), { method: 'POST', headers: getHeaders(), body: JSON.stringify(payload) });
+      if (res.ok) { toast.success("Bulk Upload Successful"); fetchCandidates(); }
+    };
+    reader.readAsText(file);
+  };
 
-      toast.success("Result Published!");
-      fetchAttempts();
+  if (loading) return <div className="p-20 text-center font-black">ACCESSING SECURE DATA...</div>;
+
+  const isSuperAdmin = profile?.role === 'super_admin';
+  const isRegStaff = profile?.role === 'reg_admin';
+  const isFullAdmin = profile?.role === 'admin' || isSuperAdmin;
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', roles: ['super_admin', 'admin'] },
+    { id: 'candidates', label: 'Candidates', roles: ['super_admin', 'admin', 'reg_admin'] },
+    { id: 'exams', label: 'Exams', roles: ['super_admin', 'admin'] },
+    { id: 'monitor', label: 'Monitor', roles: ['super_admin', 'admin'] },
+    { id: 'analytics', label: 'Analytics', roles: ['super_admin', 'admin'] },
+    { id: 'center', label: 'Center', roles: ['super_admin', 'admin'] },
+    { id: 'staff', label: 'Staff', roles: ['super_admin'] },
+    { id: 'security', label: 'Security', roles: ['super_admin'] },
+  ];
+
+  const filteredTabs = tabs.filter(t => t.roles.includes(profile?.role || ''));
+
+  useEffect(() => {
+    if (filteredTabs.length > 0 && !filteredTabs.find(t => t.id === activeTab)) {
+      setActiveTab(filteredTabs[0].id as any);
     }
-    catch (e) {} finally { setReleasing(null); }
-  };
-
-  const handleStartCandidateExam = async (en: string) => {
-    try { toast.loading("Switching to Terminal..."); await loginWithExamNumber(en); toast.dismiss(); navigate('/dashboard'); }
-    catch (e: any) { toast.dismiss(); toast.error(e.message); }
-  };
+  }, [profile, activeTab, filteredTabs]);
 
   return (
-    <div className="min-h-screen flex flex-col font-sans text-primary bg-background uppercase">
-      <header className="bg-white border-b-2 border-primary/40 p-3 flex justify-between items-center shrink-0 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20"><Shield className="w-4 h-4" /></div>
-          <h1 className="text-lg font-black tracking-tighter text-primary">Admin Control Center</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right hidden md:block">
-            <p className="text-[9px] text-primary/30 font-black leading-none mb-1">Authenticated</p>
-            <p className="text-[11px] font-bold text-primary/60">{profile?.displayName}</p>
+    <div className="min-h-screen flex flex-col bg-slate-50 uppercase">
+      <header className="h-16 bg-white border-b-2 border-primary/10 px-8 flex justify-between items-center sticky top-0 z-50">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white"><Shield className="w-5 h-5" /></div>
+            <h1 className="font-black tracking-tighter text-primary">ADMIN CONTROL</h1>
           </div>
-          <Separator orientation="vertical" className="h-6 bg-primary/10 mx-1" />
-          <Button variant="ghost" size="icon" onClick={async () => { await logOut(); navigate('/'); }} className="rounded-full w-8 h-8 text-primary/40 hover:text-red-500 hover:bg-red-50"><LogOut className="w-4 h-4" /></Button>
+          <div className="h-8 w-[1px] bg-primary/10 hidden md:block" />
+          <div className="hidden md:flex items-center gap-2 text-primary/40">
+            <div className="relative">
+              <Monitor className="w-6 h-6" />
+              <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-[10px] font-black text-primary/40 leading-none">{profile?.role?.replace('_', ' ')}</p>
+            <p className="font-bold text-xs">{profile?.displayName}</p>
+          </div>
+          <Button variant="ghost" size="icon" onClick={() => { logOut?.(); navigate('/'); }} className="rounded-full"><LogOut className="w-4 h-4" /></Button>
         </div>
       </header>
 
-      <div className="bg-primary/10 p-1.5 flex justify-center border-b border-primary/10 overflow-x-auto">
-        <div className="flex gap-1.5 p-1 rounded-xl whitespace-nowrap">
-          {isExamAdmin && (
-            <Button variant={activeTab === 'overview' ? 'default' : 'ghost'} onClick={() => setActiveTab('overview')} className={cn("rounded-lg h-9 px-4 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'overview' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}>
-              <LayoutDashboard className="w-3 h-3 mr-2" />Overview
-            </Button>
-          )}
-          {isExamAdmin && (
-            <Button variant={activeTab === 'monitor' ? 'default' : 'ghost'} onClick={() => setActiveTab('monitor')} className={cn("rounded-lg h-9 px-3 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'monitor' ? "bg-red-500 text-white" : "text-primary/40 hover:text-primary")}>
-              <Shield className="w-3 h-3 mr-2" />Monitor {liveSessions.length > 0 && <span className="ml-1.5 bg-white/20 rounded-full px-1 py-0.5 text-[7px]">{liveSessions.length}</span>}
-            </Button>
-          )}
-          {isExamAdmin && (
-            <>
-              <Button variant={activeTab === 'exams' ? 'default' : 'ghost'} onClick={() => setActiveTab('exams')} className={cn("rounded-lg h-9 px-3 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'exams' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}><BookOpen className="w-3 h-3 mr-2" />Exams</Button>
-              <Button variant={activeTab === 'bank' ? 'default' : 'ghost'} onClick={() => setActiveTab('bank')} className={cn("rounded-lg h-9 px-3 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'bank' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}><Library className="w-3 h-3 mr-2" />Bank</Button>
-            </>
-          )}
-          {isRegAdmin && (
-            <Button variant={activeTab === 'candidates' ? 'default' : 'ghost'} onClick={() => setActiveTab('candidates')} className={cn("rounded-lg h-9 px-3 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'candidates' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}><Users className="w-3 h-3 mr-2" />Registry</Button>
-          )}
-          {isSuperAdmin && (
-            <Button variant={activeTab === 'staff' ? 'default' : 'ghost'} onClick={() => setActiveTab('staff')} className={cn("rounded-lg h-9 px-3 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'staff' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}><UserPlus className="w-3 h-3 mr-2" />Staff</Button>
-          )}
-          {isSuperAdmin && (
-            <Button variant={activeTab === 'analytics' ? 'default' : 'ghost'} onClick={() => setActiveTab('analytics')} className={cn("rounded-lg h-9 px-3 font-bold tracking-widest text-[12px] border-none uppercase", activeTab === 'analytics' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}><BarChart2 className="w-3 h-3 mr-2" />Analytics</Button>
-          )}
-        </div>
+      <div className="flex bg-white border-b-2 border-primary/5 p-2 gap-2 overflow-x-auto justify-center">
+        {filteredTabs.map((tab) => (
+          <Button key={tab.id} variant={activeTab === tab.id ? 'default' : 'ghost'} onClick={() => setActiveTab(tab.id as any)} className={cn("h-10 px-6 font-black text-[10px] tracking-widest rounded-xl", activeTab === tab.id ? "bg-primary text-white" : "text-primary/40")}>
+            {tab.label.toUpperCase()}
+          </Button>
+        ))}
       </div>
 
-      <main className="flex-1 overflow-hidden flex flex-col md:flex-row bg-slate-50">
-        {activeTab === 'overview' && isExamAdmin ? (
-          <div className="flex-1 overflow-y-auto p-4 max-w-4xl mx-auto w-full">
-             <div className="space-y-6">
-                <h2 className="text-2xl font-black text-primary tracking-tighter uppercase">Operations Summary</h2>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                   <Card className="p-6 rounded-[24px] border-2 border-primary/10 bg-white shadow-lg">
-                      <p className="text-[10px] font-black text-primary/40 mb-1">CANDIDATES</p>
-                      <h4 className="text-4xl font-black text-primary">{candidates.length}</h4>
-                   </Card>
-                   <Card className="p-6 rounded-[24px] border-2 border-primary/10 bg-white shadow-lg">
-                      <p className="text-[10px] font-black text-primary/40 mb-1">ACTIVE EXAMS</p>
-                      <h4 className="text-4xl font-black text-primary">{exams.length}</h4>
-                   </Card>
-                   <Card className="p-6 rounded-[24px] border-2 border-primary/10 bg-white shadow-lg">
-                      <p className="text-[10px] font-black text-primary/40 mb-1">QUESTION BANK</p>
-                      <h4 className="text-4xl font-black text-primary">{bankQuestions.length}</h4>
-                   </Card>
-                   <Card className="p-6 rounded-[24px] border-2 border-primary/10 bg-white shadow-lg">
-                      <p className="text-[10px] font-black text-primary/40 mb-1">ATTEMPTS</p>
-                      <h4 className="text-4xl font-black text-primary">{attempts.length}</h4>
-                   </Card>
-                </div>
-                <div className="p-8 rounded-[32px] bg-primary text-white flex justify-between items-center shadow-xl">
-                   <div><h3 className="text-xl font-black mb-1">LIVE MONITORING</h3><p className="text-white/60 text-xs uppercase">OVERSEE ACTIVE TERMINALS IN REAL-TIME.</p></div>
-                   <Button onClick={() => setActiveTab('monitor')} className="h-10 px-8 bg-white text-primary rounded-[16px] font-black text-[10px] uppercase">LAUNCH PANEL</Button>
-                </div>
-             </div>
-          </div>
-        ) : activeTab === 'monitor' && isExamAdmin ? (
-          <div className="flex-1 overflow-y-auto p-4 max-w-4xl mx-auto w-full">
-            <div className="space-y-6">
-              <div className="flex justify-between items-end">
-                <div><h2 className="text-2xl font-black text-primary leading-tight uppercase">OVERSIGHT</h2><p className="text-primary/40 font-bold text-[8px] uppercase">ACTIVE TERMINALS</p></div>
-                <div className="px-3 py-1.5 bg-red-50 rounded-lg border border-red-100 flex items-center gap-2"><div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" /><span className="text-[8px] font-black text-red-600 uppercase">{liveSessions.length} Online</span></div>
-              </div>
-
-              {redisSessions.length > 0 && (
-                <div className="p-4 bg-sky-50 rounded-2xl border border-sky-100 mb-4">
-                  <p className="text-[10px] font-black text-sky-600 mb-2 uppercase flex items-center gap-2">
-                    <div className="w-2 h-2 bg-sky-500 rounded-full" /> Redis Cached Sessions ({redisSessions.length})
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {redisSessions.map((rs, i) => (
-                      <Badge key={i} variant="outline" className="bg-white border-sky-200 text-sky-700 text-[8px] font-bold">
-                        {rs.userId}: {rs.progress?.answeredCount} Ans
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {liveSessions.map(s => {
-                  const c = candidates.find(can => can.examNumber === s.userId || can.id === s.userId);
-                  const progress = s.totalPossible > 0 ? (Object.keys(s.answers || {}).length / s.totalPossible) * 100 : 0;
-                  return (
-                    <Card key={s.id} className="rounded-3xl border-2 border-primary/10 bg-white p-6 shadow-sm">
-                      <div className="flex justify-between items-start mb-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center font-black text-primary/40">{c?.fullName?.charAt(0) || "U"}</div>
-                          <div><p className="font-black text-xs truncate max-w-[120px] uppercase">{c?.fullName || "ANONYMOUS"}</p><p className="text-[8px] font-bold text-primary/20">{s.userId}</p></div>
-                        </div>
-                        <div className="text-right"><p className="text-lg font-black text-primary uppercase">{(s as any).timeLeft ? Math.floor((s as any).timeLeft / 60) : '--'}M</p></div>
-                      </div>
-                      <div className="space-y-4 mb-6">
-                        <div><div className="flex justify-between text-[8px] font-black mb-1.5"><span className="text-primary/40 uppercase">Progress</span><span className="text-primary">{Math.round(progress)}%</span></div><div className="h-1.5 w-full bg-primary/5 rounded-full overflow-hidden"><div className="h-full bg-primary" style={{ width: `${progress}%` }} /></div></div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button onClick={() => setViewingSnaps(s.id)} className="flex-1 h-9 rounded-xl border border-primary/10 text-primary text-[8px] font-bold uppercase flex items-center gap-1.5">
-                          <Camera className="w-3 h-3" /> View Snaps
-                        </Button>
-                        <Button onClick={() => handleRemoteAction(s.id, 'reset')} className="flex-1 h-9 rounded-xl border border-primary/10 text-primary text-[8px] font-bold uppercase">Reset PC</Button>
-                        <Button onClick={() => handleRemoteAction(s.id, 'terminate')} className="flex-1 h-9 rounded-xl border border-primary/10 text-primary text-[8px] font-bold uppercase">Terminate</Button>
-                      </div>
-                    </Card>
-                  );
-                })}
+      <main className="flex-1 p-8 overflow-y-auto">
+        <div className="max-w-6xl mx-auto">
+          {activeTab === 'overview' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                  { label: 'Total Exams', value: exams.length, icon: BookOpen },
+                  { label: 'Candidates', value: candidates.length, icon: Users },
+                  { label: 'Avg Score', value: analytics?.averageScore || '0.00', icon: BarChart2 },
+                  { label: 'Pass Rate', value: (analytics?.passRate || '0') + '%', icon: Shield }
+                ].map((stat, i) => (
+                  <Card key={i} className="p-8 rounded-[32px] border-2 border-primary/10 shadow-xl bg-white">
+                    <stat.icon className="w-6 h-6 text-primary/20 mb-4" />
+                    <p className="text-[10px] font-black text-primary/40 mb-1">{stat.label.toUpperCase()}</p>
+                    <h4 className="text-4xl font-black">{stat.value}</h4>
+                  </Card>
+                ))}
               </div>
             </div>
+          )}
 
-            {/* Proctor Snapshot Gallery Modal */}
-            <AnimatePresence>
-              {viewingSnaps && (
-                <div className="fixed inset-0 z-[250] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden">
-                    <div className="p-6 bg-primary text-white flex justify-between items-center">
-                      <h3 className="text-sm font-black tracking-widest uppercase">Oversight Snapshots</h3>
-                      <Button variant="ghost" onClick={() => setViewingSnaps(null)} className="text-white h-8 w-8 hover:bg-white/10"><XCircle className="w-5 h-5" /></Button>
-                    </div>
-                    <div className="p-6">
-                      <div className="grid grid-cols-5 gap-3">
-                        {liveSessions.find(s => s.id === viewingSnaps)?.proctoringSnaps?.map((snap, i) => (
-                          <div key={i} className="aspect-square bg-slate-100 rounded-xl overflow-hidden border-2 border-primary/5 hover:border-primary/40 transition-all cursor-zoom-in">
-                            <img src={snap} className="w-full h-full object-cover grayscale contrast-125" />
-                          </div>
-                        )) || <div className="col-span-5 py-20 text-center opacity-20"><CameraOff className="w-12 h-12 mx-auto mb-2" /><p className="text-[10px] font-black uppercase">No Security Snaps Captured Yet</p></div>}
-                      </div>
-                      <p className="mt-6 text-[8px] font-bold text-primary/30 text-center uppercase">Snaps are periodically captured every 120 seconds for identity verification.</p>
-                    </div>
-                  </motion.div>
+          {activeTab === 'analytics' && (
+             <div className="space-y-8">
+                <div className="flex justify-between items-center">
+                   <h2 className="text-2xl font-black">SYSTEM INTELLIGENCE</h2>
+                   <Button onClick={async () => {
+                      const res = await fetch(getApiUrl('/analytics/export-results'), { headers: getHeaders() });
+                      if (res.ok) {
+                        const blob = await res.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'cbt_results_export.csv';
+                        a.click();
+                      }
+                   }} className="h-10 bg-primary text-white font-black text-[10px] tracking-widest rounded-xl px-6 flex gap-2">
+                      <Database className="w-4 h-4" /> EXPORT ALL RESULTS
+                   </Button>
                 </div>
-              )}
-            </AnimatePresence>
-          </div>
-        ) : activeTab === 'candidates' && isRegAdmin ? (
-          <div className="flex-1 overflow-y-auto p-4 max-w-4xl mx-auto w-full">
-            <div className="space-y-6">
-              <div className="flex justify-between items-end"><div><h2 className="text-2xl font-black text-primary mb-0.5 uppercase">REGISTRY</h2><p className="text-primary/40 text-[12px] uppercase">CANDIDATE ENROLLMENT</p></div><Badge variant="outline" className="h-8 rounded-full border-2 text-[12px] px-4 font-black">{candidates.length} TOTAL</Badge></div>
-              <Card className="rounded-[32px] border-2 border-primary/20 bg-white p-6 shadow-xl">
-                <form onSubmit={handleCreateCandidate} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-left">
-                    <div className="space-y-1.5"><Label className="text-[12px] font-black opacity-40 uppercase">Full Name</Label><Input placeholder="FULL NAME" value={newCandidate.fullName} onChange={e => setNewCandidate({...newCandidate, fullName: e.target.value.toUpperCase()})} required className="h-12 text-[12px] rounded-xl font-bold border-2 border-primary/5 focus:border-primary uppercase" /></div>
-                    <div className="space-y-1.5"><Label className="text-[12px] font-black opacity-40 uppercase">Email Address</Label><Input type="email" placeholder="EMAIL@DOMAIN.COM" value={newCandidate.email} onChange={e => setNewCandidate({...newCandidate, email: e.target.value})} className="h-12 text-[12px] rounded-xl font-bold border-2 border-primary/5 focus:border-primary uppercase" /></div>
-                    <div className="space-y-1.5"><Label className="text-[12px] font-black opacity-40 uppercase">Date of Birth</Label><Input type="date" value={newCandidate.dateOfBirth} onChange={e => setNewCandidate({...newCandidate, dateOfBirth: e.target.value})} required className="h-12 text-[12px] rounded-xl font-bold border-2 border-primary/5 focus:border-primary" /></div>
-                    <div className="md:col-span-2 space-y-1.5"><Label className="text-[12px] font-black opacity-40 uppercase">Reg Number (System Assigned)</Label><Input value={newCandidate.examNumber || 'AUTO-GENERATED ON SAVE'} className="h-12 text-[12px] rounded-xl font-black bg-slate-50 border-none uppercase" disabled /></div>
-                  </div>
-                  <div className="space-y-2 text-left"><Label className="text-[12px] font-black opacity-40 uppercase">Subject Combination (Select 4)</Label><div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 p-3 border-2 rounded-xl bg-slate-50">{VIVI_SUBJECTS.map(sub => (<label key={sub} className="flex items-center gap-2 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors border border-transparent hover:border-primary/10"><input type="checkbox" checked={newCandidate.subjects.includes(sub)} onChange={(e) => { const s = e.target.checked ? [...newCandidate.subjects, sub] : newCandidate.subjects.filter(x => x !== sub); if (s.length <= 4) setNewCandidate({...newCandidate, subjects: s}); }} className="w-3 h-3 accent-primary" /><span className="text-[12px] font-black text-primary/60 uppercase">{sub}</span></label>))}</div></div>
-                  <div className="flex gap-4 pt-4 border-t-2 border-primary/5">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <div className="w-full h-44 rounded-2xl bg-slate-50 border-2 border-dashed border-primary/10 flex items-center justify-center overflow-hidden">{newCandidate.faceUrl ? <img src={newCandidate.faceUrl} className="w-full h-full object-cover" /> : <Camera className="w-8 h-8 opacity-10 text-primary" />}</div>
-                      <Button type="button" onClick={captureFace} className="h-9 text-[12px] font-black uppercase tracking-widest bg-white border-2 border-primary/10 text-primary hover:bg-primary hover:text-white">Capture Face</Button>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-2">
-                      <div className={cn("w-full h-44 rounded-2xl border-2 flex items-center justify-center transition-all", newCandidate.fingerprintData ? "bg-sky-50 border-sky-400" : "bg-slate-50 border-dashed border-primary/10")}><Fingerprint className={cn("w-10 h-10", newCandidate.fingerprintData ? "text-sky-500" : "opacity-10")} /></div>
-                      <Button type="button" onClick={captureFingerprint} className="h-9 text-[12px] font-black uppercase tracking-widest bg-white border-2 border-primary/10 text-primary hover:bg-primary hover:text-white">Enroll Finger</Button>
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full h-14 bg-primary text-white rounded-2xl font-black text-[12px] shadow-xl uppercase tracking-widest">{editingCandidateId ? 'Update Record' : 'Finalize Registration'}</Button>
-                </form>
-              </Card>
+                <div className="grid md:grid-cols-2 gap-8">
+                   <Card className="p-8 rounded-[32px] border-2 bg-white">
+                      <h3 className="text-xs font-black mb-6 uppercase tracking-widest">Performance Metrics</h3>
+                      <div className="space-y-6">
+                         <div className="flex justify-between items-end border-b pb-4">
+                            <span className="text-[10px] font-black opacity-30">CUMULATIVE PASS RATE</span>
+                            <span className="text-3xl font-black text-emerald-500">{analytics?.passRate}%</span>
+                         </div>
+                         <div className="flex justify-between items-end border-b pb-4">
+                            <span className="text-[10px] font-black opacity-30">AVERAGE RAW SCORE</span>
+                            <span className="text-3xl font-black text-primary">{analytics?.averageScore}</span>
+                         </div>
+                         <div className="flex justify-between items-end">
+                            <span className="text-[10px] font-black opacity-30">TOTAL SUBMISSIONS</span>
+                            <span className="text-3xl font-black">{analytics?.totalAttempts}</span>
+                         </div>
+                      </div>
+                   </Card>
+                   <Card className="p-8 rounded-[32px] border-2 bg-white flex flex-col justify-center items-center text-center">
+                      <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mb-4">
+                         <Shield className="w-10 h-10 text-primary/20" />
+                      </div>
+                      <h3 className="font-black text-sm uppercase">Secure System</h3>
+                      <p className="text-[10px] font-bold opacity-30 mt-2">All analytics are computed in real-time from encrypted session logs.</p>
+                   </Card>
+                </div>
+             </div>
+          )}
 
-              {/* Bulk Registration Section */}
-              <Card className="rounded-[32px] border-2 border-primary/10 bg-white p-8 shadow-xl">
+          {activeTab === 'exams' && (
+            <div className="grid md:grid-cols-[300px_1fr] gap-8">
+              <aside className="space-y-4">
+                <Card className="p-6 rounded-[24px] border-2">
+                  <h3 className="text-xs font-black mb-4">NEW MODULE</h3>
+                  <form onSubmit={handleCreateExam} className="space-y-4">
+                    <Input placeholder="SUBJECT" value={newExam.subject} onChange={e => setNewExam({...newExam, subject: e.target.value})} required className="h-12 text-[10px] font-bold" />
+                    <Input placeholder="TITLE" value={newExam.title} onChange={e => setNewExam({...newExam, title: e.target.value})} required className="h-12 text-[10px] font-bold" />
+                    <Input type="number" placeholder="MINUTES" value={newExam.durationMinutes} onChange={e => setNewExam({...newExam, durationMinutes: parseInt(e.target.value)})} required className="h-12 text-[10px] font-bold" />
+                    <div className="grid grid-cols-2 gap-2">
+                       <div className="space-y-1">
+                          <p className="text-[8px] font-black opacity-30">START</p>
+                          <Input type="datetime-local" value={newExam.startTime} onChange={e => setNewExam({...newExam, startTime: e.target.value})} className="h-10 text-[9px]" />
+                       </div>
+                       <div className="space-y-1">
+                          <p className="text-[8px] font-black opacity-30">END</p>
+                          <Input type="datetime-local" value={newExam.endTime} onChange={e => setNewExam({...newExam, endTime: e.target.value})} className="h-10 text-[9px]" />
+                       </div>
+                    </div>
+                    <Button type="submit" className="w-full h-12 bg-primary text-white font-black rounded-xl">CREATE</Button>
+                  </form>
+                </Card>
+                <div className="space-y-2">
+                  {exams.map(e => (
+                    <button key={e.id} onClick={() => setSelectedExamId(e.id)} className={cn("w-full text-left p-4 rounded-xl border-2 transition-all", selectedExamId === e.id ? "bg-primary text-white border-primary" : "bg-white border-primary/5")}>
+                      <p className="font-black text-xs">{e.subject}</p>
+                      <p className="text-[10px] opacity-60">{e.title}</p>
+                    </button>
+                  ))}
+                </div>
+              </aside>
+
+              <section className="space-y-6">
+                {selectedExamId ? (
+                  <div className="space-y-6">
+                    <Card className="p-8 rounded-[32px] border-2 bg-white">
+                      <h3 className="text-xs font-black mb-6">ADD QUESTION</h3>
+                      <form onSubmit={handleAddQuestion} className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                           <textarea className="col-span-2 w-full h-24 p-4 rounded-xl border-2 border-primary/5 bg-slate-50 font-bold text-xs" placeholder="QUESTION TEXT" value={newQuestion.text} onChange={e => setNewQuestion({...newQuestion, text: e.target.value})} required />
+                           <Input placeholder="TOPIC" value={newQuestion.topic} onChange={e => setNewQuestion({...newQuestion, topic: e.target.value})} className="h-12 text-[10px] font-bold" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          {newQuestion.options.map((opt, i) => (
+                            <div key={i} className="flex gap-2">
+                              <Input placeholder={`OPTION ${i+1}`} value={opt} onChange={e => {
+                                const o = [...newQuestion.options]; o[i] = e.target.value; setNewQuestion({...newQuestion, options: o});
+                              }} className="h-12 text-[10px] font-bold" />
+                              <button type="button" onClick={() => setNewQuestion({...newQuestion, correctOptionIndex: i})} className={cn("w-12 h-12 rounded-xl border-2 flex items-center justify-center font-black", newQuestion.correctOptionIndex === i ? "bg-primary text-white" : "bg-primary/5")}>{i+1}</button>
+                            </div>
+                          ))}
+                        </div>
+                        <Button type="submit" className="w-full h-14 bg-primary text-white font-black rounded-xl">SAVE QUESTION</Button>
+                      </form>
+                    </Card>
+
+                    <Card className="p-8 rounded-[32px] border-2 bg-gradient-to-br from-primary/5 to-sky-50 border-primary/10">
+                       <div className="flex items-center gap-3 mb-6">
+                          <PlusCircle className="w-5 h-5 text-primary" />
+                          <h3 className="text-xs font-black uppercase tracking-widest">AI Quest Engine</h3>
+                       </div>
+                       <p className="text-[10px] font-bold opacity-40 mb-4">Generate multiple questions instantly using Gemini 2.0 Flash.</p>
+                       <form onSubmit={async (e) => {
+                          e.preventDefault();
+                          const syllabus = (e.currentTarget.elements.namedItem('syllabus') as HTMLTextAreaElement).value;
+                          const count = parseInt((e.currentTarget.elements.namedItem('count') as HTMLInputElement).value);
+                          toast.promise(fetch(getApiUrl(`/exams/${selectedExamId}/ai-generate`), {
+                             method: 'POST',
+                             headers: getHeaders(),
+                             body: JSON.stringify({ syllabus, count })
+                          }), {
+                             loading: 'AI is thinking...',
+                             success: () => {
+                                fetch(getApiUrl(`/exams/${selectedExamId}`), { headers: getHeaders() })
+                                  .then(res => res.json())
+                                  .then(data => setQuestions(data.questions || []));
+                                return 'Questions Generated!';
+                             },
+                             error: 'AI Failed to respond.'
+                          });
+                       }} className="space-y-4">
+                          <textarea name="syllabus" className="w-full h-24 p-4 rounded-xl border-2 border-primary/5 bg-white font-bold text-xs" placeholder="Paste syllabus content here..." required />
+                          <div className="flex gap-4">
+                             <Input name="count" type="number" defaultValue="10" className="h-12 text-[10px] font-bold" />
+                             <Button type="submit" className="flex-1 h-12 bg-primary text-white font-black rounded-xl">GENERATE</Button>
+                          </div>
+                       </form>
+                    </Card>
+
+                    <div className="space-y-3">
+                      {questions.map((q, i) => (
+                        <Card key={q.id} className="p-6 rounded-2xl border-2 bg-white flex justify-between items-center">
+                          <div className="flex-1">
+                            <Badge className="bg-primary/5 text-primary text-[8px] mb-2">ITEM {i+1} • {q.topic}</Badge>
+                            <p className="font-bold text-xs">{q.text}</p>
+                          </div>
+                          <Button variant="ghost" onClick={async () => {
+                            await fetch(getApiUrl(`/exams/questions/${q.id}`), { method: 'DELETE', headers: getHeaders() });
+                            fetch(getApiUrl(`/exams/${selectedExamId}`), { headers: getHeaders() }).then(res => res.json()).then(data => setQuestions(data.questions || []));
+                          }} className="text-red-200 hover:text-red-500"><Trash2 className="w-4 h-4" /></Button>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center opacity-10 font-black">SELECT A MODULE</div>
+                )}
+              </section>
+            </div>
+          )}
+
+          {activeTab === 'candidates' && (
+            <div className="space-y-8">
+              <Card className="p-8 rounded-[32px] border-2 border-primary/10 bg-white shadow-xl">
                  <div className="flex justify-between items-center mb-6">
                     <div>
-                       <h3 className="text-xl font-black text-primary  tracking-tighter uppercase">Bulk Enrollment</h3>
-                       <p className="text-[9px] font-black text-primary/40  tracking-widest uppercase">Register multiple candidates via CSV/Excel</p>
+                       <h3 className="text-xl font-black text-primary tracking-tighter uppercase">Bulk Enrollment</h3>
+                       <p className="text-[9px] font-black text-primary/40 tracking-widest uppercase">Register multiple candidates via CSV</p>
                     </div>
-                    <div className="bg-primary/5 p-3 rounded-xl border border-primary/10 flex items-center gap-3">
-                       <Upload className="w-5 h-5 text-primary" />
-                       <p className="text-[7px] font-black text-primary/60 leading-tight">Format: Full Name, DOB, Subj1, Subj2, Subj3, Subj4</p>
-                    </div>
+                    <Upload className="w-5 h-5 text-primary" />
                  </div>
                  <div className="relative group">
-                    <Input
-                      type="file"
-                      accept=".csv"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = async (ev) => {
-                          const lines = (ev.target?.result as string).split('\n').filter(l => l.trim());
-                          let successCount = 0;
-                          toast.loading(`Processing ${lines.length} registrations...`);
-                          for (const line of lines) {
-                            const [name, dob, s1, s2, s3, s4] = line.split(',').map(s => s.trim());
-                            if (name && dob && s1 && s2 && s3 && s4) {
-                              const en = `${new Date().getFullYear()}${Math.floor(100000 + Math.random() * 900000)}XY`;
-                              const pin = Math.floor(100000 + Math.random() * 900000).toString();
-                              try {
-                                await setDoc(doc(db, 'candidates', en), {
-                                  fullName: name.toUpperCase(),
-                                  examNumber: en,
-                                  dateOfBirth: dob,
-                                  subjectCombination: [s1, s2, s3, s4],
-                                  status: 'active',
-                                  thumbprinted: false, // Must be verified in person
-                                  registrationDate: new Date().toISOString(),
-                                  createdAt: new Date().toISOString(),
-                                  pin: pin
-                                });
-                                successCount++;
-                              } catch (err) {}
-                            }
-                          }
-                          toast.dismiss();
-                          toast.success(`Successfully enrolled ${successCount} candidates.`);
-                          fetchCandidates();
-                        };
-                        reader.readAsText(file);
-                      }}
-                      className="h-24 border-2 border-dashed border-primary/20 rounded-2xl cursor-pointer pt-14 text-center text-[10px] font-black"
-                    />
+                    <Input type="file" accept=".csv" onChange={handleBulkUpload} className="h-24 border-2 border-dashed border-primary/20 rounded-2xl cursor-pointer pt-14 text-center text-[10px] font-black" />
                     <div className="absolute top-6 left-0 right-0 pointer-events-none flex flex-col items-center">
                        <Database className="w-8 h-8 text-primary/10 mb-1" />
                        <span className="text-[10px] font-black text-primary/30 uppercase tracking-widest">Select Enrollment Data (.csv)</span>
@@ -612,317 +474,229 @@ export default function Admin() {
                  </div>
               </Card>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">{candidates.map(c => (<Card key={c.id} className="p-4 border-2 border-primary/10 bg-white flex justify-between items-center group hover:border-primary transition-all rounded-2xl shadow-sm"><div className="flex items-center gap-3"><div className="w-12 h-12 bg-primary/5 rounded-xl border-2 overflow-hidden flex items-center justify-center">{c.faceUrl ? <img src={c.faceUrl} className="w-full h-full object-cover" /> : <p className="font-black opacity-20 uppercase text-[12px]">{c.fullName.charAt(0)}</p>}</div><div><h4 className="font-black text-[12px] truncate max-w-[120px] uppercase">{c.fullName}</h4><p className="text-[12px] font-bold text-primary/40 uppercase tracking-widest">{c.examNumber}</p></div></div><div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => startEditCandidate(c)} className="h-9 px-3 rounded-lg uppercase"><Pencil className="w-3 h-3" /></Button><Button variant="default" size="sm" onClick={() => handleStartCandidateExam(c.examNumber)} className="h-9 px-4 text-[12px] font-black uppercase">Run</Button><Button variant="ghost" size="icon" onClick={async () => { if(confirm("Permanently delete candidate?")) { await deleteDoc(doc(db, 'candidates', c.id)); fetchCandidates(); } }} className="h-9 w-9 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></Button></div></Card>))}</div>
-            </div>
-          </div>
-        ) : activeTab === 'staff' && isSuperAdmin ? (
-          <div className="flex-1 overflow-y-auto p-4 max-w-4xl mx-auto w-full">
-            <div className="space-y-6">
-              <div className="flex justify-between items-end">
-                <div><h2 className="text-2xl font-black text-primary mb-0.5 uppercase">STAFF MANAGEMENT</h2><p className="text-primary/40 text-[10px] uppercase">AUTHORIZED PERSONNEL DIRECTORY</p></div>
-                <Badge variant="outline" className="h-8 rounded-full border-2 text-[10px] px-4 font-black">{staff.length} ACTIVE OFFICERS</Badge>
-              </div>
-              <Card className="rounded-[32px] border-2 border-primary/20 bg-white p-8 shadow-xl">
-                <form onSubmit={handleCreateStaff} className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4 text-left">
-                    <div className="space-y-1.5"><Label className="text-[10px] font-black opacity-40 uppercase">Full Name</Label><Input placeholder="OFFICER NAME" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value.toUpperCase()})} required className="h-12 rounded-xl font-bold border-2 border-primary/5 focus:border-primary uppercase" /></div>
-                    <div className="space-y-1.5"><Label className="text-[10px] font-black opacity-40 uppercase">Email Address</Label><Input type="email" placeholder="EMAIL@VIVICBT.COM" value={newStaff.email} onChange={e => setNewStaff({...newStaff, email: e.target.value})} required className="h-12 rounded-xl font-bold border-2 border-primary/5 focus:border-primary uppercase" /></div>
-                    <div className="space-y-1.5"><Label className="text-[10px] font-black opacity-40 uppercase">Password</Label><Input type="password" placeholder="MIN 6 CHARACTERS" value={newStaff.password} onChange={e => setNewStaff({...newStaff, password: e.target.value})} required className="h-12 rounded-xl font-bold border-2 border-primary/5 focus:border-primary uppercase" /></div>
-                    <div className="space-y-1.5"><Label className="text-[10px] font-black opacity-40 uppercase">Operational Role</Label><select value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: e.target.value as any})} className="w-full h-12 px-4 rounded-xl border-2 border-primary/5 bg-slate-50 font-black text-[10px] focus:border-primary outline-none uppercase"><option value="reg_admin">REGISTRY ADMIN (RESTRICTED)</option><option value="admin">EXAM ADMIN (FULL ACCESS)</option></select></div>
-                  </div>
-                  <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 uppercase"><p className="text-[9px] text-amber-700 font-black leading-tight uppercase flex items-center gap-2"><AlertCircle className="w-3 h-3" /> Note: Only Super Admins can manage staff records.</p></div>
-                  <Button type="submit" className="w-full h-14 bg-primary text-white rounded-2xl font-black text-[11px] shadow-xl uppercase tracking-widest">Register Security Officer</Button>
-                </form>
-              </Card>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                {staff.map(s => (
-                  <Card key={s.uid} className="p-4 border-2 border-primary/10 bg-white flex justify-between items-center rounded-2xl shadow-sm">
-                    <div className="flex items-center gap-3"><div className="w-12 h-12 bg-primary/5 rounded-xl border-2 flex items-center justify-center font-black text-primary/40 uppercase">{s.displayName.charAt(0)}</div><div><h4 className="font-black text-xs truncate max-w-[120px] uppercase">{s.displayName}</h4><p className="text-[9px] font-bold text-primary/30 uppercase">{s.email}</p><Badge variant="outline" className="text-[7px] h-5 px-2 mt-1 uppercase font-black tracking-widest">{s.role.replace('_', ' ')}</Badge></div></div>
-                    <Button variant="ghost" size="icon" onClick={async () => { if(confirm("Revoke all access for this officer?")) { await deleteDoc(doc(db, 'users', s.uid)); fetchStaff(); } }} className="h-10 w-10 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></Button>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : activeTab === 'exams' && isExamAdmin ? (
-          <>
-            <aside className="w-full md:w-80 bg-white border-r-2 border-primary/40 flex flex-col shrink-0 uppercase">
-              <div className="p-6 border-b-2 border-primary/40 bg-slate-50">
-                <h2 className="text-[11px] font-black text-primary mb-3">MANAGE SUBJECTS</h2>
-                <form onSubmit={handleCreateOrUpdateExam} className="space-y-3">
-
-                  <Input placeholder="SUBJECT" value={newExam.subject} onChange={e => setNewExam({...newExam, subject: e.target.value.toUpperCase()})} required className="h-11 text-xs rounded-lg font-black" />
-                  <Input placeholder="DURATION (MIN)" type="number" value={newExam.durationMinutes} onChange={e => setNewExam({...newExam, durationMinutes: parseInt(e.target.value) || 0})} required className="h-11 text-xs rounded-lg font-black" />
-                  <Button type="submit" className="w-full h-11 bg-primary text-white rounded-lg font-black text-[12px] shadow-lg">SAVE</Button>
-                </form>
-              </div>
-              <ScrollArea className="flex-1">
-                <div className="p-2 space-y-2">
-                  {exams.map(e => (
-                    <button key={e.id} onClick={() => setSelectedExamId(e.id)} className={cn("w-full text-left p-4 rounded-xl border-2 transition-all", selectedExamId === e.id ? 'bg-primary text-white border-primary shadow-md' : 'bg-white border-primary/5 hover:border-primary/20')}>
-                       <p className="font-black text-[14px] truncate">{e.title}</p>
-                       <p className={cn("text-[14px] font-bold mt-1", selectedExamId === e.id ? "text-white/60" : "text-primary/30")}>{e.subject} • {e.durationMinutes}M</p>
-                    </button>
+              <div className="grid md:grid-cols-[350px_1fr] gap-8">
+                <Card className="p-8 rounded-[32px] border-2 bg-white h-fit">
+                  <h3 className="text-xs font-black mb-6 uppercase">Register Candidate</h3>
+                  <form onSubmit={handleCreateCandidate} className="space-y-4">
+                    <div className="flex justify-center mb-4">
+                       {newCandidate.faceUrl ? (
+                          <div className="relative group">
+                             <img src={newCandidate.faceUrl} className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg" />
+                             <button type="button" onClick={() => setNewCandidate({...newCandidate, faceUrl: ''})} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full"><Trash2 className="w-3 h-3" /></button>
+                          </div>
+                       ) : isCapturing ? (
+                          <div className="space-y-2 text-center">
+                             <video ref={videoRef} autoPlay className="w-48 h-36 rounded-2xl bg-black object-cover" />
+                             <Button type="button" onClick={capturePhoto} className="h-8 px-4 text-[8px] bg-primary text-white font-black rounded-lg">SNAP PHOTO</Button>
+                          </div>
+                       ) : (
+                          <button type="button" onClick={startCapture} className="w-24 h-24 rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-2 hover:border-primary transition-all">
+                             <Camera className="w-6 h-6 text-primary/20" />
+                             <span className="text-[8px] font-black opacity-30">CAPTURE FACE</span>
+                          </button>
+                       )}
+                    </div>
+                    <Input placeholder="FULL NAME" value={newCandidate.fullName} onChange={e => setNewCandidate({...newCandidate, fullName: e.target.value})} required className="h-12 text-[10px] font-bold" />
+                    <Input placeholder="EXAM NUMBER" value={newCandidate.examNumber} onChange={e => setNewCandidate({...newCandidate, examNumber: e.target.value})} required className="h-12 text-[10px] font-bold" />
+                    <Input placeholder="EMAIL" value={newCandidate.email} onChange={e => setNewCandidate({...newCandidate, email: e.target.value})} className="h-12 text-[10px] font-bold" />
+                    <div className="grid grid-cols-2 gap-2">
+                       <Input placeholder="ASSIGNED IP" value={newCandidate.assignedIp} onChange={e => setNewCandidate({...newCandidate, assignedIp: e.target.value})} className="h-10 text-[9px]" />
+                       <Input placeholder="SEAT NO" value={newCandidate.assignedSeatNumber} onChange={e => setNewCandidate({...newCandidate, assignedSeatNumber: e.target.value})} className="h-10 text-[9px]" />
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-xl space-y-2">
+                      <p className="text-[9px] font-black opacity-30">SUBJECTS (MAX 4)</p>
+                      {["English", "Math", "Physics", "Chemistry", "Biology"].map(s => (
+                        <label key={s} className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={newCandidate.subjects.includes(s)} onChange={e => {
+                            const subs = e.target.checked ? [...newCandidate.subjects, s] : newCandidate.subjects.filter(x => x !== s);
+                            if (subs.length <= 4) setNewCandidate({...newCandidate, subjects: subs});
+                          }} />
+                          <span className="text-[10px] font-black">{s.toUpperCase()}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <Button type="submit" className="w-full h-14 bg-primary text-white font-black rounded-xl">REGISTER</Button>
+                  </form>
+                </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {candidates.map(c => (
+                    <Card key={c.examNumber} className="p-6 rounded-2xl border-2 bg-white flex justify-between items-center shadow-sm">
+                      <div>
+                        <h4 className="font-black text-xs">{c.fullName}</h4>
+                        <p className="text-[10px] font-bold text-primary/30">{c.examNumber}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" onClick={() => navigate(`/exam-slip/${c.examNumber}`)} className="text-primary/40 hover:text-primary"><Printer className="w-4 h-4" /></Button>
+                        <Button variant="ghost" onClick={async () => {
+                          if(confirm("Delete candidate?")) {
+                            await fetch(getApiUrl(`/candidates/${c.examNumber}`), { method: 'DELETE', headers: getHeaders() });
+                            fetchCandidates();
+                          }
+                        }} className="text-red-200 hover:text-red-500"><Trash2 className="w-4 h-4" /></Button>
+                      </div>
+                    </Card>
                   ))}
                 </div>
-              </ScrollArea>
-            </aside>
-            <section className="flex-1 overflow-y-auto p-6 bg-slate-50 uppercase">
-              {selectedExamId ? (
-                <div className="max-w-2xl mx-auto space-y-6 text-left">
-                  <div className="flex justify-between items-end">
-                    <div><h2 className="text-2xl font-black text-primary tracking-tighter">SUBJECTS</h2><p className="text-primary/40 text-[10px] font-bold">{exams.find(e => e.id === selectedExamId)?.title}</p></div>
-                    <Badge variant="outline" className="h-8 rounded-full border-2 text-[10px] px-4 font-black">{questions.length} QUESTIONS</Badge>
-                  </div>
-                  <Card className="rounded-[24px] border-2 border-primary/20 bg-white p-6 shadow-xl">
-                    <form onSubmit={handleAddOrUpdateQuestion} className="space-y-6">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black opacity-40">QUESTION CONTENT</Label>
-                        <textarea className="w-full min-h-[100px] rounded-xl border-2 border-primary/5 bg-slate-50 p-4 text-sm font-bold focus:border-primary outline-none" placeholder="TYPE QUESTIONS HERE..." value={newQuestion.text} onChange={e => setNewQuestion({...newQuestion, text: e.target.value.toUpperCase()})} required />
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <Label className="text-[10px] font-black opacity-40 uppercase">Image URL (Optional)</Label>
-                          <Input placeholder="HTTPS://..." value={newQuestion.imageUrl} onChange={e => setNewQuestion({...newQuestion, imageUrl: e.target.value})} className="h-11 text-xs rounded-lg font-black" />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-[10px] font-black opacity-40 uppercase">Audio URL (Optional)</Label>
-                          <Input placeholder="HTTPS://..." value={newQuestion.audioUrl} onChange={e => setNewQuestion({...newQuestion, audioUrl: e.target.value})} className="h-11 text-xs rounded-lg font-black" />
-                        </div>
-                        {newQuestion.options.map((opt, i) => (
-                          <div key={i} className="flex gap-2">
-                            <Input value={opt} onChange={e => { const o = [...newQuestion.options]; o[i] = e.target.value.toUpperCase(); setNewQuestion({...newQuestion, options: o}); }} className="h-12 text-xs font-black rounded-lg" placeholder={`OPTION ${String.fromCharCode(65 + i)}`} required />
-                            <Button type="button" onClick={() => setNewQuestion({...newQuestion, correctOptionIndex: i})} className={cn("h-12 px-4 rounded-lg border-2", newQuestion.correctOptionIndex === i ? "bg-primary text-white border-primary shadow-md" : "text-primary border-primary/5")}>
-                              {newQuestion.correctOptionIndex === i ? <CheckCircle className="w-4 h-4" /> : i+1}
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                      <Button type="submit" className="w-full h-14 bg-primary text-white rounded-xl font-black text-[11px] shadow-xl">COMMIT TO MODULE</Button>
-                    </form>
-                  </Card>
-                  <div className="space-y-2">
-                    {questions.map((q, idx) => (
-                      <Card key={q.id} className="p-4 border-2 border-primary/5 bg-white hover:border-primary/10 rounded-2xl shadow-sm">
-                         <div className="flex justify-between items-start gap-4">
-                            <div className="flex-1"><Badge className="bg-primary/5 text-primary text-[8px] mb-2 font-black">ITEM {idx + 1}</Badge><p className="font-bold text-xs leading-relaxed">{q.text}</p></div>
-                            <Button variant="ghost" size="icon" onClick={async () => { if(confirm("Delete item?")) { await deleteDoc(doc(db, 'exams', selectedExamId, 'questions', q.id)); await updateDoc(doc(db, 'exams', selectedExamId), { totalQuestions: questions.length - 1 }); fetchQuestions(selectedExamId); } }} className="text-red-200 hover:text-red-500"><Trash2 className="w-4 h-4" /></Button>
-                         </div>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="h-full flex items-center justify-center opacity-20"><div className="text-center"><BookOpen className="w-16 h-16 mx-auto mb-4" /><p className="font-black text-xs">SELECT A MODULE FROM THE SIDEBAR</p></div></div>
-              )}
-            </section>
-          </>
-        ) : activeTab === 'bank' && isExamAdmin ? (
-          <div className="flex-1 overflow-y-auto p-4 max-w-4xl mx-auto w-full uppercase">
-            <div className="space-y-6">
-              <div className="flex justify-between items-end">
-                <div><h2 className="text-2xl font-black text-primary tracking-tighter uppercase">QUESTION BANK</h2><p className="text-primary/40 text-[8px] font-bold">CENTRAL REPOSITORY</p></div>
-                <div className="flex gap-2">
-                  {selectedBankQuestions.size > 0 && <Button onClick={handleBatchImportToExam} className="h-8 bg-sky-500 text-white rounded-lg font-black text-[8px] px-4 shadow-lg">ASSIGN {selectedBankQuestions.size} ITEMS TO {selectedExamId ? 'MODULE' : '...'}</Button>}
-                  <Badge variant="outline" className="h-8 rounded-full border-2 text-[10px] px-4 font-black">{bankQuestions.length} TOTAL ITEMS</Badge>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <Card className="p-6 rounded-[24px] border-2 border-primary/10 bg-white shadow-xl">
-                    <h3 className="text-[10px] font-black text-primary mb-4 flex items-center gap-2"><PlusCircle className="w-4 h-4" /> MANUAL ENTRY</h3>
-                    <div className="space-y-4">
-                       <textarea className="w-full min-h-[80px] rounded-xl border-2 border-primary/5 bg-slate-50 p-4 text-xs font-bold focus:border-primary outline-none" placeholder="QUESTION TEXT..." value={newQuestion.text} onChange={e => setNewQuestion({...newQuestion, text: e.target.value.toUpperCase()})} />
-                       <div className="grid grid-cols-2 gap-2">
-                          <Input placeholder="IMAGE URL" value={newQuestion.imageUrl} onChange={e => setNewQuestion({...newQuestion, imageUrl: e.target.value})} className="h-10 text-[9px] font-black" />
-                          <Input placeholder="AUDIO URL" value={newQuestion.audioUrl} onChange={e => setNewQuestion({...newQuestion, audioUrl: e.target.value})} className="h-10 text-[9px] font-black" />
-                          {newQuestion.options.map((opt, i) => <Input key={i} placeholder={`OPT ${i+1}`} value={opt} onChange={e => { const o = [...newQuestion.options]; o[i] = e.target.value.toUpperCase(); setNewQuestion({...newQuestion, options: o}); }} className="h-10 text-[9px] font-black" />)}
-                       </div>
-                       <Button onClick={() => addToBank(newQuestion)} className="w-full h-11 bg-primary text-white rounded-xl font-black text-[9px] shadow-lg">STORE IN BANK</Button>
-                    </div>
-                 </Card>
-                 <Card className="p-6 rounded-[24px] border-2 border-primary/10 bg-white shadow-xl flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-[10px] font-black text-primary mb-2 flex items-center gap-2"><Upload className="w-4 h-4" /> BULK UPLOAD</h3>
-                      <p className="text-[8px] text-primary/40 font-bold mb-4">UPLOAD CSV (Q, A, B, C, D, KEY)</p>
-                      <div className="relative group">
-                        <Input type="file" accept=".csv" onChange={handleQuestionBulkUpload} className="h-24 border-2 border-dashed border-primary/20 rounded-2xl cursor-pointer pt-14 text-center text-[7px] font-black" />
-                        <div className="absolute top-6 left-0 right-0 pointer-events-none flex flex-col items-center"><Upload className="w-8 h-8 text-primary/10 mb-1" /><span className="text-[8px] font-black text-primary/30 uppercase tracking-tighter">SELECT ASSESSMENT FILE</span></div>
-                      </div>
-                    </div>
-                    <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-2"><AlertCircle className="w-4 h-4 text-amber-500" /><p className="text-[7px] text-amber-600 font-black">ENSURE PROPER CSV FORMATTING BEFORE UPLOAD.</p></div>
-                 </Card>
-              </div>
-              <div className="grid grid-cols-1 gap-2">
-                {bankQuestions.map((q, idx) => {
-                  const isSelected = selectedBankQuestions.has(q.id);
-                  return (
-                    <Card key={q.id} className={cn("p-4 border-2 transition-all cursor-pointer rounded-2xl", isSelected ? "border-primary bg-primary/5 shadow-md" : "border-primary/5 bg-white hover:border-primary/20")} onClick={() => { const n = new Set(selectedBankQuestions); if(n.has(q.id)) n.delete(q.id); else n.add(q.id); setSelectedBankQuestions(n); }}>
-                      <div className="flex justify-between items-start gap-4">
-                         <div className="flex-1"><div className="flex items-center gap-2 mb-2"><div className={cn("w-4 h-4 rounded border-2 flex items-center justify-center", isSelected ? "bg-primary border-primary" : "border-primary/20")}>{isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}</div><Badge className="bg-primary/5 text-primary text-[8px] font-black">ITEM {idx + 1}</Badge></div><p className="font-black text-xs leading-relaxed">{q.text}</p></div>
-                         <Button variant="ghost" size="icon" onClick={async (e) => { e.stopPropagation(); if(confirm("Remove from bank?")) { await deleteDoc(doc(db, 'question_bank', q.id)); fetchQuestionBank(); } }} className="text-red-200 hover:text-red-500"><Trash2 className="w-4 h-4" /></Button>
-                      </div>
-                    </Card>
-                  );
-                })}
               </div>
             </div>
-          </div>
-        ) : activeTab === 'analytics' && isSuperAdmin ? (
-          <div className="flex-1 overflow-y-auto p-4 max-w-5xl mx-auto w-full uppercase">
+          )}
+
+          {activeTab === 'center' && (
             <div className="space-y-8">
-              <div className="flex justify-between items-end">
-                <div>
-                  <h2 className="text-2xl font-black text-primary tracking-tighter uppercase">INTELLIGENCE</h2>
-                  <div className="flex gap-4 mt-2">
-                    <button onClick={() => setAnalyticsMode('performance')} className={cn("text-[10px] font-black tracking-widest uppercase", analyticsMode === 'performance' ? "text-primary border-b-2 border-primary" : "text-primary/30")}>Student Performance</button>
-                    <button onClick={() => setAnalyticsMode('items')} className={cn("text-[10px] font-black tracking-widest uppercase", analyticsMode === 'items' ? "text-primary border-b-2 border-primary" : "text-primary/30")}>Item Difficulty Analysis</button>
-                  </div>
-                </div>
-                <Badge className="h-8 rounded-full border-2 bg-primary text-white text-[10px] px-4 font-black">{attempts.length} RECORDS</Badge>
-              </div>
+               <h2 className="text-2xl font-black">EXAM ROOM ARCHITECTURE</h2>
+               <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-10 gap-4 bg-slate-100 p-8 rounded-[40px] border-4 border-white shadow-inner">
+                  {seats.map(s => {
+                     const activeAttempt = attempts.find(a => a.status === 'in-progress' && a.userId === s.assignedCandidateId);
+                     const isFlagged = activeAttempt && (activeAttempt.trustScore || 100) < 70;
+                     return (
+                        <Card key={s.id} className={cn("aspect-square rounded-2xl border-2 flex flex-col items-center justify-center relative", s.status === 'occupied' ? (isFlagged ? "border-red-500 bg-red-50" : "border-emerald-500 bg-emerald-50") : "border-white bg-white/50")}>
+                           <p className="text-[8px] font-black opacity-30 absolute top-2">#{s.seatNumber}</p>
+                           {s.status === 'occupied' ? <User className={cn("w-6 h-6", isFlagged ? "text-red-500 animate-pulse" : "text-emerald-500")} /> : <PlusCircle className="w-4 h-4 text-slate-200" />}
+                        </Card>
+                     );
+                  })}
+               </div>
+            </div>
+          )}
 
-              {analyticsMode === 'performance' ? (
-                <>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card className="rounded-[32px] border-2 border-primary/10 p-6 bg-white shadow-xl">
-                      <h3 className="text-[10px] font-black text-primary/40 mb-6">PASS RATE DISTRIBUTION</h3>
-                      <div className="h-[250px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={exams.map(e => { const at = attempts.filter(a => a.examId === e.id); if (at.length === 0) return null; return { name: e.subject, rate: Math.round((at.filter(a => a.score >= (a.totalPossible / 2)).length / at.length) * 100) }; }).filter(Boolean)}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--primary) / 0.05)" /><XAxis dataKey="name" hide /><YAxis axisLine={false} tickLine={false} tick={{fill: 'oklch(var(--primary))', fontSize: 10, fontWeight: 900}} unit="%" /><Tooltip contentStyle={{borderRadius: '16px', border: 'none', background: 'white', fontWeight: 900, fontSize: 10}} /><Bar dataKey="rate" fill="oklch(var(--primary))" radius={[8, 8, 8, 8]} barSize={40} /></BarChart></ResponsiveContainer></div>
-                    </Card>
-                    <Card className="rounded-[32px] border-2 border-primary/10 p-6 bg-white shadow-xl">
-                      <h3 className="text-[10px] font-black text-primary/40 mb-6">PERFORMANCE TREND</h3>
-                      <div className="h-[250px] w-full"><ResponsiveContainer width="100%" height="100%"><AreaChart data={exams.map(e => { const at = attempts.filter(a => a.examId === e.id); if (at.length === 0) return null; return { name: e.subject, score: parseFloat((at.reduce((acc, c) => acc + c.score, 0) / at.length).toFixed(1)) }; }).filter(Boolean)}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--primary) / 0.05)" /><XAxis dataKey="name" hide /><YAxis axisLine={false} tickLine={false} tick={{fill: 'oklch(var(--primary))', fontSize: 10, fontWeight: 900}} /><Tooltip contentStyle={{borderRadius: '16px', border: 'none', background: 'white', fontWeight: 900, fontSize: 10}} /><Area type="monotone" dataKey="score" stroke="oklch(var(--primary))" fill="oklch(var(--primary) / 0.1)" strokeWidth={3} /></AreaChart></ResponsiveContainer></div>
-                    </Card>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <aside className="space-y-2">
-                        <p className="text-[10px] font-black text-primary/30 tracking-widest px-2 mb-4">MODULES</p>
-                        {exams.map(e => (
-                          <button key={e.id} onClick={() => setSelectedAnalyticsExam(e.id)} className={cn("w-full text-left p-4 rounded-xl border-2 transition-all", selectedAnalyticsExam === e.id ? "bg-primary text-white border-primary shadow-md" : "bg-white border-primary/5 hover:border-primary/10")}>
-                            <p className="font-black text-[10px] truncate uppercase">{e.title}</p>
-                          </button>
-                        ))}
-                    </aside>
-                    <div className="md:col-span-3">
-                      {selectedAnalyticsExam ? (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-3 gap-4">
-                              {(() => {
-                                const at = attempts.filter(a => a.examId === selectedAnalyticsExam);
-                                const avg = at.length > 0 ? at.reduce((acc, c) => acc + c.score, 0) / at.length : 0;
-                                return (<><Card className="p-4 bg-white border-2 border-primary/5 rounded-2xl"><p className="text-[8px] font-black text-primary/40 mb-1 uppercase">AVG SCORE</p><h5 className="text-2xl font-black">{avg.toFixed(1)}</h5></Card><Card className="p-4 bg-white border-2 border-primary/5 rounded-2xl"><p className="text-[8px] font-black text-primary/40 mb-1 uppercase">PASS RATE</p><h5 className="text-2xl font-black">{at.length > 0 ? Math.round((at.filter(a => a.score >= a.totalPossible/2).length/at.length)*100) : 0}%</h5></Card><Card className="p-4 bg-white border-2 border-primary/5 rounded-2xl"><p className="text-[8px] font-black text-primary/40 mb-1 uppercase">HIGHEST</p><h5 className="text-2xl font-black">{at.length > 0 ? Math.max(...at.map(a => a.score)) : 0}</h5></Card></>);
-                              })()}
-                            </div>
-                            <div className="space-y-2">
-                              {attempts.filter(a => a.examId === selectedAnalyticsExam).map(at => {
-                                const c = candidates.find(can => can.examNumber === at.userId || can.id === at.userId);
-                                return (
-                                  <Card key={at.id} className="p-4 border-2 border-primary/5 bg-white flex justify-between items-center rounded-2xl shadow-sm">
-                                    <div className="flex items-center gap-3"><div className="w-10 h-10 bg-primary/5 rounded-xl border-2 flex items-center justify-center font-black text-primary/40 uppercase">{c?.fullName?.charAt(0) || "U"}</div><div><p className="font-black text-xs uppercase truncate max-w-[150px]">{c?.fullName || "ANONYMOUS"}</p><p className="text-[8px] font-bold text-primary/20">{at.userId}</p></div></div>
-                                    <div className="flex items-center gap-4"><p className="text-xl font-black">{at.score}/{at.totalPossible}</p>{at.released ? <Badge className="bg-sky-400 text-white text-[7px] border-none font-black uppercase">SENT</Badge> : <Button onClick={() => handleReleaseResult(at)} disabled={releasing === at.id} className="h-8 text-[8px] font-black px-4 bg-primary text-white rounded-lg shadow-md uppercase">RELEASE</Button>}</div>
-                                  </Card>
-                                );
-                              })}
-                            </div>
-                        </div>
-                      ) : (
-                        <div className="h-[400px] bg-slate-50 border-2 border-dashed border-primary/10 rounded-[32px] flex flex-col items-center justify-center p-8 text-center opacity-30"><PieChartIcon className="w-10 h-10 mb-4" /><p className="text-[10px] font-black uppercase">SELECT A MODULE TO VIEW ANALYTICS</p></div>
-                      )}
+          {activeTab === 'monitor' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {attempts.filter(a => a.status === 'in-progress').map(s => (
+                <Card key={s.id} className="p-6 rounded-[24px] border-2 bg-white flex flex-col gap-4 overflow-hidden relative">
+                  <div className={cn("absolute top-0 right-0 left-0 h-1", (s.trustScore || 100) < 70 ? "bg-red-500" : "bg-emerald-500")} />
+                  <div className="flex justify-between items-start">
+                    <div><h4 className="font-black text-xs">{s.userId}</h4><p className="text-[10px] font-bold opacity-30">EXAM: {s.examId}</p></div>
+                    <div className="text-right">
+                       <p className="text-[8px] font-black opacity-30">TRUST</p>
+                       <p className={cn("font-black text-lg", (s.trustScore || 100) < 70 ? "text-red-500" : "text-emerald-500")}>{Math.round(s.trustScore || 100)}%</p>
                     </div>
                   </div>
-                </>
-              ) : (
-                <div className="space-y-6">
-                   <aside className="flex gap-2 overflow-x-auto pb-4">
-                      {exams.map(e => (
-                        <button key={e.id} onClick={() => setSelectedAnalyticsExam(e.id)} className={cn("px-6 py-3 rounded-full border-2 whitespace-nowrap text-[10px] font-black transition-all", selectedAnalyticsExam === e.id ? "bg-primary text-white border-primary" : "bg-white border-primary/5")}>{e.subject}</button>
-                      ))}
-                   </aside>
-
-                   {selectedAnalyticsExam && analyticsQuestions[selectedAnalyticsExam] ? (
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {analyticsQuestions[selectedAnalyticsExam].map((q, idx) => {
-                          const atForExam = attempts.filter(a => a.examId === selectedAnalyticsExam || a.results?.some((r: any) => r.examId === selectedAnalyticsExam));
-                          const correctCount = atForExam.filter(a => a.answers?.[q.id] === q.correctOptionIndex).length;
-                          const totalAns = atForExam.filter(a => a.answers?.[q.id] !== undefined).length;
-                          const difficulty = totalAns > 0 ? Math.round((correctCount / totalAns) * 100) : 0;
-
-                          return (
-                            <Card key={q.id} className="p-6 bg-white border-2 border-primary/10 rounded-[24px]">
-                               <div className="flex justify-between items-start mb-4">
-                                  <Badge className="bg-primary/5 text-primary text-[8px] font-black uppercase">Item {idx + 1}</Badge>
-                                  <div className="text-right">
-                                     <p className="text-[10px] font-black text-primary uppercase">Difficulty: {difficulty}%</p>
-                                     <div className="w-24 h-1.5 bg-primary/5 rounded-full mt-1 overflow-hidden">
-                                        <div className={cn("h-full transition-all", difficulty > 70 ? "bg-emerald-500" : difficulty > 40 ? "bg-amber-500" : "bg-rose-500")} style={{ width: `${difficulty}%` }} />
-                                     </div>
-                                  </div>
-                               </div>
-                               <p className="text-[11px] font-bold text-primary/60 mb-4 line-clamp-2 uppercase">{q.text}</p>
-                               <div className="flex items-center gap-6 text-[9px] font-black uppercase">
-                                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500" /> Correct: {correctCount}</div>
-                                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-rose-500" /> Wrong: {totalAns - correctCount}</div>
-                               </div>
-                            </Card>
-                          );
-                        })}
-                     </div>
-                   ) : (
-                     <div className="h-[400px] bg-slate-50 border-2 border-dashed border-primary/10 rounded-[32px] flex items-center justify-center text-center opacity-30"><p className="text-[10px] font-black uppercase">Select a module to view Item Response data</p></div>
-                   )}
-                </div>
-              )}
+                  <Button onClick={() => setViewingSnaps(s.id)} className="w-full h-9 rounded-xl border border-primary/10 text-primary text-[8px] font-bold uppercase flex items-center justify-center gap-1.5"><Camera className="w-3 h-3" /> View Snaps</Button>
+                </Card>
+              ))}
             </div>
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-            <XCircle className="w-16 h-16 text-red-200 mb-6" />
-            <h2 className="text-3xl font-black text-primary tracking-tighter uppercase">Access Denied</h2>
-            <p className="text-primary/40 font-bold max-w-sm mx-auto leading-relaxed mt-4 uppercase">YOUR ACCOUNT PRIVILEGES ARE RESTRICTED TO THE CANDIDATE REGISTRY MODULE ONLY. PLEASE CONTACT A SUPER ADMIN FOR FULL ACCESS.</p>
-            <Button onClick={() => setActiveTab('candidates')} className="mt-8 h-12 px-10 bg-primary text-white rounded-xl font-black text-[10px] uppercase tracking-widest">Return to Registry</Button>
-          </div>
-        )}
+          )}
+
+          {activeTab === 'staff' && isSuperAdmin && (
+             <div className="grid md:grid-cols-2 gap-8">
+                {staff.map(s => (
+                   <Card key={s.id} className="p-6 rounded-2xl border-2 bg-white flex justify-between items-center">
+                      <div className="flex items-center gap-4">
+                         <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center font-black text-primary/20">{s.displayName.charAt(0)}</div>
+                         <div><h4 className="font-black text-xs">{s.displayName}</h4><p className="text-[10px] font-bold text-primary/30 uppercase">{s.role.replace('_', ' ')}</p></div>
+                      </div>
+                      {s.role !== 'super_admin' && (
+                        <Button variant="ghost" onClick={async () => {
+                           if(confirm("Revoke staff access?")) {
+                              await fetch(getApiUrl(`/auth/staff/${s.id}`), { method: 'DELETE', headers: getHeaders() });
+                              fetchStaff();
+                           }
+                        }} className="text-red-200 hover:text-red-500"><Trash2 className="w-4 h-4" /></Button>
+                      )}
+                   </Card>
+                ))}
+             </div>
+          )}
+
+          {activeTab === 'audit' && (
+            <div className="space-y-6">
+               <h2 className="text-2xl font-black">SYSTEM AUDIT TRAIL</h2>
+               <div className="bg-white rounded-[32px] border-2 overflow-hidden">
+                  <table className="w-full">
+                     <thead className="bg-slate-50 border-b-2">
+                        <tr className="text-left text-[10px] font-black tracking-widest opacity-40">
+                           <th className="p-6">TIMESTAMP</th><th className="p-6">TYPE</th><th className="p-6">EVENT</th><th className="p-6">USER</th>
+                        </tr>
+                     </thead>
+                     <tbody className="divide-y">
+                        {logs.map(log => (
+                           <tr key={log.id} className="text-[10px] font-bold">
+                              <td className="p-6 opacity-40">{new Date(log.timestamp).toLocaleString()}</td>
+                              <td className="p-6"><Badge className={cn("text-[8px] font-black border-none", log.type === 'security' ? "bg-red-100 text-red-500" : "bg-sky-100 text-sky-500")}>{log.type.toUpperCase()}</Badge></td>
+                              <td className="p-6">{log.message}</td>
+                              <td className="p-6 opacity-40">{log.userId || 'SYSTEM'}</td>
+                           </tr>
+                        ))}
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+          )}
+
+          {activeTab === 'security' && (
+             <div className="space-y-8">
+                <h2 className="text-2xl font-black">PROCTORING INTELLIGENCE</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   {attempts.filter(a => (a.violationLogs?.length || 0) > 0 || a.isIdentityVerified === false).map(a => (
+                      <Card key={a.id} className="p-8 rounded-[40px] border-2 border-red-100 bg-white shadow-xl relative">
+                         <div className="absolute top-0 right-0 p-6"><Badge className="bg-red-500 text-white border-none">{Math.round(a.trustScore || 0)}% TRUST</Badge></div>
+                         <h3 className="text-lg font-black mb-1">{a.userId}</h3>
+                         <div className="space-y-4 mt-6">
+                            {a.isIdentityVerified === false && <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 text-rose-600 font-black text-[10px]">IDENTITY MISMATCH</div>}
+                            {a.violationLogs?.map((v: any, i: number) => (
+                               <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-primary/5">
+                                  <p className="text-[9px] font-black uppercase text-primary">AI FLAG</p>
+                                  <p className="text-[10px] font-bold">{v.reason}</p>
+                               </div>
+                            ))}
+                         </div>
+                         <Button onClick={() => setViewingSnaps(a.id)} className="w-full mt-8 h-12 border-2 border-primary/10 text-primary font-black text-[10px] rounded-xl uppercase">Review Evidence</Button>
+                      </Card>
+                   ))}
+                </div>
+             </div>
+          )}
+        </div>
       </main>
 
-      {/* Biometric Capture Overlay */}
       <AnimatePresence>
-        {isCameraOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-primary/20 backdrop-blur-md">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-sm bg-white rounded-[32px] border-2 border-primary/40 shadow-2xl overflow-hidden uppercase">
-              <div className="bg-primary p-4 text-white flex justify-between items-center"><div className="flex items-center gap-2"><Camera className="w-4 h-4" /><h3 className="text-sm font-black tracking-widest uppercase">Identity Capture</h3></div><Button variant="ghost" size="icon" onClick={closeCamera} className="text-white h-8 w-8"><XCircle className="w-5 h-5" /></Button></div>
-              <div className="p-6 space-y-6">
-                <div className="relative aspect-square max-w-[280px] mx-auto rounded-full bg-black overflow-hidden border-4 border-primary/10 shadow-2xl">
-                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover grayscale brightness-110" />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-full h-full border-[12px] border-white/10 rounded-full" />
-                  </div>
+        {viewingSnaps && (
+          <div className="fixed inset-0 z-[250] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden">
+              <div className="p-6 bg-primary text-white flex justify-between items-center">
+                <h3 className="text-sm font-black tracking-widest uppercase">Evidence Review</h3>
+                <Button variant="ghost" onClick={() => setViewingSnaps(null)} className="text-white h-8 w-8"><XCircle className="w-5 h-5" /></Button>
+              </div>
+              <div className="p-8">
+                <div className="grid grid-cols-2 gap-8 mb-8">
+                   <div className="space-y-4">
+                      <h4 className="text-[10px] font-black opacity-30 uppercase tracking-widest">Security Overview</h4>
+                      <div className={cn("p-4 rounded-2xl border-2 flex items-center gap-3", (attempts.find(s => s.id === viewingSnaps) as any)?.isIdentityVerified ? "bg-emerald-50 border-emerald-100" : "bg-rose-50 border-rose-100")}>
+                         <Shield className={cn("w-5 h-5", (attempts.find(s => s.id === viewingSnaps) as any)?.isIdentityVerified ? "text-emerald-500" : "text-rose-500")} />
+                         <div>
+                            <p className="text-[9px] font-black uppercase">Identity Verification</p>
+                            <p className="text-[11px] font-black">{(attempts.find(s => s.id === viewingSnaps) as any)?.isIdentityVerified ? "AUTHENTICATED" : "NOT VERIFIED"}</p>
+                         </div>
+                      </div>
+                   </div>
+                   <div className="space-y-4">
+                      <h4 className="text-[10px] font-black opacity-30 uppercase tracking-widest">Incident Log</h4>
+                      <ScrollArea className="h-[140px] pr-4">
+                         <div className="space-y-2">
+                            {(attempts.find(s => s.id === viewingSnaps) as any)?.violationLogs?.map((v: any, i: number) => (
+                               <div key={i} className="p-3 bg-red-50 rounded-xl border border-red-100">
+                                  <p className="text-[8px] font-black text-red-500 uppercase">{new Date(v.timestamp).toLocaleTimeString()}</p>
+                                  <p className="text-[9px] font-bold">{v.reason}</p>
+                               </div>
+                            )) || <p className="text-[10px] font-bold opacity-20 italic">No violations recorded.</p>}
+                         </div>
+                      </ScrollArea>
+                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <Button onClick={snapPhoto} className="flex-1 h-12 bg-primary text-white rounded-xl font-black shadow-lg border-none uppercase tracking-widest text-[10px] flex items-center justify-center gap-2">
-                    <Camera className="w-4 h-4" /> Snap Photo
-                  </Button>
-                  <Button
-                    onClick={async () => {
-                      toast.loading("Scanning Fingerprint...");
-                      await new Promise(r => setTimeout(r, 1500));
-                      setNewCandidate(p => ({ ...p, fingerprintData: "FP_" + Math.random().toString(36).slice(2, 9) }));
-                      toast.dismiss();
-                      toast.success("Fingerprint Linked!");
-                    }}
-                    className="flex-1 h-12 bg-sky-500 text-white rounded-xl font-black shadow-lg border-none uppercase tracking-widest text-[10px] flex items-center justify-center gap-2"
-                  >
-                    <Fingerprint className="w-4 h-4" /> Scan Finger
-                  </Button>
+                <h4 className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-4">Proctoring Snapshots</h4>
+                <div className="grid grid-cols-5 gap-3">
+                  {(attempts.find(s => s.id === viewingSnaps) as any)?.proctoringSnaps?.map((snap: string, i: number) => (
+                    <div key={i} className="aspect-square bg-slate-100 rounded-xl overflow-hidden border-2 border-primary/5 hover:border-primary/40 transition-all relative group">
+                      <img src={snap} className="w-full h-full object-cover grayscale contrast-125" />
+                      <div className="absolute inset-0 bg-primary/60 opacity-0 group-hover:opacity-100 flex items-center justify-center"><Button variant="ghost" size="icon" className="text-white" onClick={() => window.open(snap)}><Eye className="w-4 h-4" /></Button></div>
+                    </div>
+                  )) || <div className="col-span-5 py-20 text-center opacity-20"><CameraOff className="w-12 h-12 mx-auto mb-2" /><p className="text-[10px] font-black uppercase">No Snaps Captured</p></div>}
                 </div>
-                <Button variant="outline" onClick={closeCamera} className="w-full h-10 rounded-xl border-2 border-primary/20 font-black uppercase text-[9px]">Close Terminal</Button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-
-      <footer className="py-6 z-10 w-full text-center border-t border-primary/5 bg-white uppercase">
-        <p className="text-[10px] font-bold text-primary/20 tracking-widest uppercase">&copy; {new Date().getFullYear()} VIVI CBT Systems. Secure Administrative Terminal.</p>
-      </footer>
     </div>
   );
 }

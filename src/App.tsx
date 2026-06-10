@@ -16,6 +16,8 @@ import AdminAuth from '@/src/pages/AdminAuth';
 import StaffLogin from '@/src/pages/StaffLogin';
 import ResultSlip from '@/src/pages/ResultSlip';
 import ResultChecker from '@/src/pages/ResultChecker';
+import ExamSlip from '@/src/pages/ExamSlip';
+import ExamInstructions from '@/src/pages/ExamInstructions';
 
 const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) => {
   const { user, profile, loading } = useAuth();
@@ -82,6 +84,14 @@ export default function App() {
                 <ProtectedRoute>
                   <ExamPlayer />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/instructions/:examId"
+              element={
+                <ProtectedRoute>
+                  <ExamInstructions />
+                </ProtectedRoute>
               } 
             />
             <Route 
@@ -94,8 +104,10 @@ export default function App() {
             />
             <Route path="/admin/auth" element={<AdminAuth />} />
             <Route path="/staff" element={<StaffLogin />} />
+            <Route path="/exam-slip/:examNumber" element={<ExamSlip />} />
             <Route path="/results" element={<ResultChecker />} />
             <Route path="/result-slip/:examNumber" element={<ResultSlip />} />
+            <Route path="/verify/:examNumber" element={<ResultSlip isVerification />} />
           </Routes>
           <Toaster position="top-center" />
         </div>

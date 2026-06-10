@@ -1,66 +1,59 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/src/lib/firebase';
 import { Candidate, Attempt } from '@/src/types';
 import { Button } from '@/lib/ui/button';
-import { Printer, ArrowLeft, ShieldCheck, BadgeCheck, Download } from 'lucide-react';
-import { Separator } from '@/lib/ui/separator';
-import { Badge } from '@/lib/ui/badge';
-import { useAuth } from '@/src/context/AuthContext';
-import { auth } from '@/src/lib/firebase';
-import { signInAnonymously } from 'firebase/auth';
+import { Printer, ArrowLeft, ShieldCheck, BadgeCheck, Download, Award, Monitor, User } from 'lucide-react';
+import { getApiUrl } from '@/src/lib/api-config';
+import { toast } from 'sonner';
+import { motion } from 'motion/react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-export default function ResultSlip() {
+export default function ResultSlip({ isVerification = false }: { isVerification?: boolean }) {
   const { examNumber } = useParams<{ examNumber: string }>();
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [unifiedAttempt, setUnifiedAttempt] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [studyGuide, setStudyGuide] = useState<any | null>(null);
+  const [generatingGuide, setGeneratingGuide] = useState(false);
   const navigate = useNavigate();
 
-  const { user } = useAuth();
+  const handleGenerateStudyGuide = async () => {
+    if (!unifiedAttempt?.id) return;
+    setGeneratingGuide(true);
+    try {
+      const res = await fetch(getApiUrl(`/exams/attempt/${unifiedAttempt.id}/study-guide`), {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) setStudyGuide(await res.json());
+      else toast.error("Could not generate study guide.");
+    } catch (e) {
+      toast.error("Network error.");
+    } finally {
+      setGeneratingGuide(false);
+    }
+  };
+
+  const getHeaders = useCallback(() => ({
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
+  }), []);
 
   useEffect(() => {
     async function fetchResultData() {
       if (!examNumber) return;
       try {
         setLoading(true);
+        // We'll use a specific endpoint for the result slip or reuse the public one if no token
+        const res = await fetch(getApiUrl('/exams/public/check-result'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ examNumber: examNumber.toUpperCase() })
+        });
 
-        // Step 0: Ensure session for rules
-        if (!user) {
-          await signInAnonymously(auth);
-        }
-
-        const normalizedNumber = examNumber.trim().toUpperCase();
-
-        // 1. Fetch Candidate
-        const candSnap = await getDocs(query(collection(db, 'candidates'), where('examNumber', '==', normalizedNumber)));
-        if (candSnap.empty) {
-          console.error("No candidate found");
-          setLoading(false);
-          return;
-        }
-        const candData = { id: candSnap.docs[0].id, ...candSnap.docs[0].data() } as Candidate;
-        setCandidate(candData);
-
-        // 2. Fetch Unified Result
-        // userId could be the registration number, the candidate document ID, or the user's UID
-        const searchIds = Array.from(new Set([candData.id, candData.examNumber, normalizedNumber, examNumber.trim()]));
-
-        const qUnified = query(
-          collection(db, 'attempts'),
-          where('userId', 'in', searchIds),
-          where('examId', '==', 'unified')
-        );
-        const unifiedSnap = await getDocs(qUnified);
-
-        if (!unifiedSnap.empty) {
-          const data = { id: unifiedSnap.docs[0].id, ...unifiedSnap.docs[0].data() };
-          setUnifiedAttempt(data);
-        } else {
-          console.warn("No unified attempt record found for candidate");
+        const data = await res.json();
+        if (res.ok) {
+          setCandidate(data.candidate);
+          setUnifiedAttempt(data.attempt);
         }
       } catch (error) {
         console.error("Error fetching result slip:", error);
@@ -69,238 +62,220 @@ export default function ResultSlip() {
       }
     }
     fetchResultData();
-  }, [examNumber, user]);
+  }, [examNumber]);
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-black text-primary animate-pulse  tracking-widest">Generating Official Transcript...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center font-black text-primary animate-pulse uppercase tracking-widest">Generating Official Transcript...</div>;
 
   if (!candidate || !unifiedAttempt) {
     return (
       <div className="h-screen flex flex-col items-center justify-center p-6 text-center space-y-6">
         <ShieldCheck className="w-16 h-16 text-primary/20" />
-        <h2 className="text-2xl font-black  text-primary">Result Not Available</h2>
-        <p className="text-primary/40 font-bold  text-[10px] max-w-xs">This result has not been released or the record is invalid. Please contact the administration.</p>
-        <Button onClick={() => navigate('/')} className="bg-primary text-white font-black  rounded-xl h-12 px-8 shadow-xl border-none transition-all">Back to Portal</Button>
+        <h2 className="text-2xl font-black text-primary">Result Not Available</h2>
+        <Button onClick={() => navigate('/')} className="bg-primary text-white font-black rounded-xl h-12 px-8">Back to Portal</Button>
       </div>
     );
   }
 
   const results = unifiedAttempt.results || [];
-  const totalScore = results.reduce((acc: number, curr: any) => acc + (Number(curr.score) || 0), 0) || Number(unifiedAttempt.score) || 0;
-  const totalPossible = results.reduce((acc: number, curr: any) => acc + (Number(curr.totalPossible) || 0), 0) || Number(unifiedAttempt.totalPossible) || 0;
+  const totalScore = unifiedAttempt.score || 0;
+  const totalPossible = unifiedAttempt.totalPossible || 0;
 
   const downloadPDF = () => {
     if (!candidate || !unifiedAttempt) return;
-
     const doc = new jsPDF();
-    const primaryColor = [14, 165, 233]; // #0EA5E9
-
-    // Header
+    const primaryColor = [14, 165, 233];
     doc.setFillColor(248, 250, 252);
     doc.rect(0, 0, 210, 40, 'F');
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
     doc.text('VIVI CBT OFFICIAL RESULT', 105, 20, { align: 'center' });
-    doc.setFontSize(10);
-    doc.text('Unified Examination Standards', 105, 28, { align: 'center' });
-
-    // Candidate Info
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    doc.text(`Full Name: ${candidate.fullName}`, 20, 55);
-    doc.text(`Exam Number: ${candidate.examNumber}`, 20, 65);
-    doc.text(`Date of Birth: ${candidate.dateOfBirth || 'N/A'}`, 20, 75);
-    doc.text(`Date Issued: ${new Date().toLocaleDateString()}`, 20, 85);
-
-    // Results Table
-    const tableBody = results.length > 0
-      ? results.map((r: any) => [r.subject.toUpperCase(), r.score.toString()])
-      : [[unifiedAttempt.subject?.toUpperCase() || 'UNIFIED CONSOLIDATED ASSESSMENT', unifiedAttempt.score.toString()]];
-
-    (doc as any).autoTable({
-      startY: 95,
-      head: [['SUBJECT', 'SCORE']],
-      body: tableBody,
-      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [249, 250, 251] },
-      styles: { fontSize: 10, cellPadding: 5 },
-      foot: [['AGGREGATE SCORE', totalScore.toString()]],
-      footStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' }
-    });
-
-    // Verification Seal
-    const finalY = (doc as any).lastAutoTable.finalY + 20;
-    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.setLineWidth(0.5);
-    doc.circle(170, finalY, 15, 'S');
-    doc.setFontSize(6);
-    doc.text('OFFICIAL', 170, finalY - 2, { align: 'center' });
-    doc.text('SEAL', 170, finalY + 4, { align: 'center' });
-
     doc.save(`Result_${candidate.examNumber}.pdf`);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-4 px-4 print:p-0 print:bg-white selection:bg-primary/10 font-sans">
-      {/* Print Controls (Hidden on Print) */}
-      <div className="max-w-2xl mx-auto mb-4 flex justify-between items-center print:hidden">
-        <Button
-          variant="ghost"
-          onClick={() => window.history.back()}
-          className="text-primary/40 hover:text-primary font-black  text-[10px] tracking-widest gap-2 rounded-xl"
-        >
+    <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans uppercase">
+      <nav className="max-w-4xl mx-auto mb-10 bg-white/80 backdrop-blur-md border-2 border-primary/10 px-8 py-4 rounded-[24px] flex justify-between items-center shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>
+            <span className="font-black text-xl tracking-tighter text-primary">VIVI CBT</span>
+          </div>
+          <div className="h-8 w-[1px] bg-primary/10 hidden md:block" />
+          <div className="hidden md:flex items-center gap-2 text-primary/40">
+            <div className="relative">
+              <Monitor className="w-6 h-6" />
+              <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+          </div>
+        </div>
+        <button onClick={() => navigate('/')} className="text-[12px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Portal Home</button>
+      </nav>
+
+      <div className="max-w-2xl mx-auto mb-6 flex justify-between items-center print:hidden">
+        <Button variant="ghost" onClick={() => window.history.back()} className="font-black text-[10px] tracking-widest gap-2">
           <ArrowLeft className="w-4 h-4" /> Back
         </Button>
         <div className="flex gap-2">
-          <Button
-            onClick={downloadPDF}
-            variant="outline"
-            className="border-2 border-primary/20 text-primary font-black text-[11px] tracking-widest gap-3 rounded-2xl h-14 px-6 hover:bg-primary/5 transition-all"
-          >
-            <Download className="w-5 h-5" /> Download PDF
-          </Button>
-          <Button
-            onClick={() => window.print()}
-            className="bg-primary text-white font-black  text-[11px] tracking-widest gap-3 rounded-2xl h-14 px-10 shadow-2xl shadow-primary/20 border-none hover:bg-primary/90"
-          >
-            <Printer className="w-5 h-5" /> Print Official Result
+          <Button onClick={downloadPDF} variant="outline" className="h-14 px-6 rounded-2xl border-2 font-black text-[11px]"><Download className="w-5 h-5" /></Button>
+          <Button onClick={() => window.print()} className="h-14 px-10 bg-primary text-white rounded-2xl font-black text-[11px] shadow-xl">
+            <Printer className="w-5 h-5 mr-2" /> Print Official Result
           </Button>
         </div>
       </div>
 
-      {/* Official Result Slip Paper */}
-      <div className="max-w-2xl mx-auto bg-white border-[4px] border-primary p-6 rounded-[40px] shadow-2xl shadow-primary/10 relative overflow-hidden print:border-4 print:rounded-none print:shadow-none print:p-8 print:m-0">
-
-        {/* Background Watermark */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none -rotate-12">
-           <span className="text-[100px] font-black text-primary">VIVI</span>
-        </div>
-
-        {/* Header Section */}
-        <div className="relative z-10 text-center border-b-2 border-primary/10 pb-5 mb-5">
-          <div className="inline-flex items-center gap-4 mb-3">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-primary/20">V</div>
-            <div className="text-left">
-              <h1 className="text-1xl font-black  tracking-tighter text-primary leading-none">VIVI CBT OFFICIAL RESULT</h1>
-              <p className="text-[9px] font-black text-primary/40  tracking-[0.5em] mt-1">Unified Examination Standards</p>
-            </div>
-          </div>
-          <h2 className="text-1xl font-black text-primary  tracking-[0.2em] bg-primary/5 py-2 rounded-1xl border-2 border-primary/10 relative">
-            Official Performance Result
-            {unifiedAttempt.released ? (
-              <div className="absolute -top-3 -right-4 bg-sky-500 text-white text-[7px] font-black px-2 py-1 rounded-full shadow-lg transform rotate-6 border-2 border-white  tracking-widest uppercase">
-                Released & Published
-              </div>
-            ) : (
-              <div className="absolute -top-3 -right-4 bg-amber-500 text-white text-[7px] font-black px-2 py-1 rounded-full shadow-lg transform rotate-6 border-2 border-white  tracking-widest uppercase">
-                Verification Completed
-              </div>
-            )}
-          </h2>
-          <p className="text-[10px] font-bold text-primary/50 mt-4 tracking-[0.20em]">Official Original Result &bull; Session: 2026</p>
-          <p className="text-[8px] font-black text-rose-500 mt-2 tracking-[0.3em] uppercase print:hidden animate-pulse">
-            Instruction: Print in Landscape Orientation
-          </p>
-        </div>
-
-        {/* Candidate Identity Section */}
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="md:col-span-1 flex justify-center">
-            <div className="w-24 h-24 rounded-[24px] bg-primary/5 border-4 border-white shadow-2xl overflow-hidden flex items-center justify-center ring-4 ring-primary/5 shrink-0">
-              {candidate.faceUrl ? (
-                <img src={candidate.faceUrl} alt="Candidate" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-primary/10 font-black text-2xl ">Photo</span>
-              )}
-            </div>
-          </div>
-
-          <div className="md:col-span-3 grid grid-cols-2 gap-y-4 gap-x-6 py-1">
-            <div>
-              <p className="text-[10px] font-black text-primary/20  tracking-widest mb-1">Full  Name</p>
-              <p className="text-1xl font-black  text-primary tracking-tight leading-tight">{candidate.fullName}</p>
-            </div>
-            <div>
-              <p className="text-[9px] font-black text-primary/20  tracking-widest mb-1">Registration Number</p>
-              <p className="text-1xl font-black text-primary tracking-tight">{candidate.examNumber}</p>
-            </div>
-            <div>
-              <p className="text-[9px] font-black text-primary/20  tracking-widest mb-1">Date of Birth</p>
-              <p className="text-1xl font-bold text-primary/60">{candidate.dateOfBirth || 'N/A'}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-primary/20  tracking-widest mb-1">Terminal Signature</p>
-              <div className="flex items-center gap-2">
-                <BadgeCheck className="w-6 h-6 text-sky-400" />
-                <span className="text-1xl font-black text-sky-400  tracking-tighter">Verified</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Assessment Performance Table */}
-        <div className="relative z-10 border-2 border-primary/10 rounded-[24px] overflow-hidden mb-8 bg-white shadow-lg font-sans">
-          <table className="w-full">
-            <thead className="bg-primary/5 text-primary">
-              <tr>
-                <th className="px-4 py-2.5 text-left text-[11px] font-black  tracking-[0.3em] uppercase">Subjects</th>
-                <th className="px-4 py-2.5 text-right text-[11px] font-black  tracking-[0.3em] uppercase">Score Obtained</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y-2 divide-primary/5">
-              {results.length > 0 ? (
-                results.map((res: any, i: number) => (
-                  <tr key={i} className="hover:bg-primary/[0.01]">
-                    <td className="px-4 py-2 text-sm font-black text-primary  tracking-tight">{res.subject}</td>
-                    <td className="px-4 py-2 text-right">
-                      <span className="text-lg font-black text-primary">{res.score}</span>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td className="px-4 py-2 text-sm font-black text-primary  tracking-tight">{unifiedAttempt.subject || "Unified Consolidated Assessment"}</td>
-                  <td className="px-4 py-2 text-right">
-                    <span className="text-lg font-black text-primary">{unifiedAttempt.score}</span>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-            <tfoot className="bg-primary text-white">
-              <tr>
-                <td className="px-4 py-3.5 text-xs font-black  tracking-[0.4em] uppercase">Aggregate Score</td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex flex-col items-end">
-                    <p className="text-xl font-black leading-none">{totalScore}</p>
-                  </div>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-        {/* Footer Integrity Section */}
-        <div className="relative z-10 border-t-2 border-primary/10 pt-6 flex flex-col items-center">
-          <div className="w-full flex justify-between items-end mb-2">
-
-             <div className="text-right">
-                <p className="text-[10px] font-black text-primary/30  tracking-widest mb-1">Authenticity Date</p>
-                <p className="text-[10px] font-bold text-primary/60 ">{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      <div className="max-w-2xl mx-auto bg-white border-[4px] border-primary p-10 rounded-[40px] shadow-2xl relative overflow-hidden print:border-4 print:shadow-none">
+        <div className="text-center border-b-2 border-primary/10 pb-8 mb-8">
+          {isVerification && (
+             <div className="flex items-center justify-center gap-2 mb-4">
+                <div className="bg-emerald-500 text-white px-4 py-1.5 rounded-full flex items-center gap-2 shadow-lg shadow-emerald-100">
+                   <ShieldCheck className="w-4 h-4" />
+                   <span className="text-[10px] font-black tracking-widest uppercase">Official Verification: Authenticated</span>
+                </div>
              </div>
-          </div>
-
-
+          )}
+          <h1 className="text-2xl font-black text-primary tracking-tighter">VIVI CBT OFFICIAL RESULT</h1>
+          <p className="text-[10px] font-black text-primary/40 tracking-[0.5em] mt-2">Unified Examination Standards</p>
         </div>
 
-        {/* Security Seals */}
-        <div className="absolute top-8 right-8 w-20 h-20 border-4 border-sky-400 rounded-full flex items-center justify-center rotate-12 opacity-40">
-           <div className="text-center">
-              <p className="text-[7px] font-black text-sky-400  leading-none">VIVI</p>
-              <p className="text-[5px] font-black text-sky-400 ">OFFICIAL</p>
-              <p className="text-[5px] font-black text-sky-400 ">SEAL</p>
+        <div className="grid grid-cols-[100px_1fr] gap-8 mb-8">
+           <div className="w-24 h-24 bg-primary/5 rounded-2xl border-4 border-white shadow-lg overflow-hidden flex items-center justify-center">
+              {candidate.faceUrl ? <img src={candidate.faceUrl} className="w-full h-full object-cover" /> : <ShieldCheck className="w-10 h-10 opacity-10" />}
+           </div>
+           <div className="grid grid-cols-2 gap-4">
+              <div><p className="text-[10px] font-black opacity-20">Full Name</p><p className="font-black text-lg">{candidate.fullName}</p></div>
+              <div><p className="text-[10px] font-black opacity-20">Exam Number</p><p className="font-black text-lg">{candidate.examNumber}</p></div>
+              <div><p className="text-[10px] font-black opacity-20">Terminal Signature</p><div className="flex items-center gap-1 text-sky-500"><BadgeCheck className="w-5 h-5" /><span className="font-black">Verified</span></div></div>
            </div>
         </div>
 
+        <div className="border-2 border-primary/10 rounded-[24px] overflow-hidden bg-white mb-8">
+           <table className="w-full">
+              <thead className="bg-primary/5">
+                 <tr className="text-left text-[10px] font-black tracking-widest text-primary">
+                    <th className="p-4">Subject</th>
+                    <th className="p-4 text-right">Score</th>
+                 </tr>
+              </thead>
+              <tbody className="divide-y-2 divide-primary/5">
+                 {results.length > 0 ? results.map((r: any, i: number) => (
+                    <tr key={i} className="font-black text-sm text-primary">
+                       <td className="p-4">{r.subject}</td>
+                       <td className="p-4 text-right">{r.score}</td>
+                    </tr>
+                 )) : unifiedAttempt.results?.subjects ? Object.entries(unifiedAttempt.results.subjects).map(([subject, stats]: [string, any], i) => (
+                    <tr key={i} className="font-black text-sm text-primary">
+                       <td className="p-4">{subject}</td>
+                       <td className="p-4 text-right">{stats.correct} / {stats.total}</td>
+                    </tr>
+                 )) : (
+                   <tr className="font-black text-sm text-primary">
+                      <td className="p-4">Unified Assessment</td>
+                      <td className="p-4 text-right">{unifiedAttempt.score}</td>
+                   </tr>
+                 )}
+              </tbody>
+              <tfoot className="bg-primary text-white font-black">
+                 <tr>
+                    <td className="p-4 uppercase tracking-widest">Aggregate Total</td>
+                    <td className="p-4 text-right text-2xl">{totalScore} <span className="text-[10px] opacity-60">/ {totalPossible}</span></td>
+                 </tr>
+              </tfoot>
+           </table>
+        </div>
+
+        {unifiedAttempt.results?.topics && (
+           <div className="mb-8">
+              <h3 className="text-[10px] font-black opacity-30 tracking-widest mb-4 uppercase">Topic Performance Analysis</h3>
+              <div className="grid grid-cols-2 gap-4">
+                 {Object.entries(unifiedAttempt.results.topics).map(([topic, stats]: [string, any], i) => (
+                    <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-primary/5">
+                       <div className="flex justify-between items-center mb-2">
+                          <span className="text-[9px] font-black">{topic}</span>
+                          <span className="text-[9px] font-black text-primary">{Math.round((stats.correct / stats.total) * 100)}%</span>
+                       </div>
+                       <div className="h-1.5 w-full bg-primary/10 rounded-full overflow-hidden">
+                          <div className="h-full bg-primary" style={{ width: `${(stats.correct / stats.total) * 100}%` }} />
+                       </div>
+                    </div>
+                 ))}
+              </div>
+           </div>
+        )}
+
+        {unifiedAttempt.trustScore !== undefined && (
+           <div className={cn("p-4 rounded-2xl border-2 mb-8 flex items-center justify-between", unifiedAttempt.trustScore < 80 ? "border-red-100 bg-red-50" : "border-emerald-100 bg-emerald-50")}>
+              <div className="flex items-center gap-3">
+                 <ShieldCheck className={cn("w-6 h-6", unifiedAttempt.trustScore < 80 ? "text-red-500" : "text-emerald-500")} />
+                 <div>
+                    <p className="text-[10px] font-black opacity-40 uppercase">Security Trust Score</p>
+                    <p className="font-black text-lg">{Math.round(unifiedAttempt.trustScore)}%</p>
+                 </div>
+              </div>
+              {unifiedAttempt.trustScore < 80 && <Badge className="bg-red-500 text-white">Review Required</Badge>}
+           </div>
+        )}
+
+        {unifiedAttempt.status === 'completed' && !studyGuide && (
+           <Button
+            onClick={handleGenerateStudyGuide}
+            disabled={generatingGuide}
+            className="w-full h-16 bg-gradient-to-r from-primary to-sky-600 text-white font-black rounded-2xl shadow-xl mt-8 mb-8"
+           >
+              {generatingGuide ? "AI IS ANALYZING YOUR PERFORMANCE..." : "GENERATE AI STUDY GUIDE"}
+           </Button>
+        )}
+
+        {studyGuide && (
+           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-8 rounded-[32px] border-2 border-primary/20 bg-slate-50 mb-8">
+              <div className="flex items-center gap-3 mb-6">
+                 <Award className="w-6 h-6 text-primary" />
+                 <h3 className="text-sm font-black uppercase tracking-widest">Personalized AI Study Guide</h3>
+              </div>
+              <p className="text-[11px] font-bold text-primary/70 leading-relaxed mb-6 italic">"{studyGuide.summary}"</p>
+
+              <div className="space-y-6">
+                 <div>
+                    <p className="text-[9px] font-black opacity-30 uppercase tracking-[0.2em] mb-3">Priority Focus Areas</p>
+                    <div className="flex flex-wrap gap-2">
+                       {studyGuide.weakAreas?.map((area: string, i: number) => (
+                          <Badge key={i} className="bg-red-100 text-red-600 border-none px-3 py-1 text-[9px] font-black">{area.toUpperCase()}</Badge>
+                       ))}
+                    </div>
+                 </div>
+                 <div>
+                    <p className="text-[9px] font-black opacity-30 uppercase tracking-[0.2em] mb-3">AI Recommendations</p>
+                    <ul className="space-y-2">
+                       {studyGuide.recommendations?.map((rec: string, i: number) => (
+                          <li key={i} className="flex gap-3 text-[10px] font-bold">
+                             <div className="w-1.5 h-1.5 bg-primary rounded-full mt-1 shrink-0" />
+                             <span>{rec}</span>
+                          </li>
+                       ))}
+                    </ul>
+                 </div>
+              </div>
+           </motion.div>
+        )}
+
+        <div className="text-center opacity-20 font-bold text-[8px] tracking-[0.5em] mb-8">
+           Official Original Result &bull; Session 2026 &bull; {new Date().toLocaleDateString()}
+        </div>
+
+        <div className="flex justify-between items-end border-t-2 border-primary/5 pt-8">
+           <div className="space-y-1">
+              <p className="text-[8px] font-black opacity-30 uppercase">Digital Verification Signature</p>
+              <p className="font-mono text-[7px] opacity-50">{unifiedAttempt.id}</p>
+           </div>
+           <div className="text-right">
+              <img
+                 src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${window.location.origin}/verify/${candidate.examNumber}`}
+                 className="w-16 h-16 ml-auto mb-2 grayscale opacity-80"
+                 alt="Verification QR"
+              />
+              <p className="text-[7px] font-black opacity-30 uppercase">Scan to Verify Authenticity</p>
+           </div>
+        </div>
       </div>
     </div>
   );

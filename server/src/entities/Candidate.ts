@@ -29,6 +29,12 @@ export class Candidate {
   @Column({ nullable: true })
   pin?: string;
 
+  @Column({ nullable: true })
+  assignedIp?: string;
+
+  @Column({ nullable: true })
+  assignedSeatNumber?: string;
+
   @Column("simple-array")
   subjectCombination!: string[];
 

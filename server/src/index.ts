@@ -3,39 +3,43 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { createClient } from "redis";
-import { DataSource } from "typeorm";
 import cors from "cors";
 import dotenv from "dotenv";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import nodemailer from "nodemailer";
-import { User } from "./entities/User";
 import { Candidate } from "./entities/Candidate";
+import authRoutes from "./routes/auth";
+import examRoutes from "./routes/exam";
+import analyticsRoutes from "./routes/analytics";
+import centerRoutes from "./routes/center";
+import { authenticateJWT, authorizeRoles } from "./middleware/auth";
+import { AppDataSource } from "./data-source";
+export { AppDataSource };
 
 dotenv.config();
 
 const app = express();
+app.use(helmet()); // Security headers
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+});
+app.use("/auth/", limiter); // Apply rate limiting to auth routes
+
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: "*",
   },
 });
+app.set("io", io);
 
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
-
-// Database Setup
-export const AppDataSource = new DataSource({
-  type: "postgres",
-  url: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
-  synchronize: process.env.NODE_ENV !== "production", // Never sync in production
-  logging: process.env.NODE_ENV !== "production",
-  entities: [User, Candidate],
-  migrations: [],
-  subscribers: [],
-});
 
 // Redis Client
 const redisClient = createClient({
@@ -44,11 +48,17 @@ const redisClient = createClient({
 
 redisClient.on("error", (err) => console.log("Redis Client Error", err));
 
+// Routes
+app.use("/auth", authRoutes);
+app.use("/exams", examRoutes);
+app.use("/analytics", analyticsRoutes);
+app.use("/center", centerRoutes);
+
 // Mailer Setup
 const transporter = nodemailer.createTransport({
   host: process.env.MAIL_HOST || "smtp.gmail.com",
   port: parseInt(process.env.MAIL_PORT || "587"),
-  secure: false, // true for 465, false for other ports
+  secure: false,
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
@@ -67,7 +77,7 @@ async function startServer() {
   });
 
   // Get active exam sessions from Redis
-  app.get("/active-sessions", async (req, res) => {
+  app.get("/active-sessions", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
     try {
       const keys = await redisClient.keys("exam_progress:*");
       const sessions = [];
@@ -89,12 +99,23 @@ async function startServer() {
   });
 
   // Candidate Management
-  app.get("/candidates", async (req, res) => {
+  app.get("/candidates", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_admin"), async (req, res) => {
     const candidates = await AppDataSource.getRepository(Candidate).find();
     res.json(candidates);
   });
 
-  app.post("/candidates", async (req, res) => {
+  app.post("/candidates/bulk", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_admin"), async (req, res) => {
+    try {
+      const candidateRepo = AppDataSource.getRepository(Candidate);
+      const candidates = candidateRepo.create(req.body as any[]);
+      await candidateRepo.save(candidates);
+      res.status(201).json({ message: `Successfully registered ${candidates.length} candidates` });
+    } catch (error) {
+      res.status(400).json({ error: "Bulk upload failed" });
+    }
+  });
+
+  app.post("/candidates", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_admin"), async (req, res) => {
     try {
       const candidate = AppDataSource.getRepository(Candidate).create(req.body);
       await AppDataSource.getRepository(Candidate).save(candidate);
@@ -104,13 +125,13 @@ async function startServer() {
     }
   });
 
-  app.delete("/candidates/:examNumber", async (req, res) => {
-    await AppDataSource.getRepository(Candidate).delete(req.params.examNumber);
+  app.delete("/candidates/:examNumber", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+    await AppDataSource.getRepository(Candidate).delete(req.params.examNumber as any);
     res.status(204).send();
   });
 
   // Email Notification Endpoint
-  app.post("/notify-result", async (req, res) => {
+  app.post("/notify-result", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
     const { email, candidateName, examNumber, pin, totalScore } = req.body;
 
     if (!email) {

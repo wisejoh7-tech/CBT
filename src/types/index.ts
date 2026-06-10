@@ -26,6 +26,8 @@ export interface Candidate {
   registrationDate: string;
   createdAt: string;
   pin?: string;
+  assignedIp?: string;
+  assignedSeatNumber?: string;
 }
 
 export interface Exam {
@@ -37,6 +39,9 @@ export interface Exam {
   totalQuestions: number;
   createdBy: string;
   createdAt: string;
+  startTime?: string;
+  endTime?: string;
+  isActive: boolean;
 }
 
 export interface Question {
@@ -64,6 +69,10 @@ export interface Attempt {
   completedAt?: any;
   status: 'in-progress' | 'completed';
   proctoringSnaps?: string[];
+  trustScore?: number;
+  isIdentityVerified?: boolean;
+  violationLogs?: any[];
+  results?: any;
   released?: boolean;
   releasedAt?: any;
 }

@@ -6,7 +6,7 @@ import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
 import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
-import { ShieldCheck, Mail, Lock, Eye, EyeOff, Shield, User } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, Eye, EyeOff, Shield, User, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 import { Separator } from '@/lib/ui/separator';
 
@@ -45,9 +45,19 @@ export default function StaffLogin() {
     <div className="relative min-h-screen flex flex-col bg-slate-50 selection:bg-primary/10 uppercase">
       {/* Navigation */}
       <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b-2 border-primary/10 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
-        <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>
-          <span className="font-black text-xl tracking-tighter text-primary">VIVI CBT</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>
+            <span className="font-black text-xl tracking-tighter text-primary">VIVI CBT</span>
+          </div>
+          <div className="h-8 w-[1px] bg-primary/10 hidden md:block" />
+          <div className="hidden md:flex items-center gap-2 text-primary/40">
+            <div className="relative">
+              <Monitor className="w-6 h-6" />
+              <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+          </div>
         </div>
 
         <div className="hidden md:flex items-center gap-8">
@@ -68,23 +78,24 @@ export default function StaffLogin() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-md">
           <div className="text-center mb-10">
-            <div className="w-16 h-16 bg-white border-2 border-primary/20 rounded-[32px] flex items-center justify-center mx-auto mb-6 shadow-xl">
+            <div className="w-16 h-16 bg-white border-4 border-primary rounded-[20px] flex items-center justify-center mx-auto mb-6 shadow-xl">
               <ShieldCheck className="w-10 h-10 text-primary" />
             </div>
-            <h1 className="text-2xl font-black tracking-tighter text-primary leading-none mb-2">Staff Authorization</h1>
-            <p className="text-[10px] font-black text-primary/40 tracking-[0.3em]">SECURE PORTAL</p>
+            <h1 className="text-2xl font-black tracking-tighter text-primary leading-none mb-2">Staff login</h1>
+
           </div>
 
-          <Card className="rounded-[40px] border-2 border-primary/10 bg-white shadow-2xl shadow-primary/5 overflow-hidden">
-            <CardContent className="p-10 bg-white">
-              <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="p-1.5 bg-primary/10 rounded-[28px]">
+            <Card className="rounded-[24px] border-[3px] border-primary bg-white shadow-2xl shadow-primary/5 overflow-hidden">
+              <CardContent className="p-10 bg-white">
+                <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black text-primary/40 tracking-widest px-1">Institutional Email</Label>
+                  <Label className="text-[10px] font-black text-primary/40 tracking-widest px-1"> Email Address</Label>
                   <div className="relative group">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                     <Input
                       type="email"
-                      placeholder="STAFF@VIVICBT.COM"
+                      placeholder="Enter Email Address"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-primary transition-all"
@@ -94,12 +105,12 @@ export default function StaffLogin() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black text-primary/40 tracking-widest px-1">Access Password</Label>
+                  <Label className="text-[10px] font-black text-primary/40 tracking-widest px-1">Password</Label>
                   <div className="relative group">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                     <Input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
+                      placeholder="Enter Password"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       className="h-14 pl-12 pr-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-primary transition-all"
@@ -110,7 +121,7 @@ export default function StaffLogin() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/20 hover:text-primary"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
@@ -118,14 +129,15 @@ export default function StaffLogin() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-16 bg-primary text-white hover:bg-primary/90 rounded-[24px] font-black tracking-widest text-[11px] shadow-2xl shadow-primary/20 border-none transition-all active:scale-95 mt-4"
+                  className="w-full h-16 bg-primary text-white hover:bg-primary/90 rounded-[24px] font-black tracking-widest text-[16px] shadow-2xl shadow-primary/20 border-none transition-all active:scale-95 mt-4"
                 >
-                  {loading ? "VERIFYING..." : "INITIALIZE SESSION"}
+                  {loading ? "VERIFYING..." : "LOGIN"}
                 </Button>
               </form>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
+      </motion.div>
       </div>
 
       <footer className="py-12 z-10 w-full text-center border-t border-primary/5 bg-white">

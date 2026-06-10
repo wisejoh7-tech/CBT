@@ -6,7 +6,7 @@ import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
 import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
-import { ShieldCheck, Mail, Lock, Eye, EyeOff, Shield, User, Terminal } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, Eye, EyeOff, Shield, User, Terminal, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 import { Separator } from '@/lib/ui/separator';
 import { cn } from '@/src/lib/utils/utils';
@@ -54,9 +54,19 @@ export default function AdminAuth() {
   return (
     <div className="relative min-h-screen flex flex-col bg-slate-900 selection:bg-primary/20 uppercase text-slate-100">
       <nav className="sticky top-0 w-full bg-slate-900/80 backdrop-blur-md border-b-2 border-white/5 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
-        <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>
-          <span className="font-black text-xl tracking-tighter text-white">VIVI ADMIN</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>
+            <span className="font-black text-xl tracking-tighter text-white">VIVI ADMIN</span>
+          </div>
+          <div className="h-8 w-[1px] bg-white/10 hidden md:block" />
+          <div className="hidden md:flex items-center gap-2 text-white/40">
+            <div className="relative">
+              <Monitor className="w-6 h-6" />
+              <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+          </div>
         </div>
 
         <div className="hidden md:flex items-center gap-8">
