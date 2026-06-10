@@ -37,7 +37,7 @@ export default function Home() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>
-            <span className="font-black text-xl tracking-tighter text-primary">VIVI CBT</span>
+            <span className="font-black text-1xl tracking-tighter text-primary">VIVI CBT</span>
           </div>
           <div className="h-8 w-[1px] bg-primary/10 hidden md:block" />
           <div className="hidden md:flex items-center gap-2 text-primary/40">
@@ -74,9 +74,15 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <header className="relative py-24 px-6 overflow-hidden bg-slate-50">
-        <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px]" />
+      <header className="relative py-32 px-6 overflow-hidden bg-slate-50">
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <img
+            src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop"
+            className="w-full h-full object-cover opacity-[0.07] grayscale"
+            alt="Students taking exam"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-50/50 to-slate-50" />
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px] opacity-[0.03]" />
         </div>
 
         <motion.div

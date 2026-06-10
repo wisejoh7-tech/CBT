@@ -74,8 +74,13 @@ export default function CandidateLogin() {
       </nav>
 
       <div className="flex-1 flex flex-col items-center justify-center relative px-6 py-20">
-        <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px]" />
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <img
+            src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop"
+            className="w-full h-full object-cover opacity-[0.05] grayscale"
+            alt="CBT Exam Background"
+          />
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px] opacity-[0.03]" />
         </div>
 
         <motion.main initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-sm text-center">
