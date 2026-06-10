@@ -105,6 +105,11 @@ export default function CandidateLogin() {
                 <Button type="submit" disabled={loading} className="w-full h-14 bg-primary hover:bg-primary/60 text-white rounded-xl font-black tracking-[0.2em] text-[16px] shadow-2xl shadow-primary/20 transition-all border-none active:scale-95">
                   {loading ? "VERIFYING..." : "Start Examination"}
                 </Button>
+                <div className="pt-4">
+                  <button type="button" onClick={() => navigate('/candidate-register')} className="text-[10px] font-black text-primary/40 hover:text-primary transition-colors tracking-widest">
+                    NEW CANDIDATE? REGISTER HERE
+                  </button>
+                </div>
               </form>
             </div>
           </div>

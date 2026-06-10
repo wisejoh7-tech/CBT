@@ -42,7 +42,7 @@ app.use(cors());
 app.use(express.json());
 
 // Redis Client
-const redisClient = createClient({
+export const redisClient = createClient({
   url: process.env.REDIS_URL || "redis://localhost:6379",
 });
 
@@ -55,7 +55,7 @@ app.use("/analytics", analyticsRoutes);
 app.use("/center", centerRoutes);
 
 // Mailer Setup
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
   host: process.env.MAIL_HOST || "smtp.gmail.com",
   port: parseInt(process.env.MAIL_PORT || "587"),
   secure: false,

@@ -54,6 +54,7 @@ export default function Home() {
           {!user && (
             <>
               <button onClick={() => navigate('/candidate-login')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase">Candidate Login</button>
+              <button onClick={() => navigate('/candidate-register')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase">Register</button>
               <button onClick={() => navigate('/results')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase">Check Results</button>
               <Separator orientation="vertical" className="h-4 bg-primary/10" />
               <button onClick={() => navigate('/staff')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-2 uppercase">
@@ -107,6 +108,11 @@ export default function Home() {
             >
               {user ? 'Enter Dashboard' : 'Start Examination'} <ArrowRight className="w-5 h-5" />
             </Button>
+            {!user && (
+              <Button onClick={() => navigate('/candidate-register')} variant="outline" className="h-16 px-10 border-2 border-primary/20 text-primary rounded-2xl font-black text-lg active:scale-95 uppercase">
+                New Registration
+              </Button>
+            )}
             <Button onClick={() => navigate('/results')} variant="outline" className="h-16 px-10 border-2 border-primary/20 text-primary rounded-2xl font-black text-lg active:scale-95 uppercase">
               Verify Results
             </Button>

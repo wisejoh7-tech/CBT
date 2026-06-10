@@ -5,8 +5,78 @@ import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
 import { Candidate } from "../entities/Candidate";
 import { createLog } from "../lib/logger";
+import { redisClient, transporter } from "../index";
 
 const router = Router();
+
+// Candidate Pre-registration: Send Token
+router.post("/candidate/send-token", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: "Email is required" });
+
+  try {
+    const candidateRepository = AppDataSource.getRepository(Candidate);
+    const existing = await candidateRepository.findOneBy({ email });
+    if (existing) return res.status(400).json({ message: "Email already registered" });
+
+    const token = Math.floor(100000 + Math.random() * 900000).toString();
+    await redisClient.set(`reg_token:${email}`, token, { EX: 600 }); // 10 minutes
+
+    await transporter.sendMail({
+      from: `"VIVI CBT Registration" <${process.env.MAIL_USER}>`,
+      to: email,
+      subject: "Your Registration Verification Token",
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #0EA5E9;">Verification Token</h2>
+          <p>Use the following token to continue your examination registration:</p>
+          <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+            <span style="font-size: 32px; font-weight: 900; letter-spacing: 5px; color: #0EA5E9;">${token}</span>
+          </div>
+          <p>This token expires in 10 minutes.</p>
+        </div>
+      `,
+    });
+
+    res.json({ message: "Token sent to email" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to send token", error });
+  }
+});
+
+// Candidate Final Registration
+router.post("/candidate/register", async (req, res) => {
+  const { email, token, fullName, subjectCombination, dateOfBirth } = req.body;
+
+  try {
+    const savedToken = await redisClient.get(`reg_token:${email}`);
+    if (!savedToken || savedToken !== token) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    const candidateRepository = AppDataSource.getRepository(Candidate);
+    const examNumber = `${new Date().getFullYear()}${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const candidate = candidateRepository.create({
+      examNumber,
+      fullName: fullName.toUpperCase(),
+      email,
+      subjectCombination,
+      dateOfBirth,
+      status: "active"
+    });
+
+    await candidateRepository.save(candidate);
+    await redisClient.del(`reg_token:${email}`);
+
+    res.status(201).json({
+      message: "Registration successful",
+      candidate: { examNumber, fullName: candidate.fullName }
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Registration failed", error });
+  }
+});
 
 // Staff/Admin Registration
 router.post("/register", async (req, res) => {

@@ -9,6 +9,7 @@ import { WifiOff, Wifi } from 'lucide-react';
 // Pages
 import Home from '@/src/pages/Home';
 import CandidateLogin from '@/src/pages/CandidateLogin';
+import CandidateRegister from '@/src/pages/CandidateRegister';
 import ExamDashboard from '@/src/pages/ExamDashboard';
 import ExamPlayer from '@/src/pages/ExamPlayer';
 import Admin from '@/src/pages/Admin';
@@ -70,6 +71,7 @@ export default function App() {
             <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/candidate-login" element={<CandidateLogin />} />
+            <Route path="/candidate-register" element={<CandidateRegister />} />
             <Route
               path="/dashboard" 
               element={
