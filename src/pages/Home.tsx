@@ -74,15 +74,15 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <header className="relative py-32 px-6 overflow-hidden bg-slate-50">
+      <header className="relative py-32 px-6 overflow-hidden bg-white">
         <div className="absolute inset-0 z-0 pointer-events-none">
           <img
-            src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop"
-            className="w-full h-full object-cover opacity-[0.07] grayscale"
-            alt="Students taking exam"
+            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop"
+            className="w-full h-full object-cover opacity-[0.15]"
+            alt="Students in Computer Lab"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-50/50 to-slate-50" />
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px] opacity-[0.03]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/40 to-transparent" />
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px] opacity-[0.05]" />
         </div>
 
         <motion.div

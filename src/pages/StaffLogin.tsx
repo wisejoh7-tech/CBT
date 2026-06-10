@@ -74,11 +74,11 @@ export default function StaffLogin() {
       <div className="flex-1 flex flex-col items-center justify-center relative px-6 py-20">
         <div className="absolute inset-0 z-0 pointer-events-none">
           <img
-            src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop"
-            className="w-full h-full object-cover opacity-[0.05] grayscale"
-            alt="CBT Staff Background"
+            src="https://images.unsplash.com/photo-1513258496099-48168024adb0?q=80&w=2070&auto=format&fit=crop"
+            className="w-full h-full object-cover opacity-[0.1]"
+            alt="Colorful CBT Staff Background"
           />
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px] opacity-[0.03]" />
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px] opacity-[0.05]" />
         </div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-md">
