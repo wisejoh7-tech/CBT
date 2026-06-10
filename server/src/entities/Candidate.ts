@@ -11,6 +11,9 @@ export class Candidate {
   @Column({ nullable: true })
   email?: string;
 
+  @Column({ nullable: true, select: false })
+  password?: string;
+
   @Column({ nullable: true })
   dateOfBirth?: string;
 

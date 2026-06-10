@@ -11,6 +11,7 @@ interface AuthContextType {
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string, name: string, role: 'admin' | 'reg_admin' | 'super_admin') => Promise<void>;
   loginWithExamNumber: (examNumber: string) => Promise<void>;
+  loginCandidateWithEmail: (email: string, pass: string) => Promise<void>;
   logOut: () => Promise<void>;
 }
 
@@ -121,6 +122,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     } catch (e: any) {
       console.error("Login Sequence Failure:", e);
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginCandidateWithEmail = async (email: string, pass: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(getApiUrl('/auth/candidate/login-email'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Login failed');
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('profile', JSON.stringify({ ...data.profile, role: 'student' }));
+
+      const profileData: UserProfile = {
+        ...data.profile,
+        uid: data.profile.examNumber,
+        role: 'student'
+      };
+
+      setProfile(profileData);
+      setCandidate(data.profile);
+      setUser({ uid: data.profile.examNumber });
+
+    } catch (e: any) {
+      toast.error(e.message);
       throw e;
     } finally {
       setLoading(false);

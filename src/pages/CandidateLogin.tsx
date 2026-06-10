@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/src/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
-import { GraduationCap, Shield, User, Monitor } from 'lucide-react';
+import { Label } from '@/lib/ui/label';
+import { GraduationCap, Shield, User, Monitor, Mail, Lock, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Separator } from '@/lib/ui/separator';
+import { cn } from '@/src/lib/utils/utils';
+import { getApiUrl } from '@/src/lib/api-config';
 
 export default function CandidateLogin() {
   const navigate = useNavigate();
-  const { loginWithExamNumber, user, profile, loading } = useAuth();
+  const { loginWithExamNumber, loginCandidateWithEmail, user, profile, loading } = useAuth();
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'reg_admin';
   const [examNumber, setExamNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginMode, setLoginMode] = useState<'exam' | 'email'>('exam');
 
-  const handleCandidateLogin = async (e: React.FormEvent) => {
+  const handleExamLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanNumber = examNumber.trim().toUpperCase();
     if (!cleanNumber) {
@@ -32,8 +38,29 @@ export default function CandidateLogin() {
     }
   };
 
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error("Credentials required.");
+      return;
+    }
+
+    try {
+      await loginCandidateWithEmail(email, password);
+      toast.success("Login successful. Accessing dashboard...");
+      navigate('/dashboard');
+    } catch (e) {
+      // Error handled in context
+    }
+  };
+
   return (
     <div className="relative min-h-screen flex flex-col bg-slate-50 selection:bg-primary/10 ">
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="cbt-background" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px] opacity-[0.05]" />
+      </div>
+
       {/* Navigation */}
       <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b-2 border-primary/10 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
         <div className="flex items-center gap-4">
@@ -53,7 +80,6 @@ export default function CandidateLogin() {
 
         <div className="hidden md:flex items-center gap-8">
           <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Home</button>
-          <button onClick={() => navigate('/candidate-login')} className="text-[14px] font-black tracking-widest text-primary transition-colors">Candidate Login</button>
           <button onClick={() => navigate('/results')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Check Results</button>
           <Separator orientation="vertical" className="h-4 bg-primary/10" />
           {!user && (
@@ -74,43 +100,100 @@ export default function CandidateLogin() {
       </nav>
 
       <div className="flex-1 flex flex-col items-center justify-center relative px-6 py-20">
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <div className="cbt-background" />
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px] opacity-[0.05]" />
-        </div>
-
         <motion.main initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-sm text-center">
-          <div className="inline-flex items-center gap-2 mb-12 px-6 py-2.5 rounded-full border-2 border-primary/20 bg-white backdrop-blur-sm shadow-md">
+          <div className="inline-flex items-center gap-2 mb-8 px-6 py-2.5 rounded-full border-2 border-primary/20 bg-white backdrop-blur-sm shadow-md">
             <GraduationCap className="w-4 h-4 text-primary" />
-            <span className="text-[14px] font-black tracking-[0.2em] text-primary">Examination Portal</span>
+            <span className="text-[14px] font-black tracking-[0.2em] text-primary">CBT Terminal</span>
           </div>
 
-          <div className="bg-white p-10 rounded-[20px] border-2 border-primary shadow-2xl relative overflow-hidden">
-            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="space-y-1">
-                <h4 className="text-2xl font-black tracking-tight text-primary leading-tight">Candidate Examination Portal</h4>
-                <p className="text-[10px] font-bold text-primary/30 tracking-[0.2em]">Enter Your Examination Number</p>
-              </div>
+          <div className="bg-white rounded-[32px] border-2 border-primary shadow-2xl relative overflow-hidden">
+            <div className="flex border-b-2 border-primary/5 bg-slate-50">
+              <button
+                onClick={() => setLoginMode('exam')}
+                className={cn("flex-1 py-4 font-black text-[10px] tracking-widest transition-all", loginMode === 'exam' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}
+              >
+                EXAM NUMBER
+              </button>
+              <button
+                onClick={() => setLoginMode('email')}
+                className={cn("flex-1 py-4 font-black text-[10px] tracking-widest transition-all", loginMode === 'email' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}
+              >
+                EMAIL ACCESS
+              </button>
+            </div>
 
-              <form onSubmit={handleCandidateLogin} className="space-y-6">
-                <div className="relative group">
-                  <Input
-                    value={examNumber}
-                    onChange={e => setExamNumber(e.target.value)}
-                    placeholder="Enter Exam Number"
-                    className="h-12 rounded-xl bg-slate-50 border-2 border-primary/20 focus:border-primary px-6 font-black tracking-[0.2em] text-center text-primary text-sm placeholder:text-primary/20 transition-all group-hover:border-primary/60 shadow-sm uppercase"
-                  />
-                  <User className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary/40 transition-colors" />
-                </div>
-                <Button type="submit" disabled={loading} className="w-full h-14 bg-primary hover:bg-primary/60 text-white rounded-xl font-black tracking-[0.2em] text-[16px] shadow-2xl shadow-primary/20 transition-all border-none active:scale-95">
-                  {loading ? "VERIFYING..." : "Start Examination"}
-                </Button>
-                <div className="pt-4">
-                  <button type="button" onClick={() => navigate('/candidate-register')} className="text-[10px] font-black text-primary/40 hover:text-primary transition-colors tracking-widest">
-                    NEW CANDIDATE? REGISTER HERE
-                  </button>
-                </div>
-              </form>
+            <div className="p-10 space-y-8">
+              <AnimatePresence mode="wait">
+                {loginMode === 'exam' ? (
+                  <motion.form key="exam" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleExamLogin} className="space-y-6">
+                    <div className="space-y-2 text-left">
+                      <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Registration Number</Label>
+                      <div className="relative group">
+                        <Input
+                          value={examNumber}
+                          onChange={e => setExamNumber(e.target.value)}
+                          placeholder="ENTER EXAM NO"
+                          className="h-14 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary px-6 font-black tracking-[0.2em] text-center text-primary transition-all group-hover:border-primary/40 shadow-sm uppercase"
+                        />
+                        <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary/40 transition-colors" />
+                      </div>
+                    </div>
+                    <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px] shadow-2xl shadow-primary/20 transition-all active:scale-95">
+                      {loading ? "VERIFYING..." : "START EXAMINATION"}
+                    </Button>
+                  </motion.form>
+                ) : (
+                  <motion.form key="email" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleEmailLogin} className="space-y-6">
+                    <div className="space-y-4 text-left">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Email Address</Label>
+                        <div className="relative group">
+                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                          <Input
+                            type="email"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            placeholder="EMAIL@EXAMPLE.COM"
+                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-primary transition-all"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Password</Label>
+                        <div className="relative group">
+                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                          <Input
+                            type="password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-primary transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px] shadow-2xl shadow-primary/20 transition-all active:scale-95">
+                      {loading ? "LOGGING IN..." : "ACCESS DASHBOARD"}
+                    </Button>
+                  </motion.form>
+                )}
+              </AnimatePresence>
+
+              <div className="space-y-4 border-t-2 border-primary/5 pt-6">
+                <button
+                  onClick={() => navigate('/results')}
+                  className="w-full text-[10px] font-black text-primary/40 hover:text-primary transition-colors tracking-widest flex items-center justify-center gap-2"
+                >
+                  <Search className="w-3 h-3" /> CHECK MY RESULT / TRANSCRIPT
+                </button>
+                <Separator className="bg-primary/5" />
+                <button
+                  onClick={() => navigate('/candidate-register')}
+                  className="w-full text-[10px] font-black text-primary/60 hover:text-primary transition-colors tracking-widest"
+                >
+                  NOT REGISTERED? CLICK HERE TO START
+                </button>
+              </div>
             </div>
           </div>
         </motion.main>

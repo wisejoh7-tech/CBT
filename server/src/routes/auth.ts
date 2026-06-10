@@ -46,7 +46,7 @@ router.post("/candidate/send-token", async (req, res) => {
 
 // Candidate Final Registration
 router.post("/candidate/register", async (req, res) => {
-  const { email, token, fullName, subjectCombination, dateOfBirth } = req.body;
+  const { email, token, fullName, subjectCombination, dateOfBirth, password } = req.body;
 
   try {
     const savedToken = await redisClient.get(`reg_token:${email}`);
@@ -57,10 +57,13 @@ router.post("/candidate/register", async (req, res) => {
     const candidateRepository = AppDataSource.getRepository(Candidate);
     const examNumber = `${new Date().getFullYear()}${Math.floor(100000 + Math.random() * 900000)}`;
 
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
+
     const candidate = candidateRepository.create({
       examNumber,
       fullName: fullName.toUpperCase(),
       email,
+      password: hashedPassword,
       subjectCombination,
       dateOfBirth,
       status: "active"
@@ -75,6 +78,42 @@ router.post("/candidate/register", async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Registration failed", error });
+  }
+});
+
+// Candidate Login (Email/Password)
+router.post("/candidate/login-email", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const candidateRepository = AppDataSource.getRepository(Candidate);
+
+    const candidate = await candidateRepository.findOne({
+      where: { email },
+      select: ["examNumber", "fullName", "email", "password", "status", "subjectCombination", "faceUrl"]
+    });
+
+    if (!candidate || !candidate.password) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    const isMatch = await bcrypt.compare(password, candidate.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    if (candidate.status !== "active") {
+      return res.status(403).json({ message: "Registration is not active" });
+    }
+
+    const token = jwt.sign(
+      { id: candidate.examNumber, role: "student", examNumber: candidate.examNumber },
+      process.env.JWT_SECRET || "secret",
+      { expiresIn: "6h" }
+    );
+
+    res.json({ token, profile: candidate });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 

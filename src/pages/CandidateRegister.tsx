@@ -17,6 +17,7 @@ export default function CandidateRegister() {
     email: '',
     token: '',
     fullName: '',
+    password: '',
     dateOfBirth: '',
     subjectCombination: [] as string[]
   });
@@ -57,7 +58,14 @@ export default function CandidateRegister() {
       const res = await fetch(getApiUrl('/auth/candidate/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          email: formData.email,
+          token: formData.token,
+          fullName: formData.fullName,
+          dateOfBirth: formData.dateOfBirth,
+          subjectCombination: formData.subjectCombination,
+          password: formData.password
+        })
       });
       const data = await res.json();
       if (res.ok) {
@@ -158,6 +166,21 @@ export default function CandidateRegister() {
                           placeholder="SURNAME FIRSTNAME"
                           value={formData.fullName}
                           onChange={e => setFormData({...formData, fullName: e.target.value})}
+                          className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-primary/40 tracking-widest">Create Password</Label>
+                      <div className="relative group">
+                        <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                        <Input
+                          type="password"
+                          placeholder="••••••••"
+                          value={formData.password}
+                          onChange={e => setFormData({...formData, password: e.target.value})}
                           className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
                           required
                         />

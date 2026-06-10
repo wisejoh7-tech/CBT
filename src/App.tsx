@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/src/context/AuthContext';
 import { SocketProvider } from '@/src/context/SocketContext';
 import { Toaster } from '@/lib/ui/sonner';
@@ -31,6 +31,19 @@ const ProtectedRoute = ({ children, adminOnly = false }: { children: React.React
   // Strict Separation: Redirect based on role
   if (adminOnly && !isAnyAdmin) return <Navigate to="/dashboard" />;
   if (!adminOnly && isAnyAdmin) return <Navigate to="/admin" />;
+
+  return <>{children}</>;
+};
+
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, profile, loading } = useAuth();
+
+  if (loading) return null;
+
+  if (user && profile) {
+    const isAnyAdmin = profile.role === 'admin' || profile.role === 'super_admin' || profile.role === 'reg_admin';
+    return <Navigate to={isAnyAdmin ? "/admin" : "/dashboard"} />;
+  }
 
   return <>{children}</>;
 };
@@ -70,8 +83,8 @@ export default function App() {
           <div className="min-h-screen">
             <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/candidate-login" element={<CandidateLogin />} />
-            <Route path="/candidate-register" element={<CandidateRegister />} />
+            <Route path="/candidate-login" element={<PublicRoute><CandidateLogin /></PublicRoute>} />
+            <Route path="/candidate-register" element={<PublicRoute><CandidateRegister /></PublicRoute>} />
             <Route
               path="/dashboard" 
               element={
@@ -104,11 +117,11 @@ export default function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route path="/admin/auth" element={<AdminAuth />} />
-            <Route path="/staff" element={<StaffLogin />} />
-            <Route path="/exam-slip/:examNumber" element={<ExamSlip />} />
+            <Route path="/admin/auth" element={<PublicRoute><AdminAuth /></PublicRoute>} />
+            <Route path="/staff" element={<PublicRoute><StaffLogin /></PublicRoute>} />
+            <Route path="/exam-slip/:examNumber" element={<ProtectedRoute adminOnly><ExamSlip /></ProtectedRoute>} />
             <Route path="/results" element={<ResultChecker />} />
-            <Route path="/result-slip/:examNumber" element={<ResultSlip />} />
+            <Route path="/result-slip/:examNumber" element={<ProtectedRoute><ResultSlip /></ProtectedRoute>} />
             <Route path="/verify/:examNumber" element={<ResultSlip isVerification />} />
           </Routes>
           <Toaster position="top-center" />
