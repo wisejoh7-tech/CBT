@@ -22,6 +22,7 @@ export interface Candidate {
   thumbprinted: boolean;
   thumbprintData?: string;
   faceUrl?: string;
+  waecResultUrl?: string;
   subjectCombination: string[];
   registrationDate: string;
   createdAt: string;

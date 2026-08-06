@@ -12,7 +12,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --production
 COPY --from=build /app/dist ./dist
-# If you have other assets or config, copy them here
+
+# Create logs directory and set ownership
+RUN mkdir -p logs && chown -R node:node logs
+
+USER node
 
 EXPOSE 5000
 ENV NODE_ENV=production

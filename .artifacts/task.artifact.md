@@ -1,0 +1,2 @@
+- `[x]` Add `start`, `server`, and `dev:full` scripts to root `package.json`
+- `[x]` Verify scripts are available via `npm run`

@@ -4,7 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "npm run dev",
     "dev": "vite --port=3000 --host=0.0.0.0",
+    "server": "npm --prefix server run dev",
+    "dev:full": "concurrently \"npm run dev\" \"npm run server\"",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",

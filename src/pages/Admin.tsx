@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Exam, Question, Attempt, Candidate, UserProfile } from '@/src/types';
 import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
+import { Label } from '@/lib/ui/label';
 import { Card } from '@/lib/ui/card';
 import { ScrollArea } from '@/lib/ui/scroll-area';
 import { Badge } from '@/lib/ui/badge';
 import { toast } from 'sonner';
 import { 
-  Trash2, BookOpen, PlusCircle, Users, Search, BarChart2, Shield, LogOut, Camera, Printer, Upload, Database, CameraOff, User, Eye, XCircle, Monitor
+  Trash2, BookOpen, PlusCircle, Users, Search, BarChart2, Shield, LogOut, Camera, Printer, Upload, Database, CameraOff, User, Eye, XCircle, Monitor, MessageCircle, Mail, Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -33,6 +34,10 @@ export default function Admin() {
   const [seats, setSeats] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [viewingSnaps, setViewingSnaps] = useState<string | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [newMessage, setNewMessage] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const getHeaders = useCallback(() => ({
     'Content-Type': 'application/json',
@@ -76,16 +81,40 @@ export default function Admin() {
 
   useEffect(() => {
     if (!socket) return;
+    socket.emit('join-admin');
     socket.on('progress-updated', () => fetchAttempts());
     socket.on('security-alert', (data: any) => {
       toast.error(`SECURITY ALERT: ${data.userId} trust score dropped to ${Math.round(data.trustScore)}% - ${data.reason}`, { duration: 5000 });
       fetchAttempts();
     });
+    socket.on('new-message', (msg: any) => {
+      setMessages(prev => [...prev, msg]);
+      toast.info(`Message from ${msg.fromName}: ${msg.message}`);
+    });
     return () => {
       socket.off('progress-updated');
       socket.off('security-alert');
+      socket.off('new-message');
     };
   }, [socket, fetchAttempts]);
+
+  useEffect(() => {
+    if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, activeChatId]);
+
+  const sendChatMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !socket || !activeChatId) return;
+    const msg = {
+      to: activeChatId,
+      from: 'admin',
+      fromName: 'Proctor',
+      message: newMessage
+    };
+    socket.emit('send-message', msg);
+    setMessages(prev => [...prev, { ...msg, timestamp: new Date(), from: 'admin' }]);
+    setNewMessage('');
+  };
 
   useEffect(() => {
     if (!profile) return;
@@ -113,7 +142,8 @@ export default function Admin() {
 
   const [newExam, setNewExam] = useState({ title: '', subject: '', durationMinutes: 30, startTime: '', endTime: '' });
   const [newQuestion, setNewQuestion] = useState({ text: '', options: ['', '', '', ''], correctOptionIndex: 0, topic: 'General' });
-  const [newCandidate, setNewCandidate] = useState({ fullName: '', email: '', examNumber: '', subjects: [] as string[], assignedIp: '', assignedSeatNumber: '', faceUrl: '' });
+  const [newCandidate, setNewCandidate] = useState({ fullName: '', email: '', password: '', examNumber: '', subjects: [] as string[], assignedIp: '', assignedSeatNumber: '', faceUrl: '', waecResultUrl: '' });
+  const [newStaff, setNewStaff] = useState({ displayName: '', email: '', password: '', role: 'admin' as 'admin' | 'reg_admin' });
 
   const [isCapturing, setIsCapturing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -185,8 +215,25 @@ export default function Admin() {
     });
     if (res.ok) {
       toast.success("Candidate Registered");
-      setNewCandidate({ fullName: '', email: '', examNumber: '', subjects: [], assignedIp: '', assignedSeatNumber: '', faceUrl: '' });
+      setNewCandidate({ fullName: '', email: '', password: '', examNumber: '', subjects: [], assignedIp: '', assignedSeatNumber: '', faceUrl: '', waecResultUrl: '' });
       fetchCandidates();
+    }
+  };
+
+  const handleCreateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch(getApiUrl('/auth/register'), {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(newStaff)
+    });
+    if (res.ok) {
+      toast.success("Staff Registered Successfully");
+      setNewStaff({ displayName: '', email: '', password: '', role: 'admin' });
+      fetchStaff();
+    } else {
+      const data = await res.json();
+      toast.error(data.message || "Failed to register staff");
     }
   };
 
@@ -217,8 +264,6 @@ export default function Admin() {
     reader.readAsText(file);
   };
 
-  if (loading) return <div className="p-20 text-center font-black">ACCESSING SECURE DATA...</div>;
-
   const isSuperAdmin = profile?.role === 'super_admin';
   const isRegStaff = profile?.role === 'reg_admin';
   const isFullAdmin = profile?.role === 'admin' || isSuperAdmin;
@@ -230,6 +275,7 @@ export default function Admin() {
     { id: 'monitor', label: 'Monitor', roles: ['super_admin', 'admin'] },
     { id: 'analytics', label: 'Analytics', roles: ['super_admin', 'admin'] },
     { id: 'center', label: 'Center', roles: ['super_admin', 'admin'] },
+    { id: 'chat', label: 'Support', roles: ['super_admin', 'admin'] },
     { id: 'staff', label: 'Staff', roles: ['super_admin'] },
     { id: 'security', label: 'Security', roles: ['super_admin'] },
   ];
@@ -242,14 +288,15 @@ export default function Admin() {
     }
   }, [profile, activeTab, filteredTabs]);
 
+  if (loading) return <div className="p-20 text-center font-black">Loading...</div>;
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 uppercase relative">
-      <div className="cbt-background opacity-[0.03]" />
       <header className="h-16 bg-white border-b-2 border-primary/10 px-8 flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white"><Shield className="w-5 h-5" /></div>
-            <h1 className="font-black tracking-tighter text-primary">ADMIN CONTROL</h1>
+            <h2 className="font-black tracking-tighter text-primary">ADMIN DASHBOARD</h2>
           </div>
           <div className="h-8 w-[1px] bg-primary/10 hidden md:block" />
           <div className="hidden md:flex items-center gap-2 text-primary/40">
@@ -257,7 +304,7 @@ export default function Admin() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -434,6 +481,52 @@ export default function Admin() {
                        </form>
                     </Card>
 
+                    <Card className="p-8 rounded-[32px] border-2 border-primary/10 bg-white shadow-xl">
+                       <div className="flex justify-between items-center mb-6">
+                          <div>
+                             <h3 className="text-xs font-black uppercase tracking-widest">Bulk Question Upload</h3>
+                             <p className="text-[8px] font-bold opacity-30 mt-1 uppercase">Upload questions via JSON file</p>
+                          </div>
+                          <Upload className="w-5 h-5 text-primary/20" />
+                       </div>
+                       <div className="relative">
+                          <Input
+                            type="file"
+                            accept=".json"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file || !selectedExamId) return;
+                              const reader = new FileReader();
+                              reader.onload = async (ev) => {
+                                try {
+                                  const payload = JSON.parse(ev.target?.result as string);
+                                  const res = await fetch(getApiUrl(`/exams/${selectedExamId}/questions/bulk`), {
+                                    method: 'POST',
+                                    headers: getHeaders(),
+                                    body: JSON.stringify(payload)
+                                  });
+                                  if (res.ok) {
+                                    toast.success("Questions Uploaded Successfully");
+                                    fetch(getApiUrl(`/exams/${selectedExamId}`), { headers: getHeaders() })
+                                      .then(res => res.json())
+                                      .then(data => setQuestions(data.questions || []));
+                                  } else {
+                                    toast.error("Upload failed.");
+                                  }
+                                } catch (err) {
+                                  toast.error("Invalid JSON format.");
+                                }
+                              };
+                              reader.readAsText(file);
+                            }}
+                            className="h-16 border-2 border-dashed border-primary/10 rounded-2xl pt-10 text-center text-[10px] font-black cursor-pointer"
+                          />
+                          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-20">
+                             <span className="text-[10px] font-black uppercase tracking-widest mt-6">Select JSON Data</span>
+                          </div>
+                       </div>
+                    </Card>
+
                     <div className="space-y-3">
                       {questions.map((q, i) => (
                         <Card key={q.id} className="p-6 rounded-2xl border-2 bg-white flex justify-between items-center">
@@ -458,55 +551,85 @@ export default function Admin() {
 
           {activeTab === 'candidates' && (
             <div className="space-y-8">
-              <Card className="p-8 rounded-[32px] border-2 border-primary/10 bg-white shadow-xl">
-                 <div className="flex justify-between items-center mb-6">
-                    <div>
-                       <h3 className="text-xl font-black text-primary tracking-tighter uppercase">Bulk Enrollment</h3>
-                       <p className="text-[9px] font-black text-primary/40 tracking-widest uppercase">Register multiple candidates via CSV</p>
-                    </div>
-                    <Upload className="w-5 h-5 text-primary" />
-                 </div>
-                 <div className="relative group">
-                    <Input type="file" accept=".csv" onChange={handleBulkUpload} className="h-24 border-2 border-dashed border-primary/20 rounded-2xl cursor-pointer pt-14 text-center text-[10px] font-black" />
-                    <div className="absolute top-6 left-0 right-0 pointer-events-none flex flex-col items-center">
-                       <Database className="w-8 h-8 text-primary/10 mb-1" />
-                       <span className="text-[10px] font-black text-primary/30 uppercase tracking-widest">Select Enrollment Data (.csv)</span>
-                    </div>
-                 </div>
-              </Card>
 
               <div className="grid md:grid-cols-[350px_1fr] gap-8">
                 <Card className="p-8 rounded-[32px] border-2 bg-white h-fit">
-                  <h3 className="text-xs font-black mb-6 uppercase">Register Candidate</h3>
+                  <div className="flex items-center gap-2 mb-6">
+                    <Shield className="w-4 h-4 text-primary" />
+                    <h3 className="text-xs font-black uppercase tracking-widest">Candidate Enrollment</h3>
+                  </div>
                   <form onSubmit={handleCreateCandidate} className="space-y-4">
-                    <div className="flex justify-center mb-4">
-                       {newCandidate.faceUrl ? (
-                          <div className="relative group">
-                             <img src={newCandidate.faceUrl} className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg" />
-                             <button type="button" onClick={() => setNewCandidate({...newCandidate, faceUrl: ''})} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full"><Trash2 className="w-3 h-3" /></button>
-                          </div>
-                       ) : isCapturing ? (
-                          <div className="space-y-2 text-center">
-                             <video ref={videoRef} autoPlay className="w-48 h-36 rounded-2xl bg-black object-cover" />
-                             <Button type="button" onClick={capturePhoto} className="h-8 px-4 text-[8px] bg-primary text-white font-black rounded-lg">SNAP PHOTO</Button>
-                          </div>
-                       ) : (
-                          <button type="button" onClick={startCapture} className="w-24 h-24 rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-2 hover:border-primary transition-all">
-                             <Camera className="w-6 h-6 text-primary/20" />
-                             <span className="text-[8px] font-black opacity-30">CAPTURE FACE</span>
-                          </button>
-                       )}
+                    <div className="space-y-2 mb-6">
+                       <p className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Biometric Capture</p>
+                       <div className="flex justify-center">
+                          {newCandidate.faceUrl ? (
+                             <div className="relative group">
+                                <img src={newCandidate.faceUrl} className="w-32 h-32 rounded-2xl object-cover border-4 border-primary shadow-lg" />
+                                <button type="button" onClick={() => setNewCandidate({...newCandidate, faceUrl: ''})} className="absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg hover:scale-110 transition-transform"><Trash2 className="w-3 h-3" /></button>
+                             </div>
+                          ) : isCapturing ? (
+                             <div className="space-y-3 text-center w-full">
+                                <video ref={videoRef} autoPlay className="w-full aspect-video rounded-2xl bg-black object-cover border-2 border-primary/20" />
+                                <Button type="button" onClick={capturePhoto} className="h-10 w-full bg-primary text-white font-black rounded-xl tracking-widest text-[10px]">VERIFY & CAPTURE</Button>
+                             </div>
+                          ) : (
+                             <button type="button" onClick={startCapture} className="w-full h-32 rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-3 hover:border-primary hover:bg-primary/[0.02] transition-all group">
+                                <Camera className="w-8 h-8 text-primary/20 group-hover:text-primary group-hover:scale-110 transition-all" />
+                                <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em]">Initialize Biometrics</span>
+                             </button>
+                          )}
+                       </div>
                     </div>
-                    <Input placeholder="FULL NAME" value={newCandidate.fullName} onChange={e => setNewCandidate({...newCandidate, fullName: e.target.value})} required className="h-12 text-[10px] font-bold" />
-                    <Input placeholder="EXAM NUMBER" value={newCandidate.examNumber} onChange={e => setNewCandidate({...newCandidate, examNumber: e.target.value})} required className="h-12 text-[10px] font-bold" />
-                    <Input placeholder="EMAIL" value={newCandidate.email} onChange={e => setNewCandidate({...newCandidate, email: e.target.value})} className="h-12 text-[10px] font-bold" />
-                    <div className="grid grid-cols-2 gap-2">
-                       <Input placeholder="ASSIGNED IP" value={newCandidate.assignedIp} onChange={e => setNewCandidate({...newCandidate, assignedIp: e.target.value})} className="h-10 text-[9px]" />
-                       <Input placeholder="SEAT NO" value={newCandidate.assignedSeatNumber} onChange={e => setNewCandidate({...newCandidate, assignedSeatNumber: e.target.value})} className="h-10 text-[9px]" />
+
+                    <div className="space-y-4">
+                       <div className="space-y-1">
+                          <Label className="text-[9px] font-black opacity-30 tracking-widest uppercase">1. Full Name</Label>
+                          <Input placeholder="SURNAME FIRSTNAME" value={newCandidate.fullName} onChange={e => setNewCandidate({...newCandidate, fullName: e.target.value})} required className="h-12 text-[10px] font-bold" />
+                       </div>
+
+                       <div className="space-y-1">
+                          <Label className="text-[9px] font-black opacity-30 tracking-widest uppercase">2. Portal Access (Email & Password)</Label>
+                          <div className="grid gap-2">
+                             <div className="relative group">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-primary/20 group-focus-within:text-primary transition-colors" />
+                                <Input placeholder="EMAIL ADDRESS" type="email" value={newCandidate.email} onChange={e => setNewCandidate({...newCandidate, email: e.target.value})} required className="h-12 pl-10 text-[10px] font-bold" />
+                             </div>
+                             <div className="relative group">
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-primary/20 group-focus-within:text-primary transition-colors" />
+                                <Input placeholder="Password" type="password" value={newCandidate.password} onChange={e => setNewCandidate({...newCandidate, password: e.target.value})} required className="h-12 pl-10 text-[10px] font-bold" />
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="space-y-1">
+                          <Label className="text-[9px] font-black opacity-30 tracking-widest uppercase">3. System Identifier (Exam No)</Label>
+                          <div className="p-3 bg-slate-50 rounded-xl border border-primary/5">
+                             <Input placeholder="AUTO-GENERATE ON SAVE" value={newCandidate.examNumber} onChange={e => setNewCandidate({...newCandidate, examNumber: e.target.value})} className="h-10 text-[9px] font-bold bg-white" />
+                             <p className="text-[7px] font-bold opacity-30 mt-2 text-center tracking-widest uppercase">Leave blank to generate alphanumeric ID</p>
+                          </div>
+                       </div>
+
+                       <div className="space-y-1">
+                          <Label className="text-[9px] font-black opacity-30 tracking-widest uppercase">4. Supporting Documents (WAEC)</Label>
+                          <Input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => setNewCandidate({ ...newCandidate, waecResultUrl: ev.target?.result as string });
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="h-10 pt-2 text-[9px] font-bold border-dashed"
+                          />
+                       </div>
                     </div>
+
                     <div className="p-4 bg-slate-50 rounded-xl space-y-2">
                       <p className="text-[9px] font-black opacity-30">SUBJECTS (MAX 4)</p>
-                      {["English", "Math", "Physics", "Chemistry", "Biology"].map(s => (
+                      {["English", "Math", "Physics", "Chemistry", "Biology", "Economics", "Further mathematics", "Commerce"].map(s => (
                         <label key={s} className="flex items-center gap-2 cursor-pointer">
                           <input type="checkbox" checked={newCandidate.subjects.includes(s)} onChange={e => {
                             const subs = e.target.checked ? [...newCandidate.subjects, s] : newCandidate.subjects.filter(x => x !== s);
@@ -544,8 +667,8 @@ export default function Admin() {
 
           {activeTab === 'center' && (
             <div className="space-y-8">
-               <h2 className="text-2xl font-black">EXAM ROOM ARCHITECTURE</h2>
-               <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-10 gap-4 bg-slate-100 p-8 rounded-[40px] border-4 border-white shadow-inner">
+               <h2 className="text-2xl font-black">EXAM ARCHITECTURE</h2>
+               <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-10 gap-4 bg-slate-100 p-8 rounded-[20px] border-2 border-white shadow-inner">
                   {seats.map(s => {
                      const activeAttempt = attempts.find(a => a.status === 'in-progress' && a.userId === s.assignedCandidateId);
                      const isFlagged = activeAttempt && (activeAttempt.trustScore || 100) < 70;
@@ -557,6 +680,95 @@ export default function Admin() {
                      );
                   })}
                </div>
+            </div>
+          )}
+
+          {activeTab === 'chat' && (
+            <div className="grid md:grid-cols-[300px_1fr] h-[70vh] gap-8 bg-white rounded-[40px] border-2 border-primary/10 overflow-hidden shadow-2xl">
+              <aside className="border-r-2 border-primary/5 flex flex-col">
+                <div className="p-6 bg-slate-50 border-b-2 border-primary/5">
+                  <h3 className="text-xs font-black uppercase tracking-widest">Active Chats</h3>
+                </div>
+                <ScrollArea className="flex-1">
+                  <div className="p-4 space-y-2">
+                    {/* Combine existing message participants with currently active attempts */}
+                    {Array.from(new Set([
+                      ...messages.map(m => m.from === 'admin' ? m.to : m.from),
+                      ...attempts.filter(a => a.status === 'in-progress').map(a => a.userId)
+                    ])).map(id => {
+                      const lastMsg = [...messages].reverse().find(m => m.from === id || (m.from === 'admin' && m.to === id));
+                      const isActiveAttempt = attempts.find(a => a.userId === id && a.status === 'in-progress');
+                      const candidateName = candidates.find(c => c.examNumber === id)?.fullName;
+
+                      return (
+                        <button key={id} onClick={() => setActiveChatId(id)} className={cn(
+                          "w-full p-4 rounded-2xl text-left border-2 transition-all relative group",
+                          activeChatId === id ? "bg-primary text-white border-primary" : "bg-white border-primary/5 hover:border-primary/20"
+                        )}>
+                          <div className="flex justify-between items-start mb-1">
+                            <p className="font-black text-[10px] uppercase truncate flex-1">{candidateName || id}</p>
+                            {isActiveAttempt && (
+                              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]" />
+                            )}
+                          </div>
+                          <p className="text-[8px] font-bold opacity-30 mb-1">{id}</p>
+                          <p className={cn("text-[9px] truncate", activeChatId === id ? "text-white/60" : "text-primary/40")}>
+                            {lastMsg?.message || "Initiate support..."}
+                          </p>
+                        </button>
+                      );
+                    })}
+                    {messages.length === 0 && attempts.filter(a => a.status === 'in-progress').length === 0 && (
+                      <p className="text-center py-10 text-[10px] font-black opacity-10 uppercase tracking-widest">No candidates online</p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </aside>
+
+              <section className="flex flex-col">
+                {activeChatId ? (
+                  <>
+                    <div className="p-6 border-b-2 border-primary/5 flex justify-between items-center bg-slate-50/50">
+                      <div>
+                        <h4 className="font-black text-sm uppercase">Conversation with {activeChatId}</h4>
+                        <p className="text-[9px] font-bold text-emerald-500 animate-pulse">TERMINAL ACTIVE</p>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => setActiveChatId(null)} className="h-10 w-10"><XCircle className="w-5 h-5" /></Button>
+                    </div>
+                    <ScrollArea className="flex-1 p-8">
+                      <div className="space-y-4">
+                        {messages.filter(m => m.from === activeChatId || (m.from === 'admin' && m.to === activeChatId)).map((m, i) => (
+                          <div key={i} className={cn("flex flex-col", m.from === 'admin' ? "items-end" : "items-start")}>
+                            <div className={cn(
+                              "max-w-[70%] p-4 rounded-[20px] text-[12px] font-bold shadow-sm",
+                              m.from === 'admin' ? "bg-primary text-white" : "bg-slate-100 text-primary"
+                            )}>
+                              {m.message}
+                            </div>
+                            <span className="text-[8px] font-black opacity-20 mt-1 uppercase">{new Date(m.timestamp).toLocaleTimeString()}</span>
+                          </div>
+                        ))}
+                        <div ref={chatEndRef} />
+                      </div>
+                    </ScrollArea>
+                    <form onSubmit={sendChatMessage} className="p-6 border-t-2 border-primary/5 bg-slate-50/50 flex gap-4">
+                      <Input
+                        value={newMessage}
+                        onChange={e => setNewMessage(e.target.value)}
+                        placeholder="Type response to candidate..."
+                        className="h-14 rounded-2xl bg-white border-2 border-primary/5 focus:border-primary font-bold"
+                      />
+                      <Button type="submit" className="h-14 px-8 bg-primary text-white rounded-2xl font-black tracking-widest text-xs shadow-lg">SEND MESSAGE</Button>
+                    </form>
+                  </>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center opacity-10 text-center p-10">
+                    <MessageCircle className="w-16 h-16 mb-4" />
+                    <h3 className="text-2xl font-black">SUPPORT CENTER</h3>
+                    <p className="max-w-xs font-bold text-xs mt-2">Select a candidate from the left to start real-time proctor communication.</p>
+                  </div>
+                )}
+              </section>
             </div>
           )}
 
@@ -579,23 +791,87 @@ export default function Admin() {
           )}
 
           {activeTab === 'staff' && isSuperAdmin && (
-             <div className="grid md:grid-cols-2 gap-8">
-                {staff.map(s => (
-                   <Card key={s.id} className="p-6 rounded-2xl border-2 bg-white flex justify-between items-center">
-                      <div className="flex items-center gap-4">
-                         <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center font-black text-primary/20">{s.displayName.charAt(0)}</div>
-                         <div><h4 className="font-black text-xs">{s.displayName}</h4><p className="text-[10px] font-bold text-primary/30 uppercase">{s.role.replace('_', ' ')}</p></div>
-                      </div>
-                      {s.role !== 'super_admin' && (
-                        <Button variant="ghost" onClick={async () => {
-                           if(confirm("Revoke staff access?")) {
-                              await fetch(getApiUrl(`/auth/staff/${s.id}`), { method: 'DELETE', headers: getHeaders() });
-                              fetchStaff();
-                           }
-                        }} className="text-red-200 hover:text-red-500"><Trash2 className="w-4 h-4" /></Button>
-                      )}
-                   </Card>
-                ))}
+             <div className="grid md:grid-cols-[350px_1fr] gap-8">
+                <Card className="p-8 rounded-[32px] border-2 bg-white h-fit">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Shield className="w-4 h-4 text-primary" />
+                    <h3 className="text-xs font-black uppercase tracking-widest">Register New Staff</h3>
+                  </div>
+                  <form onSubmit={handleCreateStaff} className="space-y-4">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] font-black opacity-30 tracking-widest uppercase">Display Name</Label>
+                      <Input
+                        placeholder="e.g. John Doe"
+                        value={newStaff.displayName}
+                        onChange={e => setNewStaff({...newStaff, displayName: e.target.value})}
+                        required
+                        className="h-12 text-[10px] font-bold"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] font-black opacity-30 tracking-widest uppercase">Email Address</Label>
+                      <Input
+                        type="email"
+                        placeholder="staff@vivicbt.com"
+                        value={newStaff.email}
+                        onChange={e => setNewStaff({...newStaff, email: e.target.value})}
+                        required
+                        className="h-12 text-[10px] font-bold"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] font-black opacity-30 tracking-widest uppercase">Password</Label>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        value={newStaff.password}
+                        onChange={e => setNewStaff({...newStaff, password: e.target.value})}
+                        required
+                        className="h-12 text-[10px] font-bold"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] font-black opacity-30 tracking-widest uppercase">System Role</Label>
+                      <select
+                        value={newStaff.role}
+                        onChange={e => setNewStaff({...newStaff, role: e.target.value as any})}
+                        className="w-full h-12 px-4 rounded-xl border-2 border-primary/10 bg-slate-50 font-bold text-[10px] focus:border-primary focus:outline-none"
+                      >
+                        <option value="admin">Administrator</option>
+                        <option value="reg_admin">Registry Officer</option>
+                      </select>
+                    </div>
+                    <Button type="submit" className="w-full h-14 bg-primary text-white font-black rounded-xl tracking-widest text-[10px]">
+                      INITIALIZE STAFF ACCOUNT
+                    </Button>
+                  </form>
+                </Card>
+
+                <div className="grid grid-cols-1 gap-4">
+                  <h3 className="text-xs font-black uppercase tracking-widest mb-2 px-2">Current Staff Directory</h3>
+                  {staff.map(s => (
+                    <Card key={s.id} className="p-6 rounded-2xl border-2 bg-white flex justify-between items-center group hover:border-primary/20 transition-all">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center font-black text-primary/20 text-lg">{s.displayName.charAt(0)}</div>
+                          <div>
+                            <h4 className="font-black text-sm">{s.displayName}</h4>
+                            <p className="text-[10px] font-bold text-primary/30 uppercase tracking-widest">{s.role.replace('_', ' ')}</p>
+                            <p className="text-[9px] font-medium opacity-20">{s.email}</p>
+                          </div>
+                        </div>
+                        {s.role !== 'super_admin' && (
+                          <Button variant="ghost" size="icon" onClick={async () => {
+                            if(confirm("Revoke staff access?")) {
+                                await fetch(getApiUrl(`/auth/staff/${s.id}`), { method: 'DELETE', headers: getHeaders() });
+                                fetchStaff();
+                            }
+                          }} className="text-red-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                    </Card>
+                  ))}
+                </div>
              </div>
           )}
 

@@ -6,7 +6,7 @@ import { Attempt } from "../entities/Attempt";
 import { Candidate } from "../entities/Candidate";
 import { authenticateJWT, authorizeRoles } from "../middleware/auth";
 import { analyzeProctoringSnapshot, generateBulkQuestionsFromSyllabus, generatePersonalizedStudyGuide, verifyCandidateIdentity } from "../lib/gemini";
-import { createLog } from "../lib/logger";
+import { createLog, logger } from "../lib/logger";
 
 const router = Router();
 
@@ -65,6 +65,25 @@ router.post("/:id/questions", authenticateJWT, authorizeRoles("admin", "super_ad
 
   res.status(201).json(question);
 });
+
+// Bulk Question Upload
+router.post("/:id/questions/bulk", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+  const exam = await AppDataSource.getRepository(Exam).findOneBy({ id: req.params.id as any });
+  if (!exam) return res.status(404).json({ message: "Exam not found" });
+
+  const questionRepo = AppDataSource.getRepository(Question);
+  const questionsData: any[] = Array.isArray(req.body) ? req.body : [req.body];
+
+  const entities = questionRepo.create(questionsData.map((q: any) => ({ ...q, exam })));
+  await questionRepo.save(entities);
+
+  // Update totalQuestions in Exam
+  const total = await questionRepo.count({ where: { exam: { id: exam.id } } });
+  await AppDataSource.getRepository(Exam).update(exam.id, { totalQuestions: total });
+
+  res.status(201).json({ message: `Successfully added ${entities.length} questions`, questions: entities });
+});
+
 
 router.put("/questions/:qid", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
   const questionRepo = AppDataSource.getRepository(Question);
@@ -187,7 +206,7 @@ router.post("/attempt/:attemptId/snapshots", authenticateJWT, async (req, res) =
             metadata: { attemptId: attempt.id, result }
           });
         }
-      }).catch(err => console.error("Identity verification failed:", err));
+      }).catch(err => logger.error("Identity verification failed:", err));
     }
   }
 
@@ -221,7 +240,7 @@ router.post("/attempt/:attemptId/snapshots", authenticateJWT, async (req, res) =
         });
       }
     }
-  }).catch(err => console.error("Snapshot analysis error:", err));
+  }).catch(err => logger.error("Snapshot analysis error:", err));
 
   await attemptRepo.save(attempt);
   res.status(204).send();
@@ -250,7 +269,7 @@ router.put("/attempt/:attemptId", authenticateJWT, async (req, res) => {
     const topicStats: Record<string, { correct: number, total: number }> = {};
     const subjectStats: Record<string, { correct: number, total: number }> = {};
 
-    questions.forEach(q => {
+    questions.forEach((q: any) => {
       const isCorrect = answers[q.id] === q.correctOptionIndex;
       const topic = q.topic || "General";
       const subject = q.exam.subject;

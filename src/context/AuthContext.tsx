@@ -12,6 +12,7 @@ interface AuthContextType {
   signUpWithEmail: (email: string, pass: string, name: string, role: 'admin' | 'reg_admin' | 'super_admin') => Promise<void>;
   loginWithExamNumber: (examNumber: string) => Promise<void>;
   loginCandidateWithEmail: (email: string, pass: string) => Promise<void>;
+  devAdminLogin: () => Promise<void>;
   logOut: () => Promise<void>;
 }
 
@@ -31,10 +32,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (token && savedProfile) {
         try {
           const parsedProfile = JSON.parse(savedProfile);
-          setProfile(parsedProfile);
-          setUser({ uid: parsedProfile.uid || parsedProfile.id });
-          if (parsedProfile.role === 'student') {
-            setCandidate(parsedProfile);
+          // Standardize profile structure
+          const standardizedProfile = {
+            ...parsedProfile,
+            displayName: parsedProfile.displayName || parsedProfile.fullName,
+            uid: parsedProfile.uid || parsedProfile.id || parsedProfile.examNumber
+          };
+          setProfile(standardizedProfile);
+          setUser({ uid: standardizedProfile.uid });
+          if (standardizedProfile.role === 'student') {
+            setCandidate(standardizedProfile);
           }
         } catch (e) {
           console.error("Auth restoration failed", e);
@@ -113,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const profileData: UserProfile = {
         ...data.profile,
         uid: data.profile.examNumber,
+        displayName: data.profile.fullName,
         role: 'student'
       };
 
@@ -141,11 +149,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) throw new Error(data.message || 'Login failed');
 
       localStorage.setItem('token', data.token);
-      localStorage.setItem('profile', JSON.stringify({ ...data.profile, role: 'student' }));
+      localStorage.setItem('profile', JSON.stringify({ ...data.profile, role: 'student', displayName: data.profile.fullName }));
 
       const profileData: UserProfile = {
         ...data.profile,
         uid: data.profile.examNumber,
+        displayName: data.profile.fullName,
         role: 'student'
       };
 
@@ -170,8 +179,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     toast.success("Logged out successfully");
   };
 
+  const devAdminLogin = async () => {
+    // In dev, we can just log in with the default seeded admin
+    await signInWithEmail("admin@vivicbt.com", "admin123");
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, candidate, loading, signInWithEmail, signUpWithEmail, loginWithExamNumber, logOut }}>
+    <AuthContext.Provider value={{
+      user, profile, candidate, loading,
+      signInWithEmail, signUpWithEmail, loginWithExamNumber,
+      loginCandidateWithEmail, devAdminLogin, logOut
+    }}>
       {children}
     </AuthContext.Provider>
   );

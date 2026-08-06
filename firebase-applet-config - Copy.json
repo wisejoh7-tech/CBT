@@ -1,0 +1,12 @@
+{
+  "apiKey": "AIzaSyAqGDAKtHU-fUzok_560eA96ynPmROmmhQ",
+  "authDomain": "vivo-cbt.firebaseapp.com",
+  "databaseURL": "https://vivo-cbt-default-rtdb.firebaseio.com",
+  "projectId": "vivo-cbt",
+  "storageBucket": "vivo-cbt.firebasestorage.app",
+  "messagingSenderId": "144474758117",
+  "appId": "1:144474758117:web:25d6dc51c57d83b847ed0c",
+  "measurementId": "G-J81ZPMHP73",
+  "firestoreDatabaseId": "(default)"
+}
+

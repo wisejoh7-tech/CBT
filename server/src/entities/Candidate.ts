@@ -8,8 +8,8 @@ export class Candidate {
   @Column()
   fullName!: string;
 
-  @Column({ nullable: true })
-  email?: string;
+  @Column({ unique: true })
+  email!: string;
 
   @Column({ nullable: true, select: false })
   password?: string;
@@ -28,6 +28,9 @@ export class Candidate {
 
   @Column({ nullable: true })
   faceUrl?: string;
+
+  @Column({ type: "text", nullable: true })
+  waecResultUrl?: string;
 
   @Column({ nullable: true })
   pin?: string;

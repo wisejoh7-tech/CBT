@@ -21,6 +21,6 @@ export class Question {
   @Column({ type: "varchar", default: "General" })
   topic!: string;
 
-  @ManyToOne(() => Exam, (exam) => exam.questions, { onDelete: "CASCADE" })
+  @ManyToOne(() => Exam, (exam: any) => exam.questions, { onDelete: "CASCADE" })
   exam!: Exam;
 }

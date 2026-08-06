@@ -46,7 +46,7 @@ export default function ExamInstructions() {
     fetchInstructions();
   }, [examId, profile]);
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-black animate-pulse uppercase">Initializing Secure Terminal...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center font-black animate-pulse uppercase">Loading</div>;
   if (exams.length === 0) return <div className="p-20 text-center uppercase font-black">No Session Data Found.</div>;
 
   const totalDuration = exams.reduce((acc, curr) => acc + curr.durationMinutes, 0);

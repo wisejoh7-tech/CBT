@@ -65,7 +65,7 @@ export default function AdminAuth() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
 
@@ -134,6 +134,15 @@ export default function AdminAuth() {
                 <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white hover:bg-primary/90 rounded-[24px] font-black tracking-widest text-[11px] shadow-2xl shadow-primary/20 border-none transition-all active:scale-95">
                   {loading ? "PROCESSING..." : (isLogin ? "VERIFY ACCESS" : "INITIALIZE MASTER")}
                 </Button>
+                {isLogin && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    className="w-full text-[10px] font-black text-slate-500 hover:text-white transition-colors tracking-widest mt-2"
+                  >
+                    FORGOT PASSWORD?
+                  </button>
+                )}
               </form>
 
               {isLogin && (
@@ -151,7 +160,7 @@ export default function AdminAuth() {
                             navigate('/admin');
                           } catch (e: any) {
                             toast.dismiss();
-                            toast.error("Rescue failed. Ensure Anonymous Auth is enabled in Firebase Console.");
+                            toast.error("Rescue failed. Ensure your backend is running and connected to the database.");
                           }
                         }}
                         className="w-full h-14 rounded-2xl border-2 border-dashed border-white/10 text-slate-400 font-black text-[10px] hover:border-primary hover:text-white transition-all gap-2 bg-transparent"

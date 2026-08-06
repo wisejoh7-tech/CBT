@@ -19,6 +19,7 @@ export default function CandidateRegister() {
     fullName: '',
     password: '',
     dateOfBirth: '',
+    waecResultUrl: '',
     subjectCombination: [] as string[]
   });
 
@@ -63,6 +64,7 @@ export default function CandidateRegister() {
           token: formData.token,
           fullName: formData.fullName,
           dateOfBirth: formData.dateOfBirth,
+          waecResultUrl: formData.waecResultUrl,
           subjectCombination: formData.subjectCombination,
           password: formData.password
         })
@@ -106,7 +108,7 @@ export default function CandidateRegister() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
         <button onClick={() => navigate('/candidate-login')} className="text-[12px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Login</button>
@@ -199,6 +201,34 @@ export default function CandidateRegister() {
                           required
                         />
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-primary/40 tracking-widest">Upload WAEC Result (IMAGE/PDF)</Label>
+                      <div className="relative group">
+                        <Input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                setFormData({ ...formData, waecResultUrl: ev.target?.result as string });
+                                toast.success("WAEC Result Attached Successfully.");
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="h-14 pt-4 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-[10px]"
+                        />
+                      </div>
+                      {formData.waecResultUrl && formData.waecResultUrl.startsWith('data:image') && (
+                        <div className="mt-2 p-2 border-2 border-primary/10 rounded-xl bg-white">
+                           <img src={formData.waecResultUrl} className="w-full h-32 object-contain rounded-lg" alt="WAEC Preview" />
+                           <p className="text-[8px] font-black text-primary/40 text-center mt-2 uppercase tracking-widest">Document Preview Attached</p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-3">

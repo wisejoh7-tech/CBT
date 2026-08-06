@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin'];
+    }
+
+    function isRegAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin', 'reg_admin'];
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated(); // Allow reading profiles for auth
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // Exams
+    match /exams/{examId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Questions
+    match /questions/{questionId} {
+      allow read: if isAuthenticated(); // In production, refine to check active attempt
+      allow write: if isAdmin();
+    }
+
+    // Attempts (Exam sessions)
+    match /attempts/{attemptId} {
+      allow create: if isAuthenticated();
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAuthenticated() && (
+        // Students can only update their own progress (answers, timeLeft)
+        (resource.data.userId == request.auth.uid && resource.data.status == 'in-progress' && !request.resource.data.diff().affectedKeys().hasAny(['score', 'released', 'userId']))
+        || isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Candidates (Registry)
+    match /candidates/{candidateId} {
+      allow read, write: if isRegAdmin();
+    }
+
+    // Global Settings
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

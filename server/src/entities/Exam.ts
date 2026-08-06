@@ -36,6 +36,6 @@ export class Exam {
   @CreateDateColumn()
   createdAt!: Date;
 
-  @OneToMany(() => Question, (question) => question.exam, { cascade: true })
+  @OneToMany(() => Question, (question: any) => question.exam, { cascade: true })
   questions!: Question[];
 }

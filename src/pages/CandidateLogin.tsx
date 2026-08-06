@@ -16,27 +16,8 @@ export default function CandidateLogin() {
   const { loginWithExamNumber, loginCandidateWithEmail, user, profile, loading } = useAuth();
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'reg_admin';
-  const [examNumber, setExamNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loginMode, setLoginMode] = useState<'exam' | 'email'>('exam');
-
-  const handleExamLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanNumber = examNumber.trim().toUpperCase();
-    if (!cleanNumber) {
-      toast.error("Please enter your Exam Number.");
-      return;
-    }
-
-    try {
-      await loginWithExamNumber(cleanNumber);
-      toast.success("Identity Verified. Terminal Active.");
-      navigate('/dashboard');
-    } catch (e: any) {
-      toast.error(e.message || "Authentication failed. Check your Exam Number.");
-    }
-  };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +28,7 @@ export default function CandidateLogin() {
 
     try {
       await loginCandidateWithEmail(email, password);
-      toast.success("Login successful. Accessing dashboard...");
+      toast.success("Identity Verified. Accessing Dashboard...");
       navigate('/dashboard');
     } catch (e) {
       // Error handled in context
@@ -74,7 +55,7 @@ export default function CandidateLogin() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
 
@@ -103,88 +84,64 @@ export default function CandidateLogin() {
         <motion.main initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-sm text-center">
           <div className="inline-flex items-center gap-2 mb-8 px-6 py-2.5 rounded-full border-2 border-primary/20 bg-white backdrop-blur-sm shadow-md">
             <GraduationCap className="w-4 h-4 text-primary" />
-            <span className="text-[14px] font-black tracking-[0.2em] text-primary">CBT Terminal</span>
+            <span className="text-[14px] font-black tracking-[0.2em] text-primary">CANDIDATE PORTAL</span>
           </div>
 
           <div className="bg-white rounded-[32px] border-2 border-primary shadow-2xl relative overflow-hidden">
-            <div className="flex border-b-2 border-primary/5 bg-slate-50">
-              <button
-                onClick={() => setLoginMode('exam')}
-                className={cn("flex-1 py-4 font-black text-[10px] tracking-widest transition-all", loginMode === 'exam' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}
-              >
-                EXAM NUMBER
-              </button>
-              <button
-                onClick={() => setLoginMode('email')}
-                className={cn("flex-1 py-4 font-black text-[10px] tracking-widest transition-all", loginMode === 'email' ? "bg-primary text-white" : "text-primary/40 hover:text-primary")}
-              >
-                EMAIL ACCESS
-              </button>
+            <div className="p-6 border-b-2 border-primary/5 bg-slate-50">
+               <h2 className="font-black text-[12px] tracking-[0.2em] text-primary uppercase">Secure Login Access</h2>
             </div>
 
             <div className="p-10 space-y-8">
-              <AnimatePresence mode="wait">
-                {loginMode === 'exam' ? (
-                  <motion.form key="exam" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleExamLogin} className="space-y-6">
-                    <div className="space-y-2 text-left">
-                      <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Registration Number</Label>
-                      <div className="relative group">
-                        <Input
-                          value={examNumber}
-                          onChange={e => setExamNumber(e.target.value)}
-                          placeholder="ENTER EXAM NO"
-                          className="h-14 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary px-6 font-black tracking-[0.2em] text-center text-primary transition-all group-hover:border-primary/40 shadow-sm uppercase"
-                        />
-                        <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary/40 transition-colors" />
-                      </div>
+              <form onSubmit={handleEmailLogin} className="space-y-6">
+                <div className="space-y-4 text-left">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Email Address</Label>
+                    <div className="relative group">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                      <Input
+                        type="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="EMAIL@EXAMPLE.COM"
+                        className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-primary transition-all"
+                        required
+                      />
                     </div>
-                    <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px] shadow-2xl shadow-primary/20 transition-all active:scale-95">
-                      {loading ? "VERIFYING..." : "START EXAMINATION"}
-                    </Button>
-                  </motion.form>
-                ) : (
-                  <motion.form key="email" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleEmailLogin} className="space-y-6">
-                    <div className="space-y-4 text-left">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Email Address</Label>
-                        <div className="relative group">
-                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
-                          <Input
-                            type="email"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            placeholder="EMAIL@EXAMPLE.COM"
-                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-primary transition-all"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Password</Label>
-                        <div className="relative group">
-                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
-                          <Input
-                            type="password"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            placeholder="••••••••"
-                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-primary transition-all"
-                          />
-                        </div>
-                      </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Password</Label>
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                      <Input
+                        type="password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-primary transition-all"
+                        required
+                      />
                     </div>
-                    <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px] shadow-2xl shadow-primary/20 transition-all active:scale-95">
-                      {loading ? "LOGGING IN..." : "ACCESS DASHBOARD"}
-                    </Button>
-                  </motion.form>
-                )}
-              </AnimatePresence>
+                  </div>
+                </div>
+                <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px] shadow-2xl shadow-primary/20 transition-all active:scale-95">
+                  {loading ? "AUTHENTICATING..." : "ACCESS DASHBOARD"}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/forgot-password')}
+                  className="w-full text-[10px] font-black text-primary/40 hover:text-primary transition-colors tracking-widest mt-2"
+                >
+                  FORGOT PASSWORD? CLICK HERE
+                </button>
+              </form>
 
               <div className="space-y-4 border-t-2 border-primary/5 pt-6">
                 <button
                   onClick={() => navigate('/results')}
-                  className="w-full text-[10px] font-black text-primary/40 hover:text-primary transition-colors tracking-widest flex items-center justify-center gap-2"
+                  className="w-full h-14 rounded-2xl border-2 border-dashed border-primary/20 text-[10px] font-black text-primary/60 hover:bg-primary/5 hover:border-primary transition-all tracking-widest flex items-center justify-center gap-2"
                 >
-                  <Search className="w-3 h-3" /> CHECK MY RESULT / TRANSCRIPT
+                  <Search className="w-4 h-4" /> CHECK MY RESULT (EXAM NUMBER)
                 </button>
                 <Separator className="bg-primary/5" />
                 <button

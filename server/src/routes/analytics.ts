@@ -22,7 +22,7 @@ router.get("/export-results", authenticateJWT, authorizeRoles("admin", "super_ad
     });
 
     let csv = "Exam Number,Score,Total Possible,Date Completed\n";
-    attempts.forEach(a => {
+    attempts.forEach((a: any) => {
       csv += `${a.userId},${a.score},${a.totalPossible},${a.completedAt?.toISOString()}\n`;
     });
 

@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   Calculator as CalcIcon,
   LogOut,
+  MessageCircle,
   Volume2,
   Eye,
   CameraOff,
@@ -48,11 +49,16 @@ export default function ExamPlayer() {
   const [proctoringActive, setProctoringActive] = useState(false);
   const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const { profile, user, logOut } = useAuth();
   const { socket } = useSocket();
   const navigate = useNavigate();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const videoRefProctor = useRef<HTMLVideoElement>(null);
 
   const getHeaders = useCallback(() => ({
     'Content-Type': 'application/json',
@@ -113,7 +119,36 @@ export default function ExamPlayer() {
     navigate('/');
   };
 
-  const videoRefProctor = useRef<HTMLVideoElement | null>(null);
+  useEffect(() => {
+    if (socket && profile) {
+      socket.emit('join-candidate-chat', profile.examNumber);
+      socket.on('new-message', (msg: any) => {
+        setMessages(prev => [...prev, msg]);
+        if (!chatOpen) toast.info(`Message from Proctor: ${msg.message.substring(0, 30)}...`);
+      });
+      return () => { socket.off('new-message'); };
+    }
+  }, [socket, profile, chatOpen]);
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  const sendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !socket || !profile) return;
+    const msg = {
+      to: 'admin',
+      from: profile.examNumber,
+      fromName: profile.fullName,
+      message: newMessage
+    };
+    socket.emit('send-message', msg);
+    setMessages(prev => [...prev, { ...msg, timestamp: new Date(), from: 'me' }]);
+    setNewMessage('');
+  };
 
   // AI Proctoring: Periodic Webcam Capture
   useEffect(() => {
@@ -534,6 +569,66 @@ export default function ExamPlayer() {
 
         <Button onClick={() => { if(confirm("Submit all answers?")) handleSubmit(); }} className="h-14 px-8 bg-red-500 text-white rounded-2xl font-black tracking-widest hover:bg-red-600 shadow-xl shadow-red-100 border-none">FINAL SUBMIT</Button>
       </footer>
+
+      {/* Proctor Chat Widget */}
+      <div className={cn(
+        "fixed bottom-28 right-8 z-[200] flex flex-col transition-all",
+        chatOpen ? "w-80 h-[450px]" : "w-14 h-14"
+      )}>
+        <AnimatePresence>
+          {chatOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="flex-1 bg-white rounded-3xl shadow-2xl border-2 border-primary/10 flex flex-col overflow-hidden mb-4"
+            >
+              <div className="p-4 bg-primary text-white flex justify-between items-center">
+                <span className="text-[10px] font-black tracking-widest uppercase">Tech Support Chat</span>
+                <Button variant="ghost" size="icon" onClick={() => setChatOpen(false)} className="h-6 w-6 text-white"><HelpCircle className="w-4 h-4" /></Button>
+              </div>
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-3">
+                  {messages.length === 0 && (
+                    <p className="text-[10px] font-bold text-primary/20 text-center py-10 uppercase">No messages yet. Message the proctor if you have technical issues.</p>
+                  )}
+                  {messages.map((m, i) => (
+                    <div key={i} className={cn("flex flex-col", m.from === 'me' ? "items-end" : "items-start")}>
+                      <div className={cn(
+                        "max-w-[80%] p-3 rounded-2xl text-[11px] font-bold",
+                        m.from === 'me' ? "bg-primary text-white" : "bg-slate-100 text-primary"
+                      )}>
+                        {m.message}
+                      </div>
+                      <span className="text-[8px] font-black opacity-20 mt-1 uppercase">{new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+              </ScrollArea>
+              <form onSubmit={sendMessage} className="p-4 border-t border-primary/5 flex gap-2">
+                <Input
+                  value={newMessage}
+                  onChange={e => setNewMessage(e.target.value)}
+                  placeholder="Type message..."
+                  className="h-10 text-[11px] font-bold rounded-xl"
+                />
+                <Button type="submit" size="icon" className="h-10 w-10 rounded-xl bg-primary text-white"><Send className="w-4 h-4" /></Button>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <Button
+          onClick={() => setChatOpen(!chatOpen)}
+          className={cn(
+            "h-14 w-14 rounded-full shadow-2xl flex items-center justify-center transition-all self-end",
+            chatOpen ? "bg-primary/10 text-primary rotate-90" : "bg-primary text-white hover:scale-110"
+          )}
+        >
+          {chatOpen ? <XCircle className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+        </Button>
+      </div>
     </div>
   );
 }

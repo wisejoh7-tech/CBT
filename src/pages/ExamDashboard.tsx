@@ -30,6 +30,12 @@ export default function ExamDashboard() {
   const { socket } = useSocket();
   const navigate = useNavigate();
 
+  // Robust field mapping for profile display
+  const displayName = profile?.displayName || profile?.fullName || "Candidate";
+  const examNumber = profile?.examNumber || profile?.uid || "N/A";
+  const faceUrl = profile?.faceUrl || null;
+  const hasWaecResult = !!(profile?.waecResultUrl);
+
   const getHeaders = useCallback(() => ({
     'Authorization': `Bearer ${localStorage.getItem('token')}`
   }), []);
@@ -79,7 +85,7 @@ export default function ExamDashboard() {
 
   const isExamFinished = unifiedAttempt?.status === 'completed';
 
-  if (loading) return <div className="p-20 text-center font-black">ACCESSING TERMINAL...</div>;
+  if (loading) return <div className="p-20 text-center font-black">Loading</div>;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 uppercase relative">
@@ -96,7 +102,7 @@ export default function ExamDashboard() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
         <Button variant="ghost" size="icon" onClick={() => { logOut?.(); navigate('/'); }}><LogOut className="w-4 h-4" /></Button>
@@ -105,23 +111,32 @@ export default function ExamDashboard() {
       <main className="flex-1 max-w-5xl mx-auto w-full p-8 space-y-8">
         <Card className="p-10 rounded-[40px] border-2 border-primary/10 bg-white shadow-2xl">
           <div className="flex flex-col md:flex-row gap-10 items-center">
-            <div className="w-40 h-40 rounded-[32px] bg-primary/5 border-4 border-white shadow-xl flex items-center justify-center overflow-hidden">
-               {profile?.faceUrl ? <img src={profile.faceUrl} className="w-full h-full object-cover" /> : <GraduationCap className="w-16 h-16 opacity-10" />}
+            <div className="w-40 h-40 rounded-[32px] bg-primary/5 border-4 border-white shadow-xl flex items-center justify-center overflow-hidden bg-slate-100">
+               {faceUrl ? <img src={faceUrl} className="w-full h-full object-cover" /> : <User className="w-16 h-16 opacity-10" />}
             </div>
             <div className="flex-1 text-center md:text-left">
-              <h2 className="text-5xl font-black tracking-tighter mb-4">{profile?.displayName}</h2>
-              <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                <Badge className="bg-primary/5 text-primary border-none px-4 py-2 font-black">ID: {profile?.examNumber}</Badge>
-                {profile?.subjectCombination?.map(s => <Badge key={s} className="bg-sky-500 text-white border-none px-4 py-2 font-black">{s}</Badge>)}
+              <h2 className="text-5xl font-black tracking-tighter mb-4">{displayName}</h2>
+              <div className="flex flex-wrap justify-center md:justify-start gap-4 items-center">
+                <Badge className="bg-primary/5 text-primary border-none px-4 py-2 font-black">EXAM NO: {examNumber}</Badge>
+                {profile?.subjectCombination?.map(s => <Badge key={s} className="bg-sky-500 text-white border-none px-4 py-2 font-black">{s.toUpperCase()}</Badge>)}
+                {hasWaecResult ? (
+                  <Badge className="bg-emerald-500 text-white border-none px-4 py-2 font-black flex gap-1">
+                    <CheckCircle className="w-3 h-3" /> WAEC VERIFIED
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="border-amber-500 text-amber-600 px-4 py-2 font-black">
+                    WAEC PENDING
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
         </Card>
 
         {!isExamFinished ? (
-          <Card className="p-10 rounded-[40px] border-2 border-primary bg-white shadow-2xl overflow-hidden relative">
+          <Card className="p-7 rounded-[8px] border-1 border-primary bg-white shadow-1xl overflow-hidden relative">
             <div className="relative z-10">
-              <h3 className="text-3xl font-black mb-2">READY FOR EXAMINATION?</h3>
+              <h6 className="text-1xl font-black mb-2">READY FOR EXAMINATION?</h6>
               <p className="text-primary/40 font-bold mb-8">{exams.length} SUBJECTS CONFIGURED FOR YOUR SESSION</p>
 
               {exams.some(e => {
@@ -134,7 +149,7 @@ export default function ExamDashboard() {
                   <p className="text-amber-700 font-black text-xs uppercase tracking-widest">Access Restricted: Session not yet active or has expired.</p>
                 </div>
               ) : (
-                <Button onClick={() => navigate('/instructions/unified')} className="w-full h-20 bg-primary text-white rounded-3xl font-black text-xl tracking-widest shadow-2xl shadow-primary/20 flex gap-4">
+                <Button onClick={() => navigate('/instructions/unified')} className="h-20 bg-primary text-white rounded-1xl font-black text-xl tracking-widest shadow-2xl shadow-primary/20 flex gap-4">
                   <PlayCircle className="w-8 h-8" /> START SESSION NOW
                 </Button>
               )}
@@ -151,6 +166,48 @@ export default function ExamDashboard() {
                  <Printer className="w-5 h-5" /> VIEW TRANSCRIPT
                </Button>
              </div>
+          </Card>
+        )}
+
+        {!hasWaecResult && (
+          <Card className="p-10 rounded-[40px] border-2 border-dashed border-amber-200 bg-amber-50/30 text-center">
+            <div className="max-w-md mx-auto space-y-6">
+              <h3 className="text-xl font-black text-amber-800">COMPLETE YOUR PROFILE</h3>
+              <p className="text-amber-600/70 font-bold text-sm">Your WAEC result has not been uploaded. Please provide a copy for session eligibility verification.</p>
+              <Input
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = async (ev) => {
+                    const dataUrl = ev.target?.result as string;
+                    try {
+                      const res = await fetch(getApiUrl(`/candidates/${examNumber}/waec`), {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify({ waecResultUrl: dataUrl })
+                      });
+                      if (res.ok) {
+                        toast.success("Result uploaded successfully.");
+                        // Update local profile
+                        const updatedProfile = { ...profile, waecResultUrl: dataUrl };
+                        localStorage.setItem('profile', JSON.stringify(updatedProfile));
+                        window.location.reload();
+                      }
+                    } catch (err) {
+                      toast.error("Upload failed.");
+                    }
+                  };
+                  reader.readAsDataURL(file);
+                }}
+                className="h-14 pt-4 rounded-2xl border-2 border-amber-200 bg-white font-bold"
+              />
+            </div>
           </Card>
         )}
       </main>
