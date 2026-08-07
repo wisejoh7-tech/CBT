@@ -14,10 +14,12 @@ import authRoutes from "./routes/auth";
 import examRoutes from "./routes/exam";
 import analyticsRoutes from "./routes/analytics";
 import centerRoutes from "./routes/center";
+import candidateRoutes from "./routes/candidate";
 import { authenticateJWT, authorizeRoles } from "./middleware/auth";
 import { AppDataSource } from "./data-source";
 import { logger } from "./lib/logger";
 import { config } from "./lib/config";
+import { redisClient, transporter } from "./lib/services";
 
 export { AppDataSource };
 
@@ -43,32 +45,12 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Redis Client
-export const redisClient = createClient({
-  url: config.REDIS_URL,
-});
-
-redisClient.on("error", (err) => logger.error("Redis Client Error", err));
-
 // Routes
 app.use("/auth", authRoutes);
 app.use("/exams", examRoutes);
 app.use("/analytics", analyticsRoutes);
 app.use("/center", centerRoutes);
-
-// Mailer Setup
-export const transporter = nodemailer.createTransport({
-  host: config.MAIL_HOST || "smtp.gmail.com",
-  port: parseInt(config.MAIL_PORT || "587"),
-  secure: false,
-  auth: {
-    user: config.MAIL_USER,
-    pass: config.MAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
+app.use("/candidate", candidateRoutes);
 
 async function startServer() {
   try {
@@ -176,7 +158,7 @@ async function startServer() {
       try {
         const { waecResultUrl } = req.body;
         const candidateRepo = AppDataSource.getRepository(Candidate);
-        await candidateRepo.update({ examNumber: req.params.examNumber }, { waecResultUrl });
+        await candidateRepo.update(req.params.examNumber, { waecResultUrl });
         res.json({ message: "WAEC result updated successfully" });
       } catch (error) {
         res.status(500).json({ error: "Failed to update WAEC result" });

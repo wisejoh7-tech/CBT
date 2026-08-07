@@ -5,9 +5,10 @@ import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
 import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
-import { Mail, User, BookOpen, Key, Calendar, ArrowRight, CheckCircle, Monitor } from 'lucide-react';
+import { Mail, User, BookOpen, Key, Calendar, ArrowRight, CheckCircle, Monitor, Phone, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiUrl } from '@/src/lib/api-config';
+import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
 
 export default function CandidateRegister() {
   const navigate = useNavigate();
@@ -17,6 +18,11 @@ export default function CandidateRegister() {
     email: '',
     token: '',
     fullName: '',
+    phoneNumber: '',
+    stateOfOrigin: '',
+    lga: '',
+    schoolAttended: '',
+    address: '',
     password: '',
     dateOfBirth: '',
     waecResultUrl: '',
@@ -63,6 +69,11 @@ export default function CandidateRegister() {
           email: formData.email,
           token: formData.token,
           fullName: formData.fullName,
+          phoneNumber: formData.phoneNumber,
+          stateOfOrigin: formData.stateOfOrigin,
+          lga: formData.lga,
+          schoolAttended: formData.schoolAttended,
+          address: formData.address,
           dateOfBirth: formData.dateOfBirth,
           waecResultUrl: formData.waecResultUrl,
           subjectCombination: formData.subjectCombination,
@@ -117,7 +128,7 @@ export default function CandidateRegister() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-20 relative z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-black tracking-tighter text-primary leading-none mb-2">Candidate Registration</h1>
+            <h2 className="text-3xl font-black tracking-tighter text-primary leading-none mb-2">Candidate Registration</h2>
             <p className="text-[10px] font-black text-primary/40 tracking-[0.4em]">Step {step} of 2</p>
           </div>
 
@@ -127,7 +138,7 @@ export default function CandidateRegister() {
                 {step === 1 ? (
                   <motion.form key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleSendToken} className="space-y-6">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-primary/40 tracking-widest">Email Address</Label>
+                      <Label className="text-[8px] font-black text-primary/20 tracking-widest">Email</Label>
                       <div className="relative group">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                         <Input
@@ -168,6 +179,81 @@ export default function CandidateRegister() {
                           placeholder="SURNAME FIRSTNAME"
                           value={formData.fullName}
                           onChange={e => setFormData({...formData, fullName: e.target.value})}
+                          className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-primary/40 tracking-widest">Phone Number</Label>
+                      <div className="relative group">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                        <Input
+                          placeholder="+234 812 345 6789"
+                          value={formData.phoneNumber}
+                          onChange={e => setFormData({...formData, phoneNumber: e.target.value})}
+                          className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">State of Origin</Label>
+                        <select
+                          value={formData.stateOfOrigin}
+                          onChange={e => setFormData({ ...formData, stateOfOrigin: e.target.value, lga: '' })}
+                          className="w-full h-14 px-4 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-sm transition-all"
+                          required
+                        >
+                          <option value="">SELECT STATE</option>
+                          {NIGERIAN_STATES.map(state => (
+                            <option key={state} value={state}>{state.toUpperCase()}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">LGA of Origin</Label>
+                        <select
+                          value={formData.lga}
+                          onChange={e => setFormData({ ...formData, lga: e.target.value })}
+                          className="w-full h-14 px-4 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-sm transition-all"
+                          required
+                          disabled={!formData.stateOfOrigin}
+                        >
+                          <option value="">SELECT LGA</option>
+                          {formData.stateOfOrigin && STATE_LGAS[formData.stateOfOrigin]?.map(lga => (
+                            <option key={lga} value={lga}>{lga.toUpperCase()}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-primary/40 tracking-widest">School Attended</Label>
+                      <div className="relative group">
+                        <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                        <Input
+                          placeholder="NAME OF SECONDARY SCHOOL"
+                          value={formData.schoolAttended}
+                          onChange={e => setFormData({...formData, schoolAttended: e.target.value})}
+                          className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-primary/40 tracking-widest">Residential Address</Label>
+                      <div className="relative group">
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                        <Input
+                          placeholder="HOME ADDRESS"
+                          value={formData.address}
+                          onChange={e => setFormData({...formData, address: e.target.value})}
                           className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
                           required
                         />
@@ -276,3 +362,4 @@ export default function CandidateRegister() {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
+

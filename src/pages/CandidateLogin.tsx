@@ -18,6 +18,8 @@ export default function CandidateLogin() {
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'reg_admin';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [examNumber, setExamNumber] = useState('');
+  const [loginMethod, setLoginMethod] = useState<'email' | 'examNumber'>('examNumber');
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,10 +30,26 @@ export default function CandidateLogin() {
 
     try {
       await loginCandidateWithEmail(email, password);
-      toast.success("Identity Verified. Accessing Dashboard...");
+      toast.success("Identity Verified. Accessing Portal...");
       navigate('/dashboard');
     } catch (e) {
       // Error handled in context
+    }
+  };
+
+  const handleExamNumberLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!examNumber) {
+      toast.error("Exam Number required.");
+      return;
+    }
+
+    try {
+      await loginWithExamNumber(examNumber);
+      toast.success("Identity Verified. Opening Terminal...");
+      navigate('/exam-terminal');
+    } catch (e) {
+      toast.error("Invalid Exam Number or Session inactive.");
     }
   };
 
@@ -84,57 +102,95 @@ export default function CandidateLogin() {
         <motion.main initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-sm text-center">
           <div className="inline-flex items-center gap-2 mb-8 px-6 py-2.5 rounded-full border-2 border-primary/20 bg-white backdrop-blur-sm shadow-md">
             <GraduationCap className="w-4 h-4 text-primary" />
-            <span className="text-[14px] font-black tracking-[0.2em] text-primary">CANDIDATE PORTAL</span>
+            <span className="text-[8px] font-black tracking-[0.2em] text-primary">CANDIDATE PORTAL</span>
           </div>
 
           <div className="bg-white rounded-[32px] border-2 border-primary shadow-2xl relative overflow-hidden">
             <div className="p-6 border-b-2 border-primary/5 bg-slate-50">
-               <h2 className="font-black text-[12px] tracking-[0.2em] text-primary uppercase">Secure Login Access</h2>
+               <h2 className="font-black text-[12px] tracking-[0.2em] text-primary uppercase">Login Portal</h2>
             </div>
 
             <div className="p-10 space-y-8">
-              <form onSubmit={handleEmailLogin} className="space-y-6">
-                <div className="space-y-4 text-left">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Email Address</Label>
-                    <div className="relative group">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
-                      <Input
-                        type="email"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        placeholder="EMAIL@EXAMPLE.COM"
-                        className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-primary transition-all"
-                        required
-                      />
+              <div className="flex p-1 bg-slate-100 rounded-2xl">
+                 <button
+                  onClick={() => setLoginMethod('examNumber')}
+                  className={cn("flex-1 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all", loginMethod === 'examNumber' ? "bg-white text-primary shadow-sm" : "text-primary/40 hover:text-primary")}
+                 >
+                   EXAM NUMBER
+                 </button>
+                 <button
+                  onClick={() => setLoginMethod('email')}
+                  className={cn("flex-1 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all", loginMethod === 'email' ? "bg-white text-primary shadow-sm" : "text-primary/40 hover:text-primary")}
+                 >
+                   EMAIL ADDRESS
+                 </button>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {loginMethod === 'examNumber' ? (
+                  <motion.form key="exam" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} onSubmit={handleExamNumberLogin} className="space-y-6">
+                     <div className="space-y-2 text-left">
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Examination Number</Label>
+                        <div className="relative group">
+                          <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                          <Input
+                            value={examNumber}
+                            onChange={e => setExamNumber(e.target.value)}
+                            placeholder="Enter exam number."
+                            className="h-16 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-lg text-primary transition-all tracking-widest"
+                            required
+                          />
+                        </div>
+                     </div>
+                     <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px] shadow-2xl shadow-primary/20">
+                        {loading ? "VERIFYING..." : "ENTER EXAM TERMINAL"}
+                     </Button>
+                  </motion.form>
+                ) : (
+                  <motion.form key="email" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} onSubmit={handleEmailLogin} className="space-y-6">
+                    <div className="space-y-4 text-left">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Email Address</Label>
+                        <div className="relative group">
+                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                          <Input
+                            type="email"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            placeholder="EMAIL@EXAMPLE.COM"
+                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-primary transition-all"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Password</Label>
+                        <div className="relative group">
+                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                          <Input
+                            type="password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-primary transition-all"
+                            required
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Password</Label>
-                    <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
-                      <Input
-                        type="password"
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-primary transition-all"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-                <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px] shadow-2xl shadow-primary/20 transition-all active:scale-95">
-                  {loading ? "AUTHENTICATING..." : "ACCESS DASHBOARD"}
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/forgot-password')}
-                  className="w-full text-[10px] font-black text-primary/40 hover:text-primary transition-colors tracking-widest mt-2"
-                >
-                  FORGOT PASSWORD? CLICK HERE
-                </button>
-              </form>
+                    <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px] shadow-2xl shadow-primary/20">
+                      {loading ? "AUTHENTICATING..." : "ACCESS CANDIDATE PORTAL"}
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/forgot-password')}
+                      className="w-full text-[10px] font-black text-primary/40 hover:text-primary transition-colors tracking-widest mt-2"
+                    >
+                      FORGOT PASSWORD? CLICK HERE
+                    </button>
+                  </motion.form>
+                )}
+              </AnimatePresence>
 
               <div className="space-y-4 border-t-2 border-primary/5 pt-6">
                 <button

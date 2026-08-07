@@ -9,6 +9,10 @@ export interface UserProfile {
   role: 'student' | 'super_admin' | 'reg_admin' | 'admin';
   thumbprinted?: boolean;
   subjectCombination?: string[];
+  stateOfOrigin?: string;
+  lga?: string;
+  schoolAttended?: string;
+  address?: string;
   createdAt: string;
 }
 
@@ -17,8 +21,13 @@ export interface Candidate {
   examNumber: string;
   fullName: string;
   email?: string;
+  phoneNumber?: string;
   dateOfBirth?: string;
   status: 'active' | 'suspended';
+  stateOfOrigin?: string;
+  lga?: string;
+  schoolAttended?: string;
+  address?: string;
   thumbprinted: boolean;
   thumbprintData?: string;
   faceUrl?: string;

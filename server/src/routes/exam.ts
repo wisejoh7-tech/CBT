@@ -7,6 +7,9 @@ import { Candidate } from "../entities/Candidate";
 import { authenticateJWT, authorizeRoles } from "../middleware/auth";
 import { analyzeProctoringSnapshot, generateBulkQuestionsFromSyllabus, generatePersonalizedStudyGuide, verifyCandidateIdentity } from "../lib/gemini";
 import { createLog, logger } from "../lib/logger";
+import { transporter, redisClient } from "../lib/services";
+import { sendSMS } from "../lib/sms";
+import { config } from "../lib/config";
 
 const router = Router();
 
@@ -296,6 +299,56 @@ router.put("/attempt/:attemptId", authenticateJWT, async (req, res) => {
       userId: attempt.userId,
       metadata: { attemptId: attempt.id, score: attempt.score, totalPossible: attempt.totalPossible }
     });
+
+    // Send Result Notifications
+    const candidate = await AppDataSource.getRepository(Candidate).findOneBy({ examNumber: attempt.userId });
+    if (candidate) {
+      const scorePercentage = ((attempt.score / attempt.totalPossible) * 100).toFixed(1);
+      const downloadLink = `${req.protocol}://${req.get('host')}/auth/public/download-result/${attempt.id}`;
+
+      // 1. Send Email Notification
+      try {
+        await transporter.sendMail({
+          from: `"VIVI CBT Results" <${config.MAIL_USER}>`,
+          to: candidate.email,
+          subject: `📊 Your Exam Results are Ready - ${candidate.fullName}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+              <h2 style="color: #333;">Exam Performance Report</h2>
+              <p>Hello <b>${candidate.fullName}</b>,</p>
+              <p>Your examination results have been processed successfully.</p>
+
+              <div style="background: #f4f4f4; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><b>Score:</b> ${attempt.score} / ${attempt.totalPossible}</p>
+                <p style="margin: 5px 0;"><b>Percentage:</b> ${scorePercentage}%</p>
+                <p style="margin: 5px 0;"><b>Status:</b> ${attempt.score >= (attempt.totalPossible / 2) ? 'PASSED' : 'FAILED'}</p>
+              </div>
+
+              <h3>Subject Breakdown:</h3>
+              <ul>
+                ${Object.entries(attempt.results.subjects).map(([subject, stats]: [string, any]) =>
+                  `<li><b>${subject}:</b> ${stats.correct} / ${stats.total}</li>`
+                ).join('')}
+              </ul>
+
+              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <a href="${downloadLink}" style="display: inline-block; background-color: #0EA5E9; color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: bold;">Download Official Result Slip</a>
+              </div>
+
+              <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated message. Please do not reply.</p>
+            </div>
+          `
+        });
+      } catch (err) {
+        logger.error("Failed to send result email", err);
+      }
+
+      // 2. Send SMS Notification
+      if (candidate.phoneNumber) {
+        const smsMessage = `VIVI CBT: Hello ${candidate.fullName}, your exam result is ready. Score: ${attempt.score}/${attempt.totalPossible} (${scorePercentage}%). Log in to the portal for details.`;
+        await sendSMS(candidate.phoneNumber, smsMessage);
+      }
+    }
   }
 
   await attemptRepo.save(attempt);
@@ -305,6 +358,73 @@ router.put("/attempt/:attemptId", authenticateJWT, async (req, res) => {
 router.delete("/attempt/:attemptId", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
   await AppDataSource.getRepository(Attempt).delete(req.params.attemptId as any);
   res.status(204).send();
+});
+
+// --- ADMIN SCHEDULING & RELEASE ---
+
+// Bulk Schedule Candidates
+router.post("/admin/schedule-bulk", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+  const { examNumbers, examVenue, examDate, examTime } = req.body;
+  if (!Array.isArray(examNumbers)) return res.status(400).json({ message: "examNumbers must be an array" });
+
+  const candidateRepo = AppDataSource.getRepository(Candidate);
+  try {
+    await candidateRepo.createQueryBuilder()
+      .update(Candidate)
+      .set({ examVenue, examDate, examTime })
+      .where("examNumber IN (:...examNumbers)", { examNumbers })
+      .execute();
+
+    res.json({ message: `Schedule updated for ${examNumbers.length} candidates` });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update schedules", error });
+  }
+});
+
+// Release Results (with 5-day check)
+router.post("/admin/release-results", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+  const { attemptIds } = req.body; // Array of attempt IDs
+  if (!Array.isArray(attemptIds)) return res.status(400).json({ message: "attemptIds must be an array" });
+
+  const attemptRepo = AppDataSource.getRepository(Attempt);
+  const now = new Date();
+  const fiveDaysAgo = new Date(now.getTime() - (5 * 24 * 60 * 60 * 1000));
+
+  try {
+    const attempts = await attemptRepo.find({
+      where: attemptIds.map(id => ({ id }))
+    });
+
+    const toRelease: string[] = [];
+    const tooEarly: string[] = [];
+
+    attempts.forEach(attempt => {
+      if (attempt.status !== 'completed') return;
+
+      const completedAt = attempt.completedAt ? new Date(attempt.completedAt) : null;
+      if (completedAt && completedAt <= fiveDaysAgo) {
+        toRelease.push(attempt.id);
+      } else {
+        tooEarly.push(attempt.id);
+      }
+    });
+
+    if (toRelease.length > 0) {
+      await attemptRepo.createQueryBuilder()
+        .update(Attempt)
+        .set({ isReleased: true })
+        .where("id IN (:...ids)", { ids: toRelease })
+        .execute();
+    }
+
+    res.json({
+      message: `Released ${toRelease.length} results. ${tooEarly.length} results were skipped (less than 5 days since completion).`,
+      released: toRelease,
+      skipped: tooEarly
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to release results", error });
+  }
 });
 
 // --- PUBLIC RESULT CHECKER ---

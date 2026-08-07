@@ -5,7 +5,8 @@ import { useAuth } from '@/src/context/AuthContext';
 import { useSocket } from '@/src/context/SocketContext';
 import { Button } from '@/lib/ui/button';
 import { Card } from '@/lib/ui/card';
-import { 
+import { Input } from '@/lib/ui/input';
+import {
   LogOut,
   GraduationCap,
   PlayCircle,
@@ -54,8 +55,11 @@ export default function ExamDashboard() {
         setExams(filteredExams);
 
         const attemptRes = await fetch(getApiUrl('/exams/attempts/all'), { headers: getHeaders() });
-        const allAttempts: Attempt[] = await attemptRes.json();
-        const myAttempts = allAttempts.filter(a => a.userId === (profile.examNumber || user.uid));
+        const allAttempts = await attemptRes.json();
+
+        // Ensure allAttempts is an array before filtering
+        const attemptsArray = Array.isArray(allAttempts) ? allAttempts : [];
+        const myAttempts = attemptsArray.filter(a => a.userId === (profile.examNumber || user.uid));
         setAttempts(myAttempts);
 
         const unified = myAttempts.find(a => a.examId === 'unified');
@@ -88,129 +92,82 @@ export default function ExamDashboard() {
   if (loading) return <div className="p-20 text-center font-black">Loading</div>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 uppercase relative">
-      <div className="cbt-background opacity-[0.05]" />
-      <header className="h-16 bg-white border-b-2 border-primary/10 px-8 flex justify-between items-center sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white"><GraduationCap className="w-5 h-5" /></div>
-            <h1 className="font-black tracking-tighter text-primary">CBT DASHBOARD</h1>
+    <div className="min-h-screen flex flex-col bg-slate-900 uppercase relative overflow-hidden">
+      {/* Intense futuristic background for exam terminal */}
+      <div className="absolute inset-0 z-0">
+         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#0EA5E910,transparent)]" />
+         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:40px_40px]" />
+      </div>
+
+      <header className="h-12 border-b border-white/10 px-6 flex justify-between items-center relative z-10 bg-black/20 backdrop-blur-xl">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+             <div className="w-6 h-6 bg-primary rounded-md flex items-center justify-center text-white shadow-[0_0_15px_rgba(14,165,233,0.4)]"><GraduationCap className="w-3.5 h-3.5" /></div>
+             <h1 className="font-black text-xs tracking-tighter text-white">EXAM TERMINAL</h1>
           </div>
-          <div className="h-8 w-[1px] bg-primary/10 hidden md:block" />
-          <div className="hidden md:flex items-center gap-2 text-primary/40">
-            <div className="relative">
-              <Monitor className="w-6 h-6" />
-              <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-            </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
-          </div>
+          <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 font-black text-[8px] px-2 py-0.5 animate-pulse">SECURE LINK ACTIVE</Badge>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => { logOut?.(); navigate('/'); }}><LogOut className="w-4 h-4" /></Button>
+        <div className="flex items-center gap-3">
+           <div className="text-right hidden sm:block">
+              <p className="text-[8px] font-black text-white/40 leading-none">CANDIDATE ID</p>
+              <p className="text-xs font-black text-white">{profile?.examNumber}</p>
+           </div>
+           <Button variant="ghost" size="icon" className="h-8 w-8 text-white/40 hover:text-white" onClick={() => { logOut?.(); navigate('/'); }}><LogOut className="w-3.5 h-3.5" /></Button>
+        </div>
       </header>
 
-      <main className="flex-1 max-w-5xl mx-auto w-full p-8 space-y-8">
-        <Card className="p-10 rounded-[40px] border-2 border-primary/10 bg-white shadow-2xl">
-          <div className="flex flex-col md:flex-row gap-10 items-center">
-            <div className="w-40 h-40 rounded-[32px] bg-primary/5 border-4 border-white shadow-xl flex items-center justify-center overflow-hidden bg-slate-100">
-               {faceUrl ? <img src={faceUrl} className="w-full h-full object-cover" /> : <User className="w-16 h-16 opacity-10" />}
-            </div>
-            <div className="flex-1 text-center md:text-left">
-              <h2 className="text-5xl font-black tracking-tighter mb-4">{displayName}</h2>
-              <div className="flex flex-wrap justify-center md:justify-start gap-4 items-center">
-                <Badge className="bg-primary/5 text-primary border-none px-4 py-2 font-black">EXAM NO: {examNumber}</Badge>
-                {profile?.subjectCombination?.map(s => <Badge key={s} className="bg-sky-500 text-white border-none px-4 py-2 font-black">{s.toUpperCase()}</Badge>)}
-                {hasWaecResult ? (
-                  <Badge className="bg-emerald-500 text-white border-none px-4 py-2 font-black flex gap-1">
-                    <CheckCircle className="w-3 h-3" /> WAEC VERIFIED
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="border-amber-500 text-amber-600 px-4 py-2 font-black">
-                    WAEC PENDING
-                  </Badge>
-                )}
-              </div>
-            </div>
+      <main className="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-xl text-center"
+        >
+          <div className="mb-8 space-y-2">
+             <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-white leading-none">READY TO<br/><span className="text-primary">BEGIN?</span></h2>
+             <p className="text-white/40 font-bold tracking-[0.2em] uppercase text-[9px]">VIVI Standard Examination Protocol v2.0</p>
           </div>
-        </Card>
 
-        {!isExamFinished ? (
-          <Card className="p-7 rounded-[8px] border-1 border-primary bg-white shadow-1xl overflow-hidden relative">
-            <div className="relative z-10">
-              <h6 className="text-1xl font-black mb-2">READY FOR EXAMINATION?</h6>
-              <p className="text-primary/40 font-bold mb-8">{exams.length} SUBJECTS CONFIGURED FOR YOUR SESSION</p>
-
-              {exams.some(e => {
-                const now = new Date();
-                if (e.startTime && new Date(e.startTime) > now) return true;
-                if (e.endTime && new Date(e.endTime) < now) return true;
-                return false;
-              }) ? (
-                <div className="p-6 bg-amber-50 rounded-2xl border-2 border-amber-100 mb-8">
-                  <p className="text-amber-700 font-black text-xs uppercase tracking-widest">Access Restricted: Session not yet active or has expired.</p>
+          <Card className="p-8 rounded-3xl border-2 border-white/10 bg-white/5 backdrop-blur-2xl shadow-2xl relative overflow-hidden">
+             <div className="relative z-10 space-y-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                   {profile?.subjectCombination?.map(s => (
+                     <div key={s} className="p-3 rounded-xl bg-white/5 border border-white/10">
+                        <p className="text-[8px] font-black text-white/40 uppercase mb-0.5">Subject</p>
+                        <p className="text-[10px] font-black text-white">{s.toUpperCase()}</p>
+                     </div>
+                   ))}
                 </div>
-              ) : (
-                <Button onClick={() => navigate('/instructions/unified')} className="h-20 bg-primary text-white rounded-1xl font-black text-xl tracking-widest shadow-2xl shadow-primary/20 flex gap-4">
-                  <PlayCircle className="w-8 h-8" /> START SESSION NOW
-                </Button>
-              )}
-            </div>
-            <Shield className="absolute -bottom-10 -right-10 w-64 h-64 opacity-[0.03] text-primary pointer-events-none" />
-          </Card>
-        ) : (
-          <Card className="p-10 rounded-[40px] border-2 border-primary/10 bg-white shadow-2xl text-center">
-             <Award className="w-16 h-16 text-primary mx-auto mb-6" />
-             <h3 className="text-3xl font-black mb-4 uppercase">SESSION CONCLUDED</h3>
-             <p className="text-primary/40 font-bold mb-10 max-w-md mx-auto">YOUR RESPONSES HAVE BEEN TRANSMITTED TO THE CENTRAL REPOSITORY. OFFICIAL TRANSCRIPTS WILL BE AVAILABLE ONCE VERIFIED BY ADMINS.</p>
-             <div className="flex justify-center gap-4">
-               <Button onClick={() => navigate(`/result-slip/${profile?.examNumber}`)} className="h-16 px-12 bg-primary text-white rounded-2xl font-black tracking-widest flex gap-3 shadow-xl">
-                 <Printer className="w-5 h-5" /> VIEW TRANSCRIPT
-               </Button>
-             </div>
-          </Card>
-        )}
 
-        {!hasWaecResult && (
-          <Card className="p-10 rounded-[40px] border-2 border-dashed border-amber-200 bg-amber-50/30 text-center">
-            <div className="max-w-md mx-auto space-y-6">
-              <h3 className="text-xl font-black text-amber-800">COMPLETE YOUR PROFILE</h3>
-              <p className="text-amber-600/70 font-bold text-sm">Your WAEC result has not been uploaded. Please provide a copy for session eligibility verification.</p>
-              <Input
-                type="file"
-                accept="image/*,application/pdf"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const reader = new FileReader();
-                  reader.onload = async (ev) => {
-                    const dataUrl = ev.target?.result as string;
-                    try {
-                      const res = await fetch(getApiUrl(`/candidates/${examNumber}/waec`), {
-                        method: 'PUT',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        },
-                        body: JSON.stringify({ waecResultUrl: dataUrl })
-                      });
-                      if (res.ok) {
-                        toast.success("Result uploaded successfully.");
-                        // Update local profile
-                        const updatedProfile = { ...profile, waecResultUrl: dataUrl };
-                        localStorage.setItem('profile', JSON.stringify(updatedProfile));
-                        window.location.reload();
-                      }
-                    } catch (err) {
-                      toast.error("Upload failed.");
-                    }
-                  };
-                  reader.readAsDataURL(file);
-                }}
-                className="h-14 pt-4 rounded-2xl border-2 border-amber-200 bg-white font-bold"
-              />
-            </div>
+                <div className="flex flex-col gap-3">
+                  {!isExamFinished ? (
+                    <Button
+                      onClick={() => navigate('/instructions/unified')}
+                      className="h-16 bg-primary hover:bg-sky-400 text-white rounded-2xl font-black text-lg tracking-[0.1em] shadow-[0_0_30px_rgba(14,165,233,0.2)] transition-all active:scale-95 group"
+                    >
+                      START SESSION <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  ) : (
+                    <div className="p-6 bg-emerald-500/10 border-2 border-emerald-500/20 rounded-2xl text-center">
+                       <Award className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+                       <h3 className="text-lg font-black text-white mb-1 uppercase">SESSION COMPLETED</h3>
+                       <p className="text-emerald-500/60 font-bold text-xs">Your responses have been securely transmitted.</p>
+                       <Button onClick={() => navigate('/dashboard')} variant="link" className="mt-3 h-auto p-0 text-primary font-black uppercase tracking-widest text-[8px]">Go to Profile for Results</Button>
+                    </div>
+                  )}
+
+                  <p className="text-white/20 text-[8px] font-bold tracking-widest uppercase">
+                    By clicking start, you agree to the examination code of conduct.
+                  </p>
+                </div>
+             </div>
+             <Shield className="absolute -bottom-16 -left-16 w-64 h-64 text-white/5 pointer-events-none" />
           </Card>
-        )}
+        </motion.div>
       </main>
+
+      <footer className="p-4 text-center relative z-10">
+         <p className="text-[8px] font-bold text-white/20 tracking-[0.3em] uppercase">Secure Terminal ID: {Math.random().toString(36).substring(7).toUpperCase()}</p>
+      </footer>
     </div>
   );
 }

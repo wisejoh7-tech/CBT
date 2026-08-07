@@ -5,7 +5,7 @@ import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
 import { Candidate } from "../entities/Candidate";
 import { createLog, logger } from "../lib/logger";
-import { redisClient, transporter } from "../index";
+import { redisClient, transporter } from "../lib/services";
 import { config } from "../lib/config";
 
 const router = Router();
@@ -59,7 +59,7 @@ router.post("/candidate/send-token", async (req, res) => {
 
 // Candidate Final Registration
 router.post("/candidate/register", async (req, res) => {
-  const { email, token, fullName, subjectCombination, dateOfBirth, password } = req.body;
+  const { email, token, fullName, subjectCombination, dateOfBirth, password, phoneNumber, stateOfOrigin, lga, schoolAttended, address } = req.body;
 
   try {
     const savedToken = await redisClient.get(`reg_token:${email}`);
@@ -69,13 +69,35 @@ router.post("/candidate/register", async (req, res) => {
 
     const candidateRepository = AppDataSource.getRepository(Candidate);
 
-    // Generate alphanumeric exam number (e.g., 2026xY7z9R)
-    const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let randomPart = "";
-    for (let i = 0; i < 6; i++) {
-      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    // Check if phone number already exists if provided
+    if (phoneNumber) {
+      const existingPhone = await candidateRepository.findOneBy({ phoneNumber });
+      if (existingPhone) return res.status(400).json({ message: "Phone number already registered" });
     }
-    const examNumber = `${new Date().getFullYear()}${randomPart}`;
+
+    // Generate robust alphanumeric exam number (e.g., 2026Ab12Cd34Ef)
+    const year = new Date().getFullYear();
+    const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const generateExamNumber = () => {
+      let res = "";
+      for (let i = 0; i < 10; i++) {
+        res += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return `${year}${res}`;
+    };
+
+    let examNumber = generateExamNumber();
+    let isUnique = false;
+    let attempts = 0;
+    while (!isUnique && attempts < 10) {
+      const existing = await candidateRepository.findOneBy({ examNumber });
+      if (!existing) {
+        isUnique = true;
+      } else {
+        examNumber = generateExamNumber();
+        attempts++;
+      }
+    }
 
     const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
 
@@ -83,6 +105,11 @@ router.post("/candidate/register", async (req, res) => {
       examNumber,
       fullName: fullName.toUpperCase(),
       email,
+      phoneNumber,
+      stateOfOrigin,
+      lga,
+      schoolAttended,
+      address,
       password: hashedPassword,
       subjectCombination,
       dateOfBirth,
@@ -94,6 +121,7 @@ router.post("/candidate/register", async (req, res) => {
 
     // Send Welcome Email
     try {
+      const downloadLink = `${req.protocol}://${req.get('host')}/auth/public/download-slip/${examNumber}`;
       await transporter.sendMail({
         from: `"VIVI CBT Support" <${config.MAIL_USER}>`,
         to: email,
@@ -121,7 +149,9 @@ router.post("/candidate/register", async (req, res) => {
 
               <p style="color: #64748b; line-height: 1.6;">Please keep your Exam Number safe. You will need it to access the examination terminal on your scheduled date.</p>
 
-              <a href="#" style="display: inline-block; background-color: #10b981; color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: bold; margin-top: 20px;">Download Registration Slip</a>
+              <div style="text-align: center; margin-top: 30px;">
+                <a href="${downloadLink}" style="display: inline-block; background-color: #10b981; color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: bold;">Download Examination Slip</a>
+              </div>
             </div>
           </div>
         `,
@@ -281,6 +311,172 @@ router.delete("/staff/:id", async (req, res) => {
   const userRepository = AppDataSource.getRepository(User);
   await userRepository.delete(req.params.id as any);
   res.status(204).send();
+});
+
+// Public Slip Download (for Email Links)
+router.get("/public/download-slip/:examNumber", async (req, res) => {
+  const { examNumber } = req.params;
+  try {
+    const candidate = await AppDataSource.getRepository(Candidate).findOneBy({ examNumber });
+    if (!candidate) return res.status(404).send("Candidate not found");
+
+    const html = `
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
+            .slip { border: 4px solid #0EA5E9; padding: 30px; border-radius: 20px; max-width: 800px; margin: auto; }
+            .header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+            .title { font-size: 24px; font-weight: bold; color: #0EA5E9; margin: 0; }
+            .grid { display: grid; grid-template-cols: 1fr 1fr; gap: 20px; margin-top: 20px; }
+            .label { font-size: 12px; color: #999; text-transform: uppercase; font-weight: bold; }
+            .value { font-size: 16px; font-weight: bold; margin-top: 4px; }
+            .subjects { margin-top: 30px; background: #f8fafc; padding: 20px; border-radius: 10px; }
+            .footer { margin-top: 40px; text-align: center; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 20px; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+            <button onclick="window.print()" style="background: #0EA5E9; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">PRINT SLIP</button>
+          </div>
+          <div class="slip">
+            <div class="header">
+              <div style="font-size: 40px; margin-bottom: 10px;">🎓</div>
+              <p class="title">VIVI CBT SYSTEMS - EXAMINATION SLIP</p>
+              <p style="font-size: 12px; color: #666;">Official 2026 Examination Session</p>
+            </div>
+
+            <div class="grid">
+              <div>
+                <p class="label">Full Name</p>
+                <p class="value">${candidate.fullName}</p>
+              </div>
+              <div>
+                <p class="label">Examination Number</p>
+                <p class="value" style="color: #0EA5E9; font-size: 20px;">${candidate.examNumber}</p>
+              </div>
+              <div>
+                <p class="label">State of Origin</p>
+                <p class="value">${candidate.stateOfOrigin || 'N/A'}</p>
+              </div>
+              <div>
+                <p class="label">LGA</p>
+                <p class="value">${candidate.lga || 'N/A'}</p>
+              </div>
+              <div>
+                <p class="label">Exam Venue</p>
+                <p class="value">${candidate.examVenue || 'TO BE ASSIGNED'}</p>
+              </div>
+              <div>
+                <p class="label">Date & Time</p>
+                <p class="value">${candidate.examDate || 'TBA'} @ ${candidate.examTime || 'TBA'}</p>
+              </div>
+            </div>
+
+            <div class="subjects">
+              <p class="label" style="margin-bottom: 10px;">Subject Combination</p>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                ${candidate.subjectCombination.map(s => `<span style="background: white; padding: 5px 15px; border: 1px solid #eee; border-radius: 5px; font-weight: bold; font-size: 14px;">${s.toUpperCase()}</span>`).join('')}
+              </div>
+            </div>
+
+            <div class="footer">
+              <p>THIS SLIP MUST BE PRESENTED AT THE EXAMINATION VENUE. VALID ID MAY BE REQUIRED.</p>
+              <p>&copy; 2026 VIVI CBT SYSTEMS • SECURE EXAMINATION TERMINAL</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+    res.send(html);
+  } catch (error) {
+    res.status(500).send("Error generating slip");
+  }
+});
+
+// Public Result Download
+router.get("/public/download-result/:attemptId", async (req, res) => {
+  const { attemptId } = req.params;
+  try {
+    const attempt = await AppDataSource.getRepository(Attempt).findOneBy({ id: attemptId });
+    if (!attempt) return res.status(404).send("Result not found");
+    if (!attempt.isReleased) return res.status(403).send("Result not yet released by admin");
+
+    const candidate = await AppDataSource.getRepository(Candidate).findOneBy({ examNumber: attempt.userId });
+    if (!candidate) return res.status(404).send("Candidate not found");
+
+    const scorePercentage = ((attempt.score / attempt.totalPossible) * 100).toFixed(2);
+
+    const html = `
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
+            .slip { border: 4px solid #10B981; padding: 30px; border-radius: 20px; max-width: 800px; margin: auto; }
+            .header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+            .title { font-size: 24px; font-weight: bold; color: #10B981; margin: 0; }
+            .grid { display: grid; grid-template-cols: 1fr 1fr; gap: 20px; margin-top: 20px; }
+            .label { font-size: 12px; color: #999; text-transform: uppercase; font-weight: bold; }
+            .value { font-size: 16px; font-weight: bold; margin-top: 4px; }
+            .results { margin-top: 30px; background: #f0fdf4; padding: 20px; border-radius: 10px; }
+            .score-box { text-align: center; padding: 20px; background: white; border-radius: 10px; border: 2px solid #10B981; margin-bottom: 20px; }
+            .footer { margin-top: 40px; text-align: center; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 20px; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+            <button onclick="window.print()" style="background: #10B981; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">PRINT RESULT</button>
+          </div>
+          <div class="slip">
+            <div class="header">
+              <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
+              <p class="title">VIVI CBT SYSTEMS - OFFICIAL RESULT SLIP</p>
+              <p style="font-size: 12px; color: #666;">Examination Session: 2026</p>
+            </div>
+
+            <div class="grid">
+              <div>
+                <p class="label">Candidate Name</p>
+                <p class="value">${candidate.fullName}</p>
+              </div>
+              <div>
+                <p class="label">Examination Number</p>
+                <p class="value">${candidate.examNumber}</p>
+              </div>
+            </div>
+
+            <div class="results">
+              <div class="score-box">
+                <p class="label">Aggregate Score</p>
+                <p style="font-size: 48px; color: #10B981; margin: 5px 0;">${attempt.score} / ${attempt.totalPossible}</p>
+                <p class="value">${scorePercentage}%</p>
+              </div>
+
+              <p class="label" style="margin-bottom: 10px;">Subject Breakdown</p>
+              <table style="width: 100%; border-collapse: collapse;">
+                ${Object.entries(attempt.results?.subjects || {}).map(([subject, stats]: [string, any]) => `
+                  <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px 0; font-weight: bold;">${subject.toUpperCase()}</td>
+                    <td style="padding: 10px 0; text-align: right; font-weight: bold;">${stats.correct} / ${stats.total}</td>
+                  </tr>
+                `).join('')}
+              </table>
+            </div>
+
+            <div class="footer">
+              <p>VERIFICATION CODE: ${attemptId.substring(0, 8).toUpperCase()}</p>
+              <p>This is a computer-generated result and remains the property of VIVI CBT Systems.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+    res.send(html);
+  } catch (error) {
+    res.status(500).send("Error generating result slip");
+  }
 });
 
 export default router;

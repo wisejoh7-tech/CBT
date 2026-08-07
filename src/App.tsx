@@ -11,6 +11,7 @@ import Home from '@/src/pages/Home';
 import CandidateLogin from '@/src/pages/CandidateLogin';
 import CandidateRegister from '@/src/pages/CandidateRegister';
 import ExamDashboard from '@/src/pages/ExamDashboard';
+import CandidateDashboard from '@/src/pages/CandidateDashboard';
 import ExamPlayer from '@/src/pages/ExamPlayer';
 import Admin from '@/src/pages/Admin';
 import AdminAuth from '@/src/pages/AdminAuth';
@@ -87,6 +88,14 @@ export default function App() {
             <Route path="/candidate-register" element={<PublicRoute><CandidateRegister /></PublicRoute>} />
             <Route
               path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <CandidateDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/exam-terminal"
               element={
                 <ProtectedRoute>
                   <ExamDashboard />

@@ -44,6 +44,9 @@ export class Attempt {
   @Column({ default: false })
   isIdentityVerified!: boolean;
 
+  @Column({ default: false })
+  isReleased!: boolean;
+
   @Column("jsonb", { default: [] })
   violationLogs!: any[];
 
