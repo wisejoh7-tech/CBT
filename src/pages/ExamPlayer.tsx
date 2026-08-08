@@ -12,18 +12,12 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Clock, 
-  HelpCircle, 
-  Send, 
-  AlertTriangle,
-  CheckCircle2,
-  Calculator as CalcIcon,
   LogOut,
-  MessageCircle,
-  Volume2,
-  Eye,
-  CameraOff,
   Monitor,
-  User
+  User,
+  Shield,
+  CameraOff,
+  CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils/utils';
 import { GoogleGenAI } from "@google/genai";
@@ -90,7 +84,6 @@ export default function ExamPlayer() {
     const state = {
       answers: currentAnswers,
       currentQuestionIndex: currentQIdx,
-      flagged: Array.from(currentFlags),
       timeLeft: currentTimer,
       lastSaved: new Date().toISOString()
     };
@@ -256,12 +249,22 @@ export default function ExamPlayer() {
       try {
         setLoading(true);
         const res = await fetch(getApiUrl('/exams'), { headers: getHeaders() });
-        const allExams: Exam[] = await res.json();
+        if (!res.ok) throw new Error("Could not fetch examination list");
+        const allExams: any = await res.json();
+
+        if (!Array.isArray(allExams)) {
+           throw new Error("Invalid response from server");
+        }
 
         const subjectNames = profile.subjectCombination || [];
-        let filteredExams = allExams.filter(e =>
-          subjectNames.some(s => s.toLowerCase() === e.subject.toLowerCase()) || e.id === examId
+        let filteredExams = allExams.filter((e: any) =>
+          subjectNames.some(s => s.trim().toLowerCase() === e.subject.trim().toLowerCase()) || e.id === examId
         );
+
+        // Fallback: If nothing matched profile, show all active exams to ensure candidate can see questions
+        if (filteredExams.length === 0) {
+          filteredExams = allExams.filter((e: any) => e.isActive);
+        }
 
         if (filteredExams.length === 0) {
           toast.error("No matching exams found.");
@@ -269,7 +272,7 @@ export default function ExamPlayer() {
           return;
         }
 
-        filteredExams.sort((a, b) => {
+        filteredExams.sort((a: any, b: any) => {
           if (a.subject.toLowerCase() === 'use of english') return -1;
           return 0;
         });
@@ -279,8 +282,10 @@ export default function ExamPlayer() {
         const qMap: Record<string, Question[]> = {};
         for (const exam of filteredExams) {
           const qRes = await fetch(getApiUrl(`/exams/${exam.id}`), { headers: getHeaders() });
-          const examData = await qRes.json();
-          qMap[exam.id] = examData.questions || [];
+          if (qRes.ok) {
+            const examData = await qRes.json();
+            qMap[exam.id] = examData.questions || [];
+          }
         }
         setQuestionsByExam(qMap);
 
@@ -289,6 +294,12 @@ export default function ExamPlayer() {
           method: 'POST',
           headers: getHeaders()
         });
+
+        if (!attRes.ok) {
+           const errData = await attRes.json().catch(() => ({}));
+           throw new Error(errData.message || "Failed to initialize examination session");
+        }
+
         const attempt: Attempt = await attRes.json();
         setCurrentAttemptId(attempt.id);
 
@@ -404,12 +415,12 @@ export default function ExamPlayer() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl w-full bg-white p-12 rounded-[48px] shadow-2xl border-2 border-primary/20 text-center">
-          <h2 className="text-3xl font-black mb-6 text-primary">EXAMINATION PROTOCOL</h2>
+          <h2 className="text-1xl font-black mb-6 text-primary">EXAMINATION PROTOCOLS</h2>
           <div className="text-left space-y-4 mb-10 text-primary/70">
-            <p className="font-bold flex items-center gap-2"><Shield className="w-4 h-4" /> Fullscreen is mandatory.</p>
-            <p className="font-bold flex items-center gap-2"><Clock className="w-4 h-4" /> Time limit: {Math.floor((timeLeft || 0) / 60)} minutes.</p>
-            <p className="font-bold flex items-center gap-2 text-red-500"><AlertTriangle className="w-4 h-4" /> Tab-switching or minimizing will result in session termination after 3 warnings.</p>
-            <p className="font-bold flex items-center gap-2"><CameraOff className="w-4 h-4" /> Webcam monitoring is active for the duration of the exam.</p>
+            <p className="font-bold flex items-center gap-2">1. Fullscreen is mandatory.</p>
+            <p className="font-bold flex items-center gap-2">2. Time limit: {Math.floor((timeLeft || 0) / 60)} minutes.</p>
+            <p className="font-bold flex items-center gap-2 text-red-500">3. Tab-switching or minimizing will result in session termination.</p>
+            <p className="font-bold flex items-center gap-2">4. Webcam monitoring is active for the duration of the exam.</p>
           </div>
           <Button onClick={startExam} className="w-full h-16 bg-primary text-white font-black rounded-2xl tracking-widest text-lg shadow-xl shadow-primary/20">
             I Understand, Start Exam
@@ -421,20 +432,17 @@ export default function ExamPlayer() {
 
   if (isCompleted) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-screen bg-background flex items-center justify-center p-6 text-black selection:bg-slate-100">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-xl w-full bg-white p-12 rounded-[48px] shadow-2xl border border-primary/10 text-center">
-          <CheckCircle2 className="w-16 h-16 text-primary mx-auto mb-6" />
-          <h2 className="text-3xl font-black mb-4">EXAM COMPLETED</h2>
-          <div className="space-y-3 mb-10">
-            {sessionResults.map((r, i) => (
-              <div key={i} className="flex justify-between p-4 bg-primary/5 rounded-2xl font-bold">
-                <span>{r.subject}</span>
-                <span>{r.score} / {r.totalPossible}</span>
-              </div>
-            ))}
-          </div>
-          <Button onClick={() => { logOut?.(); navigate('/'); }} className="w-full h-16 bg-primary text-white font-black rounded-2xl shadow-xl">
-            Logout and Exit
+          <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-6" />
+          <h2 className="text-3xl font-black mb-4 uppercase tracking-tighter">Session Terminated Successfully</h2>
+          <p className="text-slate-500 font-bold text-sm mb-10 leading-relaxed uppercase">
+            Your responses have been securely uploaded to the central server. <br/>
+            Results will be released to your candidate dashboard <br/>
+            following final administrative verification.
+          </p>
+          <Button onClick={() => { logOut?.(); navigate('/'); }} className="w-full h-16 bg-black text-white font-black rounded-2xl shadow-xl hover:bg-slate-800 transition-all border-none">
+            LOGOUT AND EXIT PORTAL
           </Button>
         </motion.div>
       </div>
@@ -443,7 +451,6 @@ export default function ExamPlayer() {
 
   return (
     <div className="h-screen flex flex-col bg-background text-primary selection:bg-primary/10 relative">
-      <div className="cbt-background opacity-[0.03]" />
       <header className="h-20 px-8 flex items-center justify-between border-b-2 border-primary/10 bg-white sticky top-0 z-50">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
@@ -464,22 +471,14 @@ export default function ExamPlayer() {
         </div>
 
         <div className="flex gap-8 items-center">
-          {proctoringActive && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 rounded-full border border-rose-100">
-              <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
-              <span className="text-[8px] font-black text-rose-600 uppercase tracking-widest flex items-center gap-1">
-                <Eye className="w-3 h-3" /> Proctoring Active
-              </span>
-              <video ref={videoRefProctor} autoPlay muted playsInline className="hidden" />
-            </div>
-          )}
           <div className="flex items-center gap-3 text-right pr-4 border-r border-primary/10">
             <p className="text-[10px] font-black text-primary/30 uppercase tracking-widest">Time Remaining</p>
             <p className={cn("text-2xl font-mono font-black", timeLeft! < 300 ? "text-red-500 animate-pulse" : "")}>{formatTime(timeLeft || 0)}</p>
           </div>
           <Button variant="ghost" onClick={handleSuspendSession} className="text-primary/30 hover:text-red-500">
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-4 h-4" />
           </Button>
+          <video ref={videoRefProctor} autoPlay muted playsInline className="hidden" />
         </div>
       </header>
 
@@ -504,36 +503,28 @@ export default function ExamPlayer() {
 
       <main className="flex-1 flex overflow-hidden">
         <section className="flex-1 p-12 overflow-y-auto flex justify-center">
-          <div className="max-w-3xl w-full">
+          <div className="max-w-xl w-full">
             {currentQuestion && (
               <AnimatePresence mode="wait">
                 <motion.div key={currentQuestion.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
                   <div className="flex justify-between items-center">
                     <Badge className="bg-primary/10 text-primary font-black px-4 py-2 rounded-lg border-none">{exams[activeExamIndex].subject} • Question {currentQuestionIndex + 1}</Badge>
-                    <Button variant="ghost" onClick={() => {
-                      const newFlags = new Set(flaggedQuestions);
-                      if (newFlags.has(currentQuestion.id)) newFlags.delete(currentQuestion.id);
-                      else newFlags.add(currentQuestion.id);
-                      setFlaggedQuestions(newFlags);
-                    }} className={cn("font-black text-[10px] tracking-widest", flaggedQuestions.has(currentQuestion.id) ? "text-amber-500" : "text-primary/20")}>
-                      <AlertTriangle className="w-4 h-4 mr-2" /> {flaggedQuestions.has(currentQuestion.id) ? 'FLAGGED' : 'FLAG'}
-                    </Button>
                   </div>
 
-                  <h3 className="text-4xl font-black leading-tight tracking-tight">{currentQuestion.text}</h3>
+                  <h3 className="text-xl font-black leading-tight tracking-tight">{currentQuestion.text}</h3>
 
                   <div className="grid gap-4">
                     {currentQuestion.options.map((opt, idx) => {
                       const isSelected = answers[currentQuestion.id] === idx;
                       return (
                         <button key={idx} onClick={() => handleSelectOption(idx)} className={cn(
-                          "flex items-center p-6 rounded-[24px] border-2 transition-all text-left",
+                          "flex items-center p-4 rounded-2xl border-2 transition-all text-left",
                           isSelected ? "border-primary bg-primary/[0.03]" : "border-primary/10 bg-white hover:border-primary/30"
                         )}>
-                          <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center font-black text-xl mr-6", isSelected ? "bg-primary text-white" : "bg-primary/5")}>
+                          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm mr-4", isSelected ? "bg-primary text-white" : "bg-primary/5")}>
                             {String.fromCharCode(65 + idx)}
                           </div>
-                          <span className="text-xl font-bold">{opt}</span>
+                          <span className="text-sm font-bold">{opt}</span>
                         </button>
                       );
                     })}
@@ -545,7 +536,7 @@ export default function ExamPlayer() {
         </section>
 
         <aside className="w-80 border-l-2 border-primary/10 bg-white p-8 overflow-y-auto">
-          <h4 className="text-[10px] font-black text-primary/20 uppercase tracking-[0.2em] mb-6">Question Palette</h4>
+          <h4 className="text-[10px] font-black text-primary/20 uppercase tracking-[0.2em] mb-6">Question Answered</h4>
           <div className="grid grid-cols-4 gap-3">
             {questions.map((q, idx) => (
               <button key={q.id} onClick={() => setCurrentQuestionIndex(idx)} className={cn(
@@ -562,73 +553,15 @@ export default function ExamPlayer() {
       </main>
 
       <footer className="h-24 px-12 border-t-2 border-primary/10 flex items-center justify-between bg-white">
-        <div className="flex gap-4">
-          <Button variant="outline" onClick={() => setCurrentQuestionIndex(p => Math.max(0, p - 1))} disabled={currentQuestionIndex === 0} className="h-14 px-8 rounded-2xl font-black tracking-widest border-2">PREVIOUS</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setCurrentQuestionIndex(p => Math.max(0, p - 1))} disabled={currentQuestionIndex === 0} className="h-14 px-8 rounded-1xl font-black tracking-widest border-2">PREVIOUS</Button>
           <Button onClick={() => setCurrentQuestionIndex(p => Math.min(questions.length - 1, p + 1))} disabled={currentQuestionIndex === questions.length - 1} className="h-14 px-12 bg-primary text-white rounded-2xl font-black tracking-widest shadow-xl shadow-primary/20">NEXT ITEM</Button>
         </div>
 
-        <Button onClick={() => { if(confirm("Submit all answers?")) handleSubmit(); }} className="h-14 px-8 bg-red-500 text-white rounded-2xl font-black tracking-widest hover:bg-red-600 shadow-xl shadow-red-100 border-none">FINAL SUBMIT</Button>
+        <Button onClick={() => { if(confirm("Submit all answers?")) handleSubmit(); }} className="h-14 px-8 bg-red-300 text-white rounded-1xl font-black tracking-widest hover:bg-red-600 shadow-xl shadow-red-100 border-none">FINAL SUBMIT</Button>
       </footer>
 
-      {/* Proctor Chat Widget */}
-      <div className={cn(
-        "fixed bottom-28 right-8 z-[200] flex flex-col transition-all",
-        chatOpen ? "w-80 h-[450px]" : "w-14 h-14"
-      )}>
-        <AnimatePresence>
-          {chatOpen && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="flex-1 bg-white rounded-3xl shadow-2xl border-2 border-primary/10 flex flex-col overflow-hidden mb-4"
-            >
-              <div className="p-4 bg-primary text-white flex justify-between items-center">
-                <span className="text-[10px] font-black tracking-widest uppercase">Tech Support Chat</span>
-                <Button variant="ghost" size="icon" onClick={() => setChatOpen(false)} className="h-6 w-6 text-white"><HelpCircle className="w-4 h-4" /></Button>
-              </div>
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-3">
-                  {messages.length === 0 && (
-                    <p className="text-[10px] font-bold text-primary/20 text-center py-10 uppercase">No messages yet. Message the proctor if you have technical issues.</p>
-                  )}
-                  {messages.map((m, i) => (
-                    <div key={i} className={cn("flex flex-col", m.from === 'me' ? "items-end" : "items-start")}>
-                      <div className={cn(
-                        "max-w-[80%] p-3 rounded-2xl text-[11px] font-bold",
-                        m.from === 'me' ? "bg-primary text-white" : "bg-slate-100 text-primary"
-                      )}>
-                        {m.message}
-                      </div>
-                      <span className="text-[8px] font-black opacity-20 mt-1 uppercase">{new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                  ))}
-                  <div ref={chatEndRef} />
-                </div>
-              </ScrollArea>
-              <form onSubmit={sendMessage} className="p-4 border-t border-primary/5 flex gap-2">
-                <Input
-                  value={newMessage}
-                  onChange={e => setNewMessage(e.target.value)}
-                  placeholder="Type message..."
-                  className="h-10 text-[11px] font-bold rounded-xl"
-                />
-                <Button type="submit" size="icon" className="h-10 w-10 rounded-xl bg-primary text-white"><Send className="w-4 h-4" /></Button>
-              </form>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        <Button
-          onClick={() => setChatOpen(!chatOpen)}
-          className={cn(
-            "h-14 w-14 rounded-full shadow-2xl flex items-center justify-center transition-all self-end",
-            chatOpen ? "bg-primary/10 text-primary rotate-90" : "bg-primary text-white hover:scale-110"
-          )}
-        >
-          {chatOpen ? <XCircle className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
-        </Button>
-      </div>
     </div>
   );
 }

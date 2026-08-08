@@ -14,7 +14,8 @@ import {
   Printer,
   Award,
   Monitor,
-  User
+  User,
+  ArrowRight
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils/utils';
 import { useNavigate } from 'react-router-dom';
@@ -50,19 +51,16 @@ export default function ExamDashboard() {
         const allExams: Exam[] = await examRes.json();
         const subjectNames = profile.subjectCombination || [];
         const filteredExams = allExams.filter(e =>
-          subjectNames.some(s => s.toLowerCase() === e.subject.toLowerCase())
+          subjectNames.some(s => s.trim().toLowerCase() === e.subject.trim().toLowerCase())
         );
         setExams(filteredExams);
 
-        const attemptRes = await fetch(getApiUrl('/exams/attempts/all'), { headers: getHeaders() });
-        const allAttempts = await attemptRes.json();
+        const attemptRes = await fetch(getApiUrl('/exams/attempts/my'), { headers: getHeaders() });
+        const myAttempts = await attemptRes.json();
 
-        // Ensure allAttempts is an array before filtering
-        const attemptsArray = Array.isArray(allAttempts) ? allAttempts : [];
-        const myAttempts = attemptsArray.filter(a => a.userId === (profile.examNumber || user.uid));
-        setAttempts(myAttempts);
+        setAttempts(myAttempts || []);
 
-        const unified = myAttempts.find(a => a.examId === 'unified');
+        const unified = myAttempts?.find?.((a: any) => a.examId === 'unified');
         setUnifiedAttempt(unified || null);
 
         setLoading(false);

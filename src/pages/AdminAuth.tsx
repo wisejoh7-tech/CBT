@@ -118,7 +118,16 @@ export default function AdminAuth() {
                   <Label className="text-[10px] font-black text-slate-500 tracking-widest">Email Address</Label>
                   <div className="relative group">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-primary transition-colors" />
-                    <Input type="email" placeholder="ADMIN@VIVICBT.COM" value={email} onChange={e => setEmail(e.target.value)} className="h-14 pl-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all" required />
+                    <Input
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="ADMIN@VIVICBT.COM"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      className="h-14 pl-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all"
+                      required
+                    />
                   </div>
                 </div>
 
@@ -126,7 +135,16 @@ export default function AdminAuth() {
                   <Label className="text-[10px] font-black text-slate-500 tracking-widest">Password</Label>
                   <div className="relative group">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-primary transition-colors" />
-                    <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="h-14 pl-12 pr-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all" required />
+                    <Input
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      className="h-14 pl-12 pr-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all"
+                      required
+                    />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-white transition-colors">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                   </div>
                 </div>

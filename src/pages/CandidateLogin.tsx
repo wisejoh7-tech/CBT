@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
 import { Label } from '@/lib/ui/label';
-import { GraduationCap, Shield, User, Monitor, Mail, Lock, Search } from 'lucide-react';
+import { GraduationCap, Shield, User, Monitor, Mail, Lock, Search, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { Separator } from '@/lib/ui/separator';
 import { cn } from '@/src/lib/utils/utils';
@@ -18,8 +18,12 @@ export default function CandidateLogin() {
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'reg_admin';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [examNumber, setExamNumber] = useState('');
+  const [examNumber, setExamNumber] = useState(localStorage.getItem('pendingExamNumber') || '');
   const [loginMethod, setLoginMethod] = useState<'email' | 'examNumber'>('examNumber');
+
+  React.useEffect(() => {
+    localStorage.removeItem('pendingExamNumber');
+  }, []);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +51,7 @@ export default function CandidateLogin() {
     try {
       await loginWithExamNumber(examNumber);
       toast.success("Identity Verified. Opening Terminal...");
-      navigate('/exam-terminal');
+      navigate('/instructions/unified');
     } catch (e) {
       toast.error("Invalid Exam Number or Session inactive.");
     }
@@ -78,23 +82,11 @@ export default function CandidateLogin() {
         </div>
 
         <div className="hidden md:flex items-center gap-8">
-          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Home</button>
-          <button onClick={() => navigate('/results')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Check Results</button>
-          <Separator orientation="vertical" className="h-4 bg-primary/10" />
-          {!user && (
-            <button onClick={() => navigate('/staff')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-2">
-              <User className="w-3 h-3" /> Staff Portal
-            </button>
-          )}
-          {user && (
-            <button
-              onClick={() => navigate(isAdmin ? '/admin' : '/dashboard')}
-              className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-2"
-            >
-              {isAdmin ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />}
-              Go to {isAdmin ? 'Admin Panel' : 'Exam Terminal'}
-            </button>
-          )}
+          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-1">
+            <ArrowLeft className="w-4 h-4" /> HOME
+          </button>
+          <button onClick={() => navigate('/candidate-register')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">REGISTER</button>
+          <button onClick={() => navigate('/results')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CHECK RESULT</button>
         </div>
       </nav>
 
@@ -107,7 +99,7 @@ export default function CandidateLogin() {
 
           <div className="bg-white rounded-[32px] border-2 border-primary shadow-2xl relative overflow-hidden">
             <div className="p-6 border-b-2 border-primary/5 bg-slate-50">
-               <h2 className="font-black text-[12px] tracking-[0.2em] text-primary uppercase">Login Portal</h2>
+               <h2 className="font-black text-[12px] tracking-[0.2em] text-primary uppercase">LOGIN PORTAL</h2>
             </div>
 
             <div className="p-10 space-y-8">
@@ -128,22 +120,24 @@ export default function CandidateLogin() {
 
               <AnimatePresence mode="wait">
                 {loginMethod === 'examNumber' ? (
-                  <motion.form key="exam" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} onSubmit={handleExamNumberLogin} className="space-y-6">
+                  <motion.form key="exam" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 2.5, x: 0 }} exit={{ opacity: 0, x: -10 }} onSubmit={handleExamNumberLogin} className="space-y-6">
                      <div className="space-y-2 text-left">
                         <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Examination Number</Label>
                         <div className="relative group">
-                          <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+
                           <Input
+                            name="examNumber"
+                            autoComplete="username"
                             value={examNumber}
                             onChange={e => setExamNumber(e.target.value)}
-                            placeholder="Enter exam number."
-                            className="h-16 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-lg text-primary transition-all tracking-widest"
+                            placeholder="Enter Exam Number."
+                            className="h-10 pl-8 rounded-2xl bg-slate-30 border-1 border-primary/10 focus:border-primary font-bold text-lg text-primary transition-all tracking-widest"
                             required
                           />
                         </div>
                      </div>
-                     <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px] shadow-2xl shadow-primary/20">
-                        {loading ? "VERIFYING..." : "ENTER EXAM TERMINAL"}
+                     <Button type="submit" disabled={loading} className="w-full h-11 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px]">
+                        {loading ? "VERIFYING..." : "START"}
                      </Button>
                   </motion.form>
                 ) : (
@@ -152,13 +146,15 @@ export default function CandidateLogin() {
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Email Address</Label>
                         <div className="relative group">
-                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+
                           <Input
+                            name="email"
                             type="email"
+                            autoComplete="email"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
-                            placeholder="EMAIL@EXAMPLE.COM"
-                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-primary transition-all"
+                            placeholder="Enter Email"
+                            className="h-10 pl-6 rounded-2xl bg-slate-20 border-1 border-primary/10 focus:border-primary font-bold text-primary transition-all"
                             required
                           />
                         </div>
@@ -166,25 +162,27 @@ export default function CandidateLogin() {
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Password</Label>
                         <div className="relative group">
-                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+
                           <Input
+                            name="password"
                             type="password"
+                            autoComplete="current-password"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
-                            placeholder="••••••••"
-                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/10 focus:border-primary font-bold text-primary transition-all"
+                            placeholder="Enter Password"
+                            className="h-10 pl-6 rounded-2xl bg-slate-20 border-1 border-primary/10 focus:border-primary font-bold text-primary transition-all"
                             required
                           />
                         </div>
                       </div>
                     </div>
-                    <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px] shadow-2xl shadow-primary/20">
-                      {loading ? "AUTHENTICATING..." : "ACCESS CANDIDATE PORTAL"}
+                    <Button type="submit" disabled={loading} className="w-full h-11 bg-primary text-white rounded-2 font-black tracking-widest text-[16px] ">
+                      {loading ? "AUTHENTICATING..." : "LOGIN"}
                     </Button>
                     <button
                       type="button"
                       onClick={() => navigate('/forgot-password')}
-                      className="w-full text-[10px] font-black text-primary/40 hover:text-primary transition-colors tracking-widest mt-2"
+                      className="w-full text-[10px] font-black text-primary/50 hover:text-primary transition-colors tracking-widest mt-2"
                     >
                       FORGOT PASSWORD? CLICK HERE
                     </button>
@@ -195,9 +193,9 @@ export default function CandidateLogin() {
               <div className="space-y-4 border-t-2 border-primary/5 pt-6">
                 <button
                   onClick={() => navigate('/results')}
-                  className="w-full h-14 rounded-2xl border-2 border-dashed border-primary/20 text-[10px] font-black text-primary/60 hover:bg-primary/5 hover:border-primary transition-all tracking-widest flex items-center justify-center gap-2"
+                  className="w-full h-11 rounded-2xl border-1  border-primary/20 text-[11px] font-black text-primary/60 hover:bg-primary/5 hover:border-primary transition-all tracking-widest flex items-center justify-center gap-2"
                 >
-                  <Search className="w-4 h-4" /> CHECK MY RESULT (EXAM NUMBER)
+                  <Search className="w-4 h-" /> CHECK MY RESULT (EXAM NUMBER)
                 </button>
                 <Separator className="bg-primary/5" />
                 <button

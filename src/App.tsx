@@ -20,6 +20,8 @@ import ResultSlip from '@/src/pages/ResultSlip';
 import ResultChecker from '@/src/pages/ResultChecker';
 import ExamSlip from '@/src/pages/ExamSlip';
 import ExamInstructions from '@/src/pages/ExamInstructions';
+import ForgotPassword from '@/src/pages/ForgotPassword';
+import ResetPassword from '@/src/pages/ResetPassword';
 
 const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) => {
   const { user, profile, loading } = useAuth();
@@ -43,7 +45,12 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (user && profile) {
     const isAnyAdmin = profile.role === 'admin' || profile.role === 'super_admin' || profile.role === 'reg_admin';
-    return <Navigate to={isAnyAdmin ? "/admin" : "/dashboard"} />;
+    if (isAnyAdmin) return <Navigate to="/admin" />;
+
+    if (profile.loginMethod === 'examNumber') {
+      return <Navigate to="/instructions/unified" />;
+    }
+    return <Navigate to="/dashboard" />;
   }
 
   return <>{children}</>;
@@ -128,7 +135,9 @@ export default function App() {
             />
             <Route path="/admin/auth" element={<PublicRoute><AdminAuth /></PublicRoute>} />
             <Route path="/staff" element={<PublicRoute><StaffLogin /></PublicRoute>} />
-            <Route path="/exam-slip/:examNumber" element={<ProtectedRoute adminOnly><ExamSlip /></ProtectedRoute>} />
+            <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+            <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+            <Route path="/exam-slip/:examNumber" element={<ProtectedRoute><ExamSlip /></ProtectedRoute>} />
             <Route path="/results" element={<ResultChecker />} />
             <Route path="/result-slip/:examNumber" element={<ProtectedRoute><ResultSlip /></ProtectedRoute>} />
             <Route path="/verify/:examNumber" element={<ResultSlip isVerification />} />

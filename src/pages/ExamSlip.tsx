@@ -47,36 +47,38 @@ export default function ExamSlip() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
         <button onClick={() => navigate('/')} className="text-[12px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Portal Home</button>
       </nav>
 
-      <div className="max-w-2xl mx-auto mb-6 flex justify-between items-center print:hidden">
-        <Button variant="ghost" onClick={() => window.history.back()} className="font-black text-[10px] tracking-widest gap-2">
-          <ArrowLeft className="w-4 h-4" /> Back
-        </Button>
-        <Button onClick={() => window.print()} className="h-14 px-10 bg-primary text-white rounded-2xl font-black text-[11px] shadow-xl">
+      <div className="max-w-4xl mx-auto mb-6 flex justify-between items-center print:hidden">
+        <div className="flex gap-3">
+          <Button onClick={() => navigate('/')} className="h-12 px-6 bg-slate-900 text-white rounded-xl font-black text-[10px] tracking-widest gap-2 hover:bg-black shadow-lg transition-all border-none">
+            <ArrowLeft className="w-4 h-4" /> Return to Home
+          </Button>
+        </div>
+        <Button onClick={() => window.print()} className="h-14 px-10 bg-primary text-white rounded-2xl font-black text-[11px] tracking-widest shadow-xl active:scale-95 transition-transform border-none">
           <Printer className="w-5 h-5 mr-2" /> Print Examination Slip
         </Button>
       </div>
 
-      <div className="max-w-2xl mx-auto bg-white border-[4px] border-primary p-10 rounded-[40px] shadow-2xl relative overflow-hidden print:border-4 print:shadow-none">
+      <div className="max-w-4xl mx-auto bg-white border-[2px] border-primary p-8 rounded-[30px] relative overflow-hidden print:border-4 print:shadow-none">
         <div className="text-center border-b-2 border-primary/10 pb-8 mb-8">
-          <h1 className="text-2xl font-black text-primary tracking-tighter">VIVI CBT EXAMINATION SLIP</h1>
-          <p className="text-[10px] font-black text-primary/40 tracking-[0.5em] mt-2">Registration Confirmation &bull; Session 2026</p>
+          <h4 className="text-1xl font-black text-primary tracking-tighter">CBT EXAMINATION SLIP</h4>
+          <p className="text-[12px] font-black text-primary/40 ">Registration Confirmation &bull; Session 2026</p>
         </div>
 
         <div className="grid grid-cols-[150px_1fr] gap-8 mb-8">
-           <div className="w-36 h-44 bg-slate-50 rounded-2xl border-4 border-white shadow-lg overflow-hidden flex items-center justify-center">
+           <div className="w-20 h-20 bg-slate-50 rounded-2xl border-4 border-white shadow-lg overflow-hidden flex items-center justify-center">
               {candidate.faceUrl ? <img src={candidate.faceUrl} className="w-full h-full object-cover" /> : <User className="w-12 h-12 opacity-10" />}
            </div>
            <div className="space-y-6">
-              <div><p className="text-[10px] font-black opacity-30">Full Name</p><p className="font-black text-xl">{candidate.fullName}</p></div>
+              <div><p className="text-[11px] font-black opacity-30">Full Name</p><p className="font-black text-1xl">{candidate.fullName}</p></div>
               <div className="grid grid-cols-2 gap-4">
                  <div><p className="text-[10px] font-black opacity-30">Exam Number</p><p className="font-bold">{candidate.examNumber}</p></div>
-                 <div><p className="text-[10px] font-black opacity-30">PIN</p><p className="font-bold tracking-widest">{candidate.pin || 'NOT SET'}</p></div>
+                 <div><p className="text-[10px] font-black opacity-30 ">PIN</p><p className="font-bold tracking-widest ">{candidate.pin || <span className="text-[8px] opacity-40 uppercase font-black tracking-tight">Not Set</span>}</p></div>
               </div>
            </div>
         </div>
@@ -87,16 +89,16 @@ export default function ExamSlip() {
                  <MapPin className="w-5 h-5 text-primary" />
                  <p className="text-[10px] font-black uppercase tracking-widest">Assigned Center</p>
               </div>
-              <p className="font-bold text-sm">VIVI Digital Innovation Center, Hub A</p>
-              <p className="text-[10px] font-bold opacity-40 mt-1">Seat: {candidate.assignedSeatNumber || 'AUTO-ASSIGNED ON ARRIVAL'}</p>
+              <p className="font-bold text-sm">{candidate.examVenue || 'NOT YET ASSIGNED'}</p>
+              <p className="text-[10px] font-bold opacity-40 mt-1 uppercase">Seat: {candidate.assignedSeatNumber || 'ASSIGNED ON ARRIVAL'}</p>
            </div>
            <div className="p-6 bg-slate-50 rounded-3xl border-2 border-primary/5">
               <div className="flex items-center gap-3 mb-4">
                  <Calendar className="w-5 h-5 text-primary" />
                  <p className="text-[10px] font-black uppercase tracking-widest">Schedule Info</p>
               </div>
-              <p className="font-bold text-sm">Session Starts: 08:00 AM</p>
-              <p className="text-[10px] font-bold opacity-40 mt-1">Arrival Time: 07:30 AM</p>
+              <p className="font-bold text-sm">Date: {candidate.examDate || 'TBA'}</p>
+              <p className="text-[10px] font-bold opacity-40 mt-1 uppercase">Time: {candidate.examTime || 'TBA'}</p>
            </div>
         </div>
 
@@ -124,7 +126,7 @@ export default function ExamSlip() {
         </div>
 
         <div className="mt-8 flex justify-between items-center opacity-20">
-           <div className="text-[8px] font-black tracking-widest">VERIFIED AT {new Date(candidate.registrationDate).toLocaleDateString()}</div>
+           <div className="text-[8px] font-black tracking-widest">VERIFIED AT {new Date(candidate.createdAt).toLocaleDateString()}</div>
            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${candidate.examNumber}`} className="w-12 h-12 grayscale" />
         </div>
       </div>

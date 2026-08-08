@@ -61,12 +61,12 @@ export default function StaffLogin() {
         </div>
 
         <div className="hidden md:flex items-center gap-8">
-          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Home</button>
-          <button onClick={() => navigate('/candidate-login')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Candidate Login</button>
-          <button onClick={() => navigate('/results')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Check Results</button>
+          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">HOME</button>
+          <button onClick={() => navigate('/candidate-login')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CANDIDATE LOGIN</button>
+          <button onClick={() => navigate('/results')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CHECK RESULT</button>
           <Separator orientation="vertical" className="h-4 bg-primary/10" />
           <button onClick={() => navigate('/staff')} className="text-[14px] font-black tracking-widest text-primary transition-colors flex items-center gap-2">
-            <User className="w-3 h-3" /> Staff Login
+            <User className="w-3 h-3" /> STAFF LOGIN
           </button>
         </div>
       </nav>
@@ -82,12 +82,12 @@ export default function StaffLogin() {
             <div className="w-16 h-16 bg-white border-4 border-primary rounded-[20px] flex items-center justify-center mx-auto mb-6 shadow-xl">
               <ShieldCheck className="w-10 h-10 text-primary" />
             </div>
-            <h1 className="text-2xl font-black tracking-tighter text-primary leading-none mb-2">Staff login</h1>
+            <h1 className="text-1xl font-black tracking-tighter text-white leading-none mb-2">STAFF LOGIN</h1>
 
           </div>
 
           <div className="p-1.5 bg-primary/10 rounded-[28px]">
-            <Card className="rounded-[24px] border-[3px] border-primary bg-white shadow-2xl shadow-primary/5 overflow-hidden">
+            <Card className="rounded-[18px] border-[1px] border-primary bg-white shadow-1xl shadow-primary/5 overflow-hidden">
               <CardContent className="p-10 bg-white">
                 <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="space-y-2">
@@ -95,11 +95,13 @@ export default function StaffLogin() {
                   <div className="relative group">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                     <Input
+                      name="email"
                       type="email"
+                      autoComplete="email"
                       placeholder="Enter Email Address"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-primary transition-all"
+                      className="h-12 pl-10 rounded-2xl  border-2 border-primary/5 focus:border-primary  text-primary transition-all"
                       required
                     />
                   </div>
@@ -110,11 +112,13 @@ export default function StaffLogin() {
                   <div className="relative group">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                     <Input
+                      name="password"
                       type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
                       placeholder="Enter Password"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      className="h-14 pl-12 pr-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-primary transition-all"
+                      className="h-12 pl-10 pr-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-primary transition-all"
                       required
                     />
                     <button
@@ -130,7 +134,7 @@ export default function StaffLogin() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-16 bg-primary text-white hover:bg-primary/90 rounded-[24px] font-black tracking-widest text-[16px] shadow-2xl shadow-primary/20 border-none transition-all active:scale-95 mt-4"
+                  className="w-full h-14 bg-primary text-white hover:bg-primary/30 rounded-[11px] font-black tracking-widest text-[16px] shadow-2xl shadow-primary/20 border-none transition-all active:scale-95 mt-4"
                 >
                   {loading ? "VERIFYING..." : "LOGIN"}
                 </Button>

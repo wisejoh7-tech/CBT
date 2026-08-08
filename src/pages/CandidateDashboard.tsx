@@ -47,12 +47,12 @@ export default function CandidateDashboard() {
     try {
       const res = await fetch(getApiUrl('/candidate/dashboard'), { headers: getHeaders() });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.candidate) {
         setDashboardData(data.candidate);
         setAttempts(data.attempts || []);
         setEditEditForm(data.candidate);
       } else {
-        toast.error(data.message || "Unauthorized access. Redirecting...");
+        toast.error("Candidate record not found or session expired.");
         navigate('/candidate-login');
       }
       setLoading(false);
@@ -94,12 +94,11 @@ export default function CandidateDashboard() {
   };
 
   const handlePrint = (type: 'schedule' | 'result', attemptId?: string) => {
-    const url = type === 'schedule'
-      ? `/exam-slip/${dashboardData?.examNumber}`
-      : `/result-slip/${dashboardData?.examNumber}?attemptId=${attemptId}`;
-
-    // In a real app, this might open a new tab or trigger a print view
-    window.open(getApiUrl(`/candidate/print/${type}${attemptId ? `?attemptId=${attemptId}` : ''}`), '_blank');
+    if (type === 'schedule') {
+      window.open(`/exam-slip/${dashboardData?.examNumber}`, '_blank');
+    } else {
+      window.open(`/result-slip/${dashboardData?.examNumber}?attemptId=${attemptId}`, '_blank');
+    }
   };
 
   if (loading) return <div className="p-20 text-center font-black animate-pulse">Loading...</div>;
@@ -120,11 +119,35 @@ export default function CandidateDashboard() {
             <span className="text-[8px] font-black uppercase tracking-[0.2em]">Profile Management</span>
           </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => { logOut?.(); navigate('/'); }}><LogOut className="w-4 h-4" /></Button>
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate('/')} className="text-[10px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-1 uppercase">
+            <HomeIcon className="w-3.5 h-3.5" /> Home
+          </button>
+          <div className="h-4 w-[1px] bg-primary/10 mx-2" />
+          <Button variant="ghost" size="icon" onClick={() => { logOut?.(); navigate('/'); }} className="text-primary/40 hover:text-rose-500 hover:bg-rose-50"><LogOut className="w-4 h-4" /></Button>
+        </div>
       </header>
 
       <main className="flex-1 max-w-4xl mx-auto w-full p-4 space-y-6 relative z-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          {/* Action Call for Examination */}
+          <Card className="p-6 bg-primary text-white rounded-[32px] shadow-xl shadow-primary/20 flex flex-col md:flex-row justify-between items-center gap-6 border-none">
+             <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20">
+                   <BookOpen className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                   <h3 className="text-xl font-black tracking-tight leading-none mb-1 uppercase">Ready for Examination?</h3>
+                   <p className="text-[10px] font-bold text-white/60 tracking-widest uppercase">Proceed to the secure exam terminal to begin session.</p>
+                </div>
+             </div>
+             <Button
+               onClick={() => navigate('/instructions/unified')}
+               className="h-14 px-10 bg-white text-primary rounded-2xl font-black text-xs tracking-widest shadow-2xl shadow-black/10 active:scale-95 transition-all hover:bg-slate-50 border-none shrink-0"
+             >
+               ENTER EXAM TERMINAL
+             </Button>
+          </Card>
           <Card className="rounded-[32px] border-2 border-primary/10 bg-white shadow-2xl overflow-hidden">
             {/* Top Section: Candidate Profile / Edit Form */}
             <div className="relative">
@@ -261,14 +284,14 @@ export default function CandidateDashboard() {
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest">State of Origin</Label>
-                          <select value={editForm.stateOfOrigin || ''} onChange={e => setEditEditForm({ ...editForm, stateOfOrigin: e.target.value, lga: '' })} className="w-full h-12 px-3 rounded-xl bg-white border-2 border-primary/5 focus:border-primary font-bold text-[10px]">
+                          <select value={editForm.stateOfOrigin || ''} onChange={e => setEditEditForm({ ...editForm, stateOfOrigin: e.target.value, lga: '' })} className="w-full h-12 px-3 rounded-xl bg-white border-2 border-primary/5 focus:border-primary font-bold text-[10px] outline-none focus:ring-0">
                             <option value="">SELECT STATE</option>
                             {NIGERIAN_STATES.map(state => <option key={state} value={state}>{state.toUpperCase()}</option>)}
                           </select>
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest">LGA of Origin</Label>
-                          <select value={editForm.lga || ''} onChange={e => setEditEditForm({ ...editForm, lga: e.target.value })} className="w-full h-12 px-3 rounded-xl bg-white border-2 border-primary/5 focus:border-primary font-bold text-[10px]" disabled={!editForm.stateOfOrigin}>
+                          <select value={editForm.lga || ''} onChange={e => setEditEditForm({ ...editForm, lga: e.target.value })} className="w-full h-12 px-3 rounded-xl bg-white border-2 border-primary/5 focus:border-primary font-bold text-[10px] outline-none focus:ring-0" disabled={!editForm.stateOfOrigin}>
                             <option value="">SELECT LGA</option>
                             {editForm.stateOfOrigin && STATE_LGAS[editForm.stateOfOrigin]?.map(lga => <option key={lga} value={lga}>{lga.toUpperCase()}</option>)}
                           </select>

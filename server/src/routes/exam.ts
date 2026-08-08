@@ -22,9 +22,16 @@ router.get("/", authenticateJWT, async (req, res) => {
   res.json(exams);
 });
 
-router.post("/", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+router.post("/", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req: any, res) => {
   const examRepo = AppDataSource.getRepository(Exam);
-  const exam = examRepo.create(req.body);
+  const data = {
+    ...req.body,
+    totalQuestions: req.body.totalQuestions || 0,
+    createdBy: req.body.createdBy || req.user?.displayName || "Admin",
+    isActive: req.body.isActive ?? true
+  };
+
+  const exam = examRepo.create(data);
   await examRepo.save(exam);
   res.status(201).json(exam);
 });
@@ -118,19 +125,21 @@ router.post("/:id/ai-generate", authenticateJWT, authorizeRoles("admin", "super_
   const exam = await AppDataSource.getRepository(Exam).findOneBy({ id: req.params.id as any });
   if (!exam) return res.status(404).json({ message: "Exam not found" });
 
-  const aiQuestions = await generateBulkQuestionsFromSyllabus(syllabus, count || 10);
+  try {
+    const aiQuestions = await generateBulkQuestionsFromSyllabus(syllabus, count || 10);
 
-  if (!aiQuestions) return res.status(500).json({ error: "AI Generation failed" });
+    const questionRepo = AppDataSource.getRepository(Question);
+    const entities = aiQuestions.map((q: any) => questionRepo.create({ ...q, exam }));
+    await questionRepo.save(entities);
 
-  const questionRepo = AppDataSource.getRepository(Question);
-  const entities = aiQuestions.map((q: any) => questionRepo.create({ ...q, exam }));
-  await questionRepo.save(entities);
+    // Update totalQuestions
+    const total = await questionRepo.count({ where: { exam: { id: exam.id } } });
+    await AppDataSource.getRepository(Exam).update(exam.id, { totalQuestions: total });
 
-  // Update totalQuestions
-  const total = await questionRepo.count({ where: { exam: { id: exam.id } } });
-  await AppDataSource.getRepository(Exam).update(exam.id, { totalQuestions: total });
-
-  res.status(201).json({ message: `Successfully generated ${entities.length} questions`, questions: entities });
+    res.status(201).json({ message: `Successfully generated ${entities.length} questions`, questions: entities });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || "AI Generation failed" });
+  }
 });
 
 // AI: Generate Personalized Study Guide
@@ -146,6 +155,14 @@ router.get("/attempt/:attemptId/study-guide", authenticateJWT, async (req, res) 
 
 // --- ATTEMPT ROUTES ---
 
+router.get("/attempts/my", authenticateJWT, async (req: any, res) => {
+  const userId = req.user.examNumber || req.user.id;
+  const attempts = await AppDataSource.getRepository(Attempt).find({
+    where: { userId }
+  });
+  res.json(attempts);
+});
+
 router.get("/attempts/all", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
   const attempts = await AppDataSource.getRepository(Attempt).find();
   res.json(attempts);
@@ -159,11 +176,19 @@ router.post("/:id/attempt", authenticateJWT, async (req: any, res) => {
   let attempt = await attemptRepo.findOneBy({ examId, userId, status: "in-progress" });
 
   if (!attempt) {
-    const exam = await AppDataSource.getRepository(Exam).findOneBy({ id: examId });
+    let totalQuestions = 0;
+    // Only query if it's a valid UUID to avoid Postgres error
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(examId);
+
+    if (isUuid) {
+      const exam = await AppDataSource.getRepository(Exam).findOneBy({ id: examId });
+      totalQuestions = exam?.totalQuestions || 0;
+    }
+
     attempt = attemptRepo.create({
       userId,
       examId,
-      totalPossible: exam?.totalQuestions || 0,
+      totalPossible: totalQuestions,
       status: "in-progress",
     });
     await attemptRepo.save(attempt);
@@ -300,53 +325,26 @@ router.put("/attempt/:attemptId", authenticateJWT, async (req, res) => {
       metadata: { attemptId: attempt.id, score: attempt.score, totalPossible: attempt.totalPossible }
     });
 
-    // Send Result Notifications
+    // Send Submission Confirmation (Without score, per user requirement to only show on dashboard/release)
     const candidate = await AppDataSource.getRepository(Candidate).findOneBy({ examNumber: attempt.userId });
     if (candidate) {
-      const scorePercentage = ((attempt.score / attempt.totalPossible) * 100).toFixed(1);
-      const downloadLink = `${req.protocol}://${req.get('host')}/auth/public/download-result/${attempt.id}`;
-
-      // 1. Send Email Notification
       try {
         await transporter.sendMail({
-          from: `"VIVI CBT Results" <${config.MAIL_USER}>`,
+          from: `"VIVI CBT Support" <${config.MAIL_USER}>`,
           to: candidate.email,
-          subject: `📊 Your Exam Results are Ready - ${candidate.fullName}`,
+          subject: `✅ Examination Submitted Successfully - ${candidate.fullName}`,
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
-              <h2 style="color: #333;">Exam Performance Report</h2>
+              <h2 style="color: #333;">Submission Confirmation</h2>
               <p>Hello <b>${candidate.fullName}</b>,</p>
-              <p>Your examination results have been processed successfully.</p>
-
-              <div style="background: #f4f4f4; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <p style="margin: 5px 0;"><b>Score:</b> ${attempt.score} / ${attempt.totalPossible}</p>
-                <p style="margin: 5px 0;"><b>Percentage:</b> ${scorePercentage}%</p>
-                <p style="margin: 5px 0;"><b>Status:</b> ${attempt.score >= (attempt.totalPossible / 2) ? 'PASSED' : 'FAILED'}</p>
-              </div>
-
-              <h3>Subject Breakdown:</h3>
-              <ul>
-                ${Object.entries(attempt.results.subjects).map(([subject, stats]: [string, any]) =>
-                  `<li><b>${subject}:</b> ${stats.correct} / ${stats.total}</li>`
-                ).join('')}
-              </ul>
-
-              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-                <a href="${downloadLink}" style="display: inline-block; background-color: #0EA5E9; color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: bold;">Download Official Result Slip</a>
-              </div>
-
-              <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated message. Please do not reply.</p>
+              <p>This is to confirm that your examination session has been successfully terminated and your responses have been securely uploaded.</p>
+              <p>Your results are currently undergoing administrative verification and will be released to your dashboard shortly.</p>
+              <p style="color: #666; font-size: 12px; margin-top: 30px;">VIVI CBT SYSTEMS • ACADEMIC INTEGRITY ENFORCED</p>
             </div>
           `
         });
       } catch (err) {
-        logger.error("Failed to send result email", err);
-      }
-
-      // 2. Send SMS Notification
-      if (candidate.phoneNumber) {
-        const smsMessage = `VIVI CBT: Hello ${candidate.fullName}, your exam result is ready. Score: ${attempt.score}/${attempt.totalPossible} (${scorePercentage}%). Log in to the portal for details.`;
-        await sendSMS(candidate.phoneNumber, smsMessage);
+        logger.error("Failed to send submission confirmation email", err);
       }
     }
   }
@@ -415,6 +413,48 @@ router.post("/admin/release-results", authenticateJWT, authorizeRoles("admin", "
         .set({ isReleased: true })
         .where("id IN (:...ids)", { ids: toRelease })
         .execute();
+
+      // Send Emails for released results
+      const releasedAttempts = await attemptRepo.find({
+        where: toRelease.map(id => ({ id }))
+      });
+
+      for (const attempt of releasedAttempts) {
+        const candidate = await AppDataSource.getRepository(Candidate).findOneBy({ examNumber: attempt.userId });
+        if (candidate) {
+          const scorePercentage = ((attempt.score / attempt.totalPossible) * 100).toFixed(1);
+          const downloadLink = `${req.protocol}://${req.get('host')}/auth/public/download-result/${attempt.id}`;
+
+          try {
+            await transporter.sendMail({
+              from: `"VIVI CBT Results" <${config.MAIL_USER}>`,
+              to: candidate.email,
+              subject: `📊 Official Exam Results Released - ${candidate.fullName}`,
+              html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+                  <h2 style="color: #333;">Official Performance Report</h2>
+                  <p>Hello <b>${candidate.fullName}</b>,</p>
+                  <p>Your examination results have been verified and officially released to your dashboard.</p>
+
+                  <div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <p style="margin: 5px 0;"><b>Final Score:</b> ${attempt.score} / ${attempt.totalPossible}</p>
+                    <p style="margin: 5px 0;"><b>Percentage:</b> ${scorePercentage}%</p>
+                    <p style="margin: 5px 0;"><b>Status:</b> ${attempt.score >= (attempt.totalPossible / 2) ? 'PASSED' : 'FAILED'}</p>
+                  </div>
+
+                  <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                    <a href="${downloadLink}" style="display: inline-block; background-color: #10b981; color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: bold;">Download Official Result Slip</a>
+                  </div>
+
+                  <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an official communication from VIVI CBT Systems. Please keep this for your records.</p>
+                </div>
+              `
+            });
+          } catch (mailError) {
+            logger.error(`Failed to send release email to ${candidate.email}`, mailError);
+          }
+        }
+      }
     }
 
     res.json({

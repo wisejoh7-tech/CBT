@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
-import { Search, GraduationCap, Lock, AlertCircle, User, Shield, Monitor } from 'lucide-react';
+import { Search, GraduationCap, Lock, AlertCircle, User, Shield, Monitor, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiUrl } from '@/src/lib/api-config';
 import { useAuth } from '@/src/context/AuthContext';
@@ -64,31 +64,16 @@ export default function ResultChecker() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI RESULT<br/> CHECKER PORTAL</span>
           </div>
         </div>
 
         <div className="hidden md:flex items-center gap-8">
-          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Home</button>
-          {!user && (
-            <>
-              <button onClick={() => navigate('/candidate-login')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Candidate Login</button>
-              <button onClick={() => navigate('/results')} className="text-[14px] font-black tracking-widest text-primary transition-colors">Check Results</button>
-              <Separator orientation="vertical" className="h-4 bg-primary/10" />
-              <button onClick={() => navigate('/staff')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-2">
-                <User className="w-3 h-3" /> Staff Portal
-              </button>
-            </>
-          )}
-          {user && (
-            <button
-              onClick={() => navigate(isAdmin ? '/admin' : '/dashboard')}
-              className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-2"
-            >
-              {isAdmin ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />}
-              Go to {isAdmin ? 'Admin Panel' : 'Exam Terminal'}
-            </button>
-          )}
+          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-1">
+            <ArrowLeft className="w-4 h-4" /> HOME
+          </button>
+          <button onClick={() => navigate('/candidate-login')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CANDIDATE LOGIN</button>
+          <button onClick={() => navigate('/candidate-register')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">REGISTER</button>
         </div>
       </nav>
 
@@ -99,19 +84,19 @@ export default function ResultChecker() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm text-center space-y-12">
           <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white border-2 border-primary shadow-sm">
             <GraduationCap className="w-4 h-4 text-primary" />
-            <span className="text-[10px] font-black text-primary tracking-widest">RESULT PORTAL</span>
+            <span className="text-[12px] font-black text-primary tracking-widest">RESULT PORTAL</span>
           </div>
 
-          <div className="bg-white p-8 rounded-[10px] border-2 border-primary shadow-1xl relative overflow-hidden">
-            <div className="space-y-8">
-              <h1 className="text-2xl font-black tracking-tighter text-primary">CHECK RESULTS</h1>
+          <div className="bg-white p-6 rounded-[4px]  border-2 border-primary shadow-1xl relative overflow-hidden">
+            <div className="space-y-8 ">
+              <h4 className="text-1xl font-black tracking-tighter text-primary">CHECK RESULT</h4>
               <form onSubmit={handleCheckResult} className="space-y-4">
                 <div className="relative">
                   <Input value={targetExamNumber} onChange={e => setTargetExamNumber(e.target.value)} placeholder="Registration Number" className="h-12 rounded-xl bg-slate-50 border-2 border-primary/20 focus:border-primary text-center font-black shadow-sm" />
                   <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-10" />
                 </div>
-                <Button type="submit" disabled={checkingResult} className="w-full h-14 bg-primary text-white text-1xl rounded-xl font-black tracking-widest shadow-2xl">
-                  {checkingResult ? "VERIFYING..." : "CHECK"}
+                <Button type="submit" disabled={checkingResult} className="w-full h-14 bg-primary text-white text-1xl rounded-2xl font-black tracking-widest shadow-1xl">
+                  {checkingResult ? "VERIFYING..." : "ENTER "}
                 </Button>
               </form>
             </div>

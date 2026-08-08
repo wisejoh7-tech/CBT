@@ -100,6 +100,7 @@ router.post("/candidate/register", async (req, res) => {
     }
 
     const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
+    const pin = Math.floor(100000 + Math.random() * 900000).toString(); // Generate random 6-digit PIN
 
     const candidate = candidateRepository.create({
       examNumber,
@@ -113,7 +114,8 @@ router.post("/candidate/register", async (req, res) => {
       password: hashedPassword,
       subjectCombination,
       dateOfBirth,
-      status: "active"
+      status: "active",
+      pin
     });
 
     await candidateRepository.save(candidate);
@@ -265,7 +267,11 @@ router.post("/candidate-login", async (req, res) => {
     const { examNumber } = req.body;
     const candidateRepository = AppDataSource.getRepository(Candidate);
 
-    const candidate = await candidateRepository.findOneBy({ examNumber });
+    // Case-insensitive search for exam number
+    const candidate = await candidateRepository.createQueryBuilder("candidate")
+      .where("LOWER(candidate.examNumber) = LOWER(:examNumber)", { examNumber })
+      .getOne();
+
     if (!candidate) {
       return res.status(404).json({ message: "Invalid Exam Number" });
     }

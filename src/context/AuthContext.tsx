@@ -114,15 +114,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed');
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('profile', JSON.stringify(data.profile));
-
       const profileData: UserProfile = {
         ...data.profile,
         uid: data.profile.examNumber,
         displayName: data.profile.fullName,
-        role: 'student'
+        role: 'student',
+        loginMethod: 'examNumber'
       };
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('profile', JSON.stringify(profileData));
 
       setProfile(profileData);
       setCandidate(data.profile);
@@ -148,15 +149,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed');
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('profile', JSON.stringify({ ...data.profile, role: 'student', displayName: data.profile.fullName }));
-
       const profileData: UserProfile = {
         ...data.profile,
         uid: data.profile.examNumber,
         displayName: data.profile.fullName,
-        role: 'student'
+        role: 'student',
+        loginMethod: 'email'
       };
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('profile', JSON.stringify(profileData));
 
       setProfile(profileData);
       setCandidate(data.profile);

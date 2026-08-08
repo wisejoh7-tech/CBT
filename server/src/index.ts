@@ -15,6 +15,7 @@ import examRoutes from "./routes/exam";
 import analyticsRoutes from "./routes/analytics";
 import centerRoutes from "./routes/center";
 import candidateRoutes from "./routes/candidate";
+import subjectRoutes from "./routes/subject";
 import { authenticateJWT, authorizeRoles } from "./middleware/auth";
 import { AppDataSource } from "./data-source";
 import { logger } from "./lib/logger";
@@ -51,6 +52,7 @@ app.use("/exams", examRoutes);
 app.use("/analytics", analyticsRoutes);
 app.use("/center", centerRoutes);
 app.use("/candidate", candidateRoutes);
+app.use("/subjects", subjectRoutes);
 
 async function startServer() {
   try {
@@ -140,12 +142,33 @@ async function startServer() {
           data.password = await bcrypt.hash(data.password, 10);
         }
 
+        // Auto-generate 6-digit PIN if not provided
+        if (!data.pin) {
+          data.pin = Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
         const candidate = candidateRepo.create(data);
         await candidateRepo.save(candidate);
         res.status(201).json(candidate);
       } catch (error: any) {
         logger.error("Failed to create candidate", error);
         res.status(400).json({ error: error.message || "Failed to create candidate" });
+      }
+    });
+
+    app.get("/candidates/:examNumber", authenticateJWT, async (req: any, res) => {
+      try {
+        const candidate = await AppDataSource.getRepository(Candidate).findOneBy({ examNumber: req.params.examNumber });
+        if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+
+        // Security check: candidates can only see their own data
+        if (req.user.role === 'student' && req.user.examNumber !== candidate.examNumber) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+
+        res.json(candidate);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch candidate" });
       }
     });
 
@@ -159,9 +182,9 @@ async function startServer() {
         const { waecResultUrl } = req.body;
         const candidateRepo = AppDataSource.getRepository(Candidate);
         await candidateRepo.update(req.params.examNumber, { waecResultUrl });
-        res.json({ message: "WAEC result updated successfully" });
+        res.json({ message: "Identification document updated successfully" });
       } catch (error) {
-        res.status(500).json({ error: "Failed to update WAEC result" });
+        res.status(500).json({ error: "Failed to update identification document" });
       }
     });
 

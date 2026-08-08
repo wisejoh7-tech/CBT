@@ -84,4 +84,14 @@ router.get("/exam-performance", authenticateJWT, authorizeRoles("admin", "super_
   }
 });
 
+// Reset all performance metrics (deletes all attempts)
+router.post("/reset", authenticateJWT, authorizeRoles("super_admin"), async (req, res) => {
+  try {
+    await AppDataSource.getRepository(Attempt).clear();
+    res.json({ message: "Performance metrics reset successfully (All attempt data cleared)." });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to reset metrics" });
+  }
+});
+
 export default router;

@@ -38,6 +38,9 @@ export interface Candidate {
   pin?: string;
   assignedIp?: string;
   assignedSeatNumber?: string;
+  examVenue?: string;
+  examDate?: string;
+  examTime?: string;
 }
 
 export interface Exam {

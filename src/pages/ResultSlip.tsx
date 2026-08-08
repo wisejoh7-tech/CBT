@@ -110,7 +110,11 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
             <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
           </div>
         </div>
-        <button onClick={() => navigate('/')} className="text-[12px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Portal Home</button>
+        <div className="flex items-center gap-6">
+           <button onClick={() => navigate('/')} className="text-[12px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-1">
+              <ArrowLeft className="w-3.5 h-3.5" /> Portal Home
+           </button>
+        </div>
       </nav>
 
       <div className="max-w-2xl mx-auto mb-6 flex justify-between items-center print:hidden">

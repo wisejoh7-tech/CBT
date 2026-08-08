@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.replace(/['"]/g, '');
 const GEMINI_MODEL = "gemini-1.5-flash";
 
 export async function analyzeProctoringSnapshot(base64Image: string) {
@@ -75,15 +75,22 @@ export async function generateQuestionExplanation(question: string, options: str
 }
 
 export async function generateBulkQuestionsFromSyllabus(syllabus: string, count: number = 10) {
-  if (!GEMINI_API_KEY) return null;
+  if (!GEMINI_API_KEY) {
+    console.error("GEMINI_API_KEY is missing");
+    return null;
+  }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-  const prompt = `Generate ${count} multiple choice questions based on this syllabus: "${syllabus}".
-  Return a JSON array of objects, each with: 'text' (string), 'options' (array of 4 strings), 'correctOptionIndex' (0-3), and 'topic' (string).`;
+  const prompt = `Generate exactly ${count} multiple choice questions based on this syllabus: "${syllabus}".
+  Provide the output strictly as a JSON array of objects.
+  Each object MUST have these exact keys: 'text' (the question), 'options' (array of 4 strings), 'correctOptionIndex' (integer 0-3), and 'topic' (a short category string).`;
 
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { response_mime_type: "application/json" }
+    generationConfig: {
+      response_mime_type: "application/json",
+      temperature: 0.7
+    }
   };
 
   try {
@@ -92,12 +99,44 @@ export async function generateBulkQuestionsFromSyllabus(syllabus: string, count:
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("Gemini API Error Detail:", JSON.stringify(errorData));
+      throw new Error(`AI Engine Error: ${errorData.error?.message || response.statusText}. Please verify your GEMINI_API_KEY.`);
+    }
+
     const data = (await response.json()) as any;
-    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    return resultText ? JSON.parse(resultText) : null;
-  } catch (error) {
-    console.error("Bulk AI Generation failed:", error);
-    return null;
+    let resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!resultText) {
+      throw new Error(`Gemini Error: No text in response. This often happens if the syllabus is too short or violates safety filters.`);
+    }
+
+    // Advanced JSON Extraction
+    try {
+      // 1. Try direct parse
+      const parsed = JSON.parse(resultText);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch (e) {
+      try {
+        // 2. Try stripping markdown and cleaning
+        const cleaned = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
+        const start = cleaned.indexOf('[');
+        const end = cleaned.lastIndexOf(']');
+        if (start !== -1 && end !== -1) {
+          const parsed = JSON.parse(cleaned.substring(start, end + 1));
+          return Array.isArray(parsed) ? parsed : [parsed];
+        }
+        throw new Error("No JSON array found in AI response");
+      } catch (parseError) {
+        console.error("Failed to parse Gemini output. Raw text:", resultText);
+        throw new Error("AI returned data in an invalid format. Please try a clearer syllabus.");
+      }
+    }
+  } catch (error: any) {
+    console.error("Bulk AI Generation Critical Failure:", error.message);
+    throw error;
   }
 }
 
