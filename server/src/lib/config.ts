@@ -1,29 +1,12 @@
-import { z } from "zod";
-import dotenv from "dotenv";
+// src/lib/api-config.ts
 
-dotenv.config();
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-const envSchema = z.object({
-  PORT: z.string().default("5000"),
-  DATABASE_URL: z.string().url(),
-  REDIS_URL: z.string().url().default("redis://localhost:6379"),
-  JWT_SECRET: z.string().min(32, "JWT_SECRET should be at least 32 characters long for production"),
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  GEMINI_API_KEY: z.string().optional(),
-  MAIL_HOST: z.string().optional(),
-  MAIL_PORT: z.string().optional(),
-  MAIL_USER: z.string().email().optional(),
-  MAIL_PASS: z.string().optional(),
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
-  TWILIO_PHONE_NUMBER: z.string().optional(),
-});
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
 
-const parsedEnv = envSchema.safeParse(process.env);
+export { API_BASE_URL, SOCKET_URL };
 
-if (!parsedEnv.success) {
-  console.error("❌ Invalid environment variables:", JSON.stringify(parsedEnv.error.format(), null, 2));
-  process.exit(1);
-}
-
-export const config = parsedEnv.data;
+export const getApiUrl = (path: string) =>
+  `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;

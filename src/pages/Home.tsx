@@ -61,13 +61,7 @@ export default function Home() {
           {user && isAdmin && (
             <>
               <Separator orientation="vertical" className="h-4 bg-primary/10" />
-              <button
-                onClick={() => navigate('/admin')}
-                className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-2 uppercase"
-              >
-                <Shield className="w-3.5 h-3.5" />
-                Go to Admin Panel
-              </button>
+
             </>
           )}
           {user && !isAdmin && (
