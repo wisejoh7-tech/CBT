@@ -5,32 +5,32 @@ export class Attempt {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column()
+  @Column({ type: "uuid" })
   userId!: string;
 
-  @Column()
+  @Column({ type: "uuid" })
   examId!: string;
 
-  @Column({ default: 0 })
+  @Column({ type: "int", default: 0 })
   score!: number;
 
-  @Column({ default: 0 })
+  @Column({ type: "int", default: 0 })
   totalPossible!: number;
 
-  @Column("jsonb", { default: {} })
+  @Column({ type: "jsonb", default: () => "'{}'" })
   answers!: Record<string, number>;
 
   @Column("simple-array", { nullable: true })
   flagged?: string[];
 
-  @Column({ nullable: true })
+  @Column({ type: "int", nullable: true })
   timeLeft?: number;
 
-  @Column({ default: 0 })
+  @Column({ type: "int", default: 0 })
   currentQuestionIndex!: number;
 
-  @Column({ default: "in-progress" })
-  status!: 'in-progress' | 'completed';
+  @Column({ type: "varchar", default: "in-progress" })
+  status!: "in-progress" | "completed";
 
   @Column("jsonb", { nullable: true })
   results?: any;
@@ -38,21 +38,21 @@ export class Attempt {
   @Column("jsonb", { nullable: true })
   proctoringSnaps?: string[];
 
-  @Column({ type: "float", default: 100.0 })
+  @Column({ type: "double precision", default: 100.0 })
   trustScore!: number;
 
-  @Column({ default: false })
+  @Column({ type: "boolean", default: false })
   isIdentityVerified!: boolean;
 
-  @Column({ default: false })
+  @Column({ type: "boolean", default: false })
   isReleased!: boolean;
 
-  @Column("jsonb", { default: [] })
+  @Column("jsonb", { default: () => "'[]'" })
   violationLogs!: any[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: "timestamptz" })
   startedAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: "timestamptz", nullable: true })
   completedAt?: Date;
 }

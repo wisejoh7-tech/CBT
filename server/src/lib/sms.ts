@@ -1,5 +1,5 @@
-import { config } from "./config";
 import { logger } from "./logger";
+import { config } from "./config";
 
 // Note: You would typically use a package like 'twilio'
 // npm install twilio
@@ -7,7 +7,7 @@ import { logger } from "./logger";
 // or uses a generic approach.
 
 export async function sendSMS(to: string, message: string) {
-  if (!config.TWILIO_ACCOUNT_SID || !config.TWILIO_AUTH_TOKEN || !config.TWILIO_PHONE_NUMBER) {
+  if (!config.twilio.accountSid || !config.twilio.authToken || !config.twilio.phoneNumber) {
     logger.warn(`SMS to ${to} would be sent, but Twilio credentials are missing in .env: ${message}`);
     return;
   }
@@ -16,11 +16,11 @@ export async function sendSMS(to: string, message: string) {
     // Dynamically require twilio to avoid crash if not installed,
     // but in a real app, it should be a dependency.
     const twilio = require('twilio');
-    const client = twilio(config.TWILIO_ACCOUNT_SID, config.TWILIO_AUTH_TOKEN);
+    const client = twilio(config.twilio.accountSid, config.twilio.authToken);
 
     await client.messages.create({
       body: message,
-      from: config.TWILIO_PHONE_NUMBER,
+      from: config.twilio.phoneNumber,
       to: to
     });
 

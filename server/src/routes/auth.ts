@@ -1,3 +1,4 @@
+import { Attempt } from "../entities/Attempt";
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -24,7 +25,8 @@ router.post("/candidate/send-token", async (req, res) => {
     await redisClient.set(`reg_token:${email}`, token, { EX: 600 }); // 10 minutes
 
     await transporter.sendMail({
-      from: `"VIVI CBT Support" <${config.MAIL_USER}>`,
+     from: `"VIVI CBT Support" <${config.mail.user}>`,
+
       to: email,
       subject: "🔒 Verification Token for VIVI CBT Registration",
       html: `
@@ -125,7 +127,7 @@ router.post("/candidate/register", async (req, res) => {
     try {
       const downloadLink = `${req.protocol}://${req.get('host')}/auth/public/download-slip/${examNumber}`;
       await transporter.sendMail({
-        from: `"VIVI CBT Support" <${config.MAIL_USER}>`,
+        from: `"VIVI CBT Support" <${config.mail.user}>`,
         to: email,
         subject: "🎉 Registration Successful - VIVI CBT 2026",
         html: `
@@ -520,7 +522,7 @@ router.post("/forgot-password", async (req, res) => {
     await redisClient.set(`reset_token:${email}`, token, { EX: 1800 }); // 30 minutes
 
     await transporter.sendMail({
-      from: `"VIVI CBT Security" <${config.MAIL_USER}>`,
+      from: `"VIVI CBT Support" <${config.mail.user}>`,
       to: email,
       subject: "🔑 Password Reset Request",
       html: `

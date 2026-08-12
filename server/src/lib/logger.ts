@@ -1,6 +1,6 @@
 import winston from "winston";
 import { AppDataSource } from "../data-source";
-import { Log } from "../entities/Log";
+import { Log, LogType, LogSeverity } from "../entities/Log";
 
 const { combine, timestamp, printf, colorize, errors } = winston.format;
 
@@ -13,7 +13,9 @@ export const logger = winston.createLogger({
   format: combine(
     timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
     errors({ stack: true }),
-    process.env.NODE_ENV === "production" ? winston.format.json() : combine(colorize(), logFormat)
+    process.env.NODE_ENV === "production"
+      ? winston.format.json()
+      : combine(colorize(), logFormat)
   ),
   transports: [
     new winston.transports.Console(),
@@ -27,20 +29,27 @@ export const logger = winston.createLogger({
 });
 
 export async function createLog(data: {
-  type: 'auth' | 'security' | 'exam' | 'system';
-  severity: 'info' | 'warning' | 'error' | 'critical';
+  type: LogType | "auth" | "security" | "exam" | "system";
+  severity: LogSeverity | "info" | "warning" | "error" | "critical";
   message: string;
   userId?: string;
   metadata?: any;
 }) {
-  // Log to winston
-  const winstonLevel = data.severity === 'critical' ? 'error' : data.severity;
+  const severityStr = data.severity.toString();
+  const winstonLevel = severityStr === "critical" ? "error" :
+                       severityStr === "warning" ? "warn" : severityStr;
+
   logger.log(winstonLevel, data.message, { metadata: data.metadata, userId: data.userId });
 
-  // Log to Database
   try {
     const logRepo = AppDataSource.getRepository(Log);
-    const log = logRepo.create(data);
+    const log = logRepo.create({
+      type: data.type as LogType,
+      severity: data.severity as LogSeverity,
+      message: data.message,
+      userId: data.userId,
+      metadata: data.metadata
+    });
     await logRepo.save(log);
   } catch (err) {
     logger.error("Failed to save log to database", err);

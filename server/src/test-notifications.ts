@@ -1,6 +1,7 @@
 import { transporter, redisClient } from "./lib/services";
 import { sendSMS } from "./lib/sms";
 import { config } from "./lib/config";
+
 import { AppDataSource } from "./data-source";
 import dotenv from "dotenv";
 
@@ -17,14 +18,14 @@ async function testNotifications() {
     console.error("Setup failed:", e);
   }
 
-  const testEmail = process.env.MAIL_USER || "test@example.com";
-  const testPhone = process.env.TWILIO_PHONE_NUMBER || "+1234567890"; // For testing, this should be a real number if credentials exist
+  const testEmail = config.mail.user || "test@example.com";
+  const testPhone = config.twilio.phoneNumber || "+1234567890";
 
   // 1. Test Email
   console.log(`Testing Email to: ${testEmail}`);
   try {
     await transporter.sendMail({
-      from: `"Test Support" <${config.MAIL_USER}>`,
+      from: `"Test Support" <${config.mail.user}>`,
       to: testEmail,
       subject: "🔔 Test Notification",
       text: "This is a test email from the VIVI CBT system."

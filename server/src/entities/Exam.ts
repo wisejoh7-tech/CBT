@@ -6,36 +6,36 @@ export class Exam {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column()
+  @Column({ type: "varchar", length: 255 })
   title!: string;
 
   @Column({ type: "text", nullable: true })
   description?: string;
 
-  @Column()
+  @Column({ type: "varchar", length: 100 })
   subject!: string;
 
-  @Column()
+  @Column({ type: "int" })
   durationMinutes!: number;
 
-  @Column()
+  @Column({ type: "int" })
   totalQuestions!: number;
 
-  @Column({ type: "timestamp", nullable: true })
+  @Column({ type: "timestamptz", nullable: true })
   startTime?: Date;
 
-  @Column({ type: "timestamp", nullable: true })
+  @Column({ type: "timestamptz", nullable: true })
   endTime?: Date;
 
-  @Column({ default: true })
+  @Column({ type: "boolean", default: true })
   isActive!: boolean;
 
-  @Column()
+  @Column({ type: "uuid" })
   createdBy!: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: "timestamptz" })
   createdAt!: Date;
 
-  @OneToMany(() => Question, (question: any) => question.exam, { cascade: true })
+  @OneToMany(() => Question, (question) => question.exam, { cascade: true })
   questions!: Question[];
 }

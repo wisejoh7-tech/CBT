@@ -1,4 +1,4 @@
-import { transporter } from "./index";
+import { transporter } from "./lib/services";
 import { config } from "./lib/config";
 import dotenv from "dotenv";
 
@@ -6,10 +6,10 @@ dotenv.config();
 
 async function testEmail() {
   console.log("--- Email Configuration ---");
-  console.log("Host:", config.MAIL_HOST);
-  console.log("Port:", config.MAIL_PORT);
-  console.log("User:", config.MAIL_USER);
-  console.log("Pass:", config.MAIL_PASS ? "****" : "MISSING");
+  console.log("Host:", config.mail.host);
+  console.log("Port:", config.mail.port);
+  console.log("User:", config.mail.user);
+  console.log("Pass:", config.mail.pass ? "****" : "MISSING");
 
   try {
     console.log("Verifying transporter...");
@@ -18,8 +18,8 @@ async function testEmail() {
 
     console.log("Sending test email...");
     const info = await transporter.sendMail({
-      from: `"VIVI CBT Test" <${config.MAIL_USER}>`,
-      to: config.MAIL_USER, // Send to self
+      from: `"VIVI CBT Test" <${config.mail.user}>`,
+      to: config.mail.user, // Send to self
       subject: "Test Email",
       text: "If you see this, your email configuration is working!",
     });

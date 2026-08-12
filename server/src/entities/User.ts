@@ -5,13 +5,13 @@ export class User {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ unique: true })
+  @Column({ type: "varchar", length: 255, unique: true })
   email!: string;
 
-  @Column()
+  @Column({ type: "varchar", length: 255 })
   password!: string;
 
-  @Column()
+  @Column({ type: "varchar", length: 255 })
   displayName!: string;
 
   @Column({
@@ -19,11 +19,11 @@ export class User {
     enum: ["student", "super_admin", "reg_admin", "admin"],
     default: "student",
   })
-  role!: string;
+  role!: "student" | "super_admin" | "reg_admin" | "admin";
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", length: 100, nullable: true })
   examNumber?: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: "timestamp with time zone" })
   createdAt!: Date;
 }

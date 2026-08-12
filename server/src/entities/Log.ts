@@ -1,25 +1,45 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
 
+export enum LogType {
+  AUTH = "auth",
+  SECURITY = "security",
+  EXAM = "exam",
+  SYSTEM = "system",
+}
+
+export enum LogSeverity {
+  INFO = "info",
+  WARNING = "warning",
+  ERROR = "error",
+  CRITICAL = "critical",
+}
+
 @Entity()
 export class Log {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column()
-  type!: 'auth' | 'security' | 'exam' | 'system';
+  @Column({
+    type: "enum",
+    enum: LogType,
+  })
+  type!: LogType;
 
-  @Column()
-  severity!: 'info' | 'warning' | 'error' | 'critical';
+  @Column({
+    type: "enum",
+    enum: LogSeverity,
+  })
+  severity!: LogSeverity;
 
-  @Column()
+  @Column({ type: "text" })
   message!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "uuid", nullable: true })
   userId?: string;
 
   @Column("jsonb", { nullable: true })
   metadata?: any;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: "timestamptz" })
   timestamp!: Date;
 }

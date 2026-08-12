@@ -1,23 +1,31 @@
+// src/lib/services.ts
+import "reflect-metadata";
+
 import { createClient } from "redis";
 import nodemailer from "nodemailer";
-import { config } from "./config";
+import { config } from "./config"; // named import (matches src/lib/config.ts)
 import { logger } from "./logger";
 
-// Redis Client
+// --- Redis Client ---
 export const redisClient = createClient({
-  url: config.REDIS_URL,
+  url: config.redisUrl,
+  socket: config.redisUrl?.startsWith("rediss://")
+    ? { tls: true, rejectUnauthorized: false }
+    : undefined
 });
 
-redisClient.on("error", (err) => logger.error("Redis Client Error", err));
+redisClient.on("error", (err) => {
+  logger.error("Redis connection error:", err);
+});
 
-// Mailer Setup
+// --- Mailer Setup ---
 export const transporter = nodemailer.createTransport({
-  host: config.MAIL_HOST || "smtp.gmail.com",
-  port: parseInt(config.MAIL_PORT || "587"),
+  host: config.mail?.host || "smtp.gmail.com",
+  port: Number(config.mail?.port) || 587,
   secure: false,
   auth: {
-    user: config.MAIL_USER,
-    pass: config.MAIL_PASS,
+    user: config.mail?.user,
+    pass: config.mail?.pass,
   },
   tls: {
     rejectUnauthorized: false,

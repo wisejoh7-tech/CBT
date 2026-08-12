@@ -1,17 +1,20 @@
-// src/lib/api-config.ts
+export const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:5000";
+export const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL as string) || "http://localhost:5000";
 
-// For Desktop and Mobile apps, we need a hardcoded or environment-driven URL
-// because relative paths like '/api' only work when served by Nginx on the same domain.
+export const getApiUrl = (path: string) => {
+  const baseUrl = API_BASE_URL;
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${baseUrl}${normalizedPath}`;
+};
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:10000"; // dev fallback
+export const config = {
+  // Environment
+  NODE_ENV: import.meta.env.MODE,
 
-const SOCKET_URL =
-  import.meta.env.VITE_SOCKET_URL || "http://localhost:10000"; // dev fallback
+  // API + Socket URLs
+  API_BASE_URL,
+  SOCKET_URL,
 
-export { API_BASE_URL, SOCKET_URL };
-
-// Helper to build full API paths
-export const getApiUrl = (path: string) =>
-  `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
-
+  // Helper
+  getApiUrl,
+};

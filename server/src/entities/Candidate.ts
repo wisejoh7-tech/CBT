@@ -2,64 +2,64 @@ import { Entity, PrimaryColumn, Column, CreateDateColumn } from "typeorm";
 
 @Entity()
 export class Candidate {
-  @PrimaryColumn()
+  @PrimaryColumn({ type: "varchar", length: 50 })
   examNumber!: string;
 
-  @Column()
+  @Column({ type: "varchar", length: 255 })
   fullName!: string;
 
-  @Column({ unique: true })
+  @Column({ type: "varchar", length: 255, unique: true })
   email!: string;
 
-  @Column({ nullable: true, unique: true })
+  @Column({ type: "varchar", length: 20, nullable: true, unique: true })
   phoneNumber?: string;
 
-  @Column({ nullable: true, select: false })
+  @Column({ type: "varchar", length: 255, nullable: true, select: false })
   password?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "date", nullable: true })
   dateOfBirth?: string;
 
-  @Column({ default: "active" })
+  @Column({ type: "varchar", length: 50, default: "active" })
   status!: string;
 
-  @Column({ default: false })
+  @Column({ type: "boolean", default: false })
   thumbprinted!: boolean;
 
   @Column({ type: "text", nullable: true })
   thumbprintData?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", length: 1024, nullable: true })
   faceUrl?: string;
 
   @Column({ type: "text", nullable: true })
   waecResultUrl?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", length: 50, nullable: true })
   pin?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", length: 45, nullable: true })
   assignedIp?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", length: 20, nullable: true })
   assignedSeatNumber?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", length: 255, nullable: true })
   examVenue?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "date", nullable: true })
   examDate?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "time", nullable: true })
   examTime?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", length: 100, nullable: true })
   stateOfOrigin?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", length: 100, nullable: true })
   lga?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", length: 255, nullable: true })
   schoolAttended?: string;
 
   @Column({ type: "text", nullable: true })
@@ -68,6 +68,6 @@ export class Candidate {
   @Column("simple-array")
   subjectCombination!: string[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: "timestamptz" })
   createdAt!: Date;
 }

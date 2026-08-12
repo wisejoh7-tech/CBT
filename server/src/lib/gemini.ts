@@ -42,7 +42,7 @@ export async function analyzeProctoringSnapshot(base64Image: string) {
       throw new Error(`Gemini API error: ${response.statusText}`);
     }
 
-    const data = (await response.json()) as any;
+    const data = (await response.json()) as { candidates?: any[] };
     const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     return resultText ? JSON.parse(resultText) : null;
   } catch (error) {
@@ -67,7 +67,7 @@ export async function generateQuestionExplanation(question: string, options: str
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify(payload)
       });
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as { candidates?: any[] };
       return data.candidates?.[0]?.content?.parts?.[0]?.text;
    } catch (error) {
       return null;
@@ -101,12 +101,12 @@ export async function generateBulkQuestionsFromSyllabus(syllabus: string, count:
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
       console.error("Gemini API Error Detail:", JSON.stringify(errorData));
       throw new Error(`AI Engine Error: ${errorData.error?.message || response.statusText}. Please verify your GEMINI_API_KEY.`);
     }
 
-    const data = (await response.json()) as any;
+    const data = (await response.json()) as { candidates?: any[] };
     let resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!resultText) {
@@ -115,12 +115,10 @@ export async function generateBulkQuestionsFromSyllabus(syllabus: string, count:
 
     // Advanced JSON Extraction
     try {
-      // 1. Try direct parse
       const parsed = JSON.parse(resultText);
       return Array.isArray(parsed) ? parsed : [parsed];
-    } catch (e) {
+    } catch {
       try {
-        // 2. Try stripping markdown and cleaning
         const cleaned = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
         const start = cleaned.indexOf('[');
         const end = cleaned.lastIndexOf(']');
@@ -129,7 +127,7 @@ export async function generateBulkQuestionsFromSyllabus(syllabus: string, count:
           return Array.isArray(parsed) ? parsed : [parsed];
         }
         throw new Error("No JSON array found in AI response");
-      } catch (parseError) {
+      } catch {
         console.error("Failed to parse Gemini output. Raw text:", resultText);
         throw new Error("AI returned data in an invalid format. Please try a clearer syllabus.");
       }
@@ -164,7 +162,7 @@ export async function verifyCandidateIdentity(liveSnapshot: string, registration
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    const data = (await response.json()) as any;
+    const data = (await response.json()) as { candidates?: any[] };
     const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     return resultText ? JSON.parse(resultText) : null;
   } catch (error) {
@@ -192,7 +190,7 @@ export async function generatePersonalizedStudyGuide(performanceData: any) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    const data = (await response.json()) as any;
+    const data = (await response.json()) as { candidates?: any[] };
     const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     return resultText ? JSON.parse(resultText) : null;
   } catch (error) {

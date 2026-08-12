@@ -1,5 +1,4 @@
-
-import { AppDataSource } from "./data-source";
+import { AppDataSource } from "./data-source"; // TypeORM DataSource
 import { createClient } from "redis";
 import dotenv from "dotenv";
 
@@ -13,6 +12,7 @@ async function testConnections() {
   try {
     await AppDataSource.initialize();
     console.log("✅ Postgres Connected Successfully");
+    await AppDataSource.destroy(); // close connection after test
   } catch (error) {
     console.error("❌ Postgres Connection Failed:", error);
   }
@@ -22,17 +22,20 @@ async function testConnections() {
   const redisClient = createClient({
     url: process.env.REDIS_URL || "redis://localhost:6379",
   });
-  redisClient.on("error", (err) => console.log("Redis Error Event:", err.message));
+
+  redisClient.on("error", (err) =>
+    console.error("Redis Error Event:", err.message)
+  );
 
   try {
     await redisClient.connect();
     console.log("✅ Redis Connected Successfully");
-    await redisClient.disconnect();
+    await redisClient.disconnect(); // close connection after test
   } catch (error) {
     console.error("❌ Redis Connection Failed:", error);
   }
 
-  process.exit();
+  process.exit(0); // exit cleanly
 }
 
 testConnections();

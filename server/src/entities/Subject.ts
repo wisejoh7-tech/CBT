@@ -5,12 +5,12 @@ export class Subject {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ unique: true })
+  @Column("varchar", { unique: true })  // explicitly set type
   name!: string;
 
-  @Column({ default: true })
+  @Column("boolean", { default: true }) // explicitly set type
   isActive!: boolean;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: "timestamp" })
   createdAt!: Date;
 }

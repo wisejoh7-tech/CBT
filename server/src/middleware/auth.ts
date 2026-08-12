@@ -1,5 +1,7 @@
+// src/middleware/auth.ts
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload as DefaultJwtPayload } from "jsonwebtoken";
+import { config } from "../lib/config"; // adjust path if needed
 
 export interface AuthRequest extends Request {
   user?: {
@@ -9,23 +11,44 @@ export interface AuthRequest extends Request {
   };
 }
 
+type JwtPayload = DefaultJwtPayload & {
+  id?: string;
+  role?: string;
+  examNumber?: string;
+};
+
+const getJwtSecret = () => config?.JWT_SECRET ?? process.env.JWT_SECRET ?? "secret";
+
 export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
-  if (authHeader) {
-    const token = authHeader.split(" ")[1];
-
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user) => {
-      if (err) {
-        return res.sendStatus(403);
-      }
-
-      req.user = user as any;
-      next();
-    });
-  } else {
-    res.sendStatus(401);
+  if (!authHeader) {
+    return res.status(401).json({ message: "Unauthorized: missing Authorization header" });
   }
+
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized: malformed Authorization header" });
+  }
+
+  jwt.verify(token, getJwtSecret(), (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ message: "Forbidden: invalid token" });
+    }
+
+    const payload = decoded as JwtPayload;
+    if (!payload || !payload.id) {
+      return res.status(403).json({ message: "Forbidden: invalid token payload" });
+    }
+
+    req.user = {
+      id: String(payload.id),
+      role: String(payload.role ?? "user"),
+      examNumber: payload.examNumber,
+    };
+
+    next();
+  });
 };
 
 export const authorizeRoles = (...roles: string[]) => {
