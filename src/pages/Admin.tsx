@@ -706,7 +706,7 @@ export default function Admin() {
                                 <h4 className="font-black text-sm text-primary tracking-widest uppercase">{activeChatId}</h4>
                                 <div className="flex items-center gap-2 mt-1">
                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                                   <p className="text-[9px] font-black text-emerald-500 tracking-widest leading-none pt-0.5">BIOMETRIC AUTHENTICATED TUNNEL</p>
+                                   <p className="text-[9px] font-black text-emerald-500 tracking-widest leading-none pt-0.5">BIOMETRIC AUTHENTICATED</p>
                                 </div>
                              </div>
                              <Button variant="ghost" size="icon" onClick={() => setActiveChatId(null)} className="h-10 w-10 text-primary/20 hover:text-primary rounded-xl transition-all"><CircleX className="w-5 h-5" /></Button>
