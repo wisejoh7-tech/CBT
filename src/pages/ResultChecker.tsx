@@ -22,7 +22,7 @@ export default function ResultChecker() {
 
   const handleCheckResult = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanId = targetExamNumber.trim().toUpperCase();
+    const cleanId = targetExamNumber.trim();
 
     if (!cleanId) {
       toast.error("Please enter your Examination Number.");
@@ -51,7 +51,7 @@ export default function ResultChecker() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 uppercase relative">
+    <div className="min-h-screen flex flex-col bg-slate-50 relative">
       <div className="cbt-background opacity-[0.05]" />
       {/* Navigation */}
       <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b-2 border-primary/10 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
@@ -66,7 +66,7 @@ export default function ResultChecker() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI RESULT<br/> CHECKER PORTAL</span>
+            <span className="text-[10px] font-black tracking-[0.2em] leading-none text-left">VIVI RESULT<br/> CHECKER PORTAL</span>
           </div>
         </div>
 
@@ -98,19 +98,19 @@ export default function ResultChecker() {
               <div className="flex flex-col p-6 gap-4">
                 <button
                   onClick={() => { navigate('/'); setIsMenuOpen(false); }}
-                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase py-2 flex items-center gap-2"
+                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors py-2 flex items-center gap-2"
                 >
                   <ArrowLeft className="w-4 h-4" /> HOME
                 </button>
                 <button
                   onClick={() => { navigate('/candidate-login'); setIsMenuOpen(false); }}
-                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary uppercase py-2"
+                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
                 >
                   CANDIDATE LOGIN
                 </button>
                 <button
                   onClick={() => { navigate('/candidate-register'); setIsMenuOpen(false); }}
-                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary uppercase py-2"
+                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
                 >
                   REGISTER
                 </button>

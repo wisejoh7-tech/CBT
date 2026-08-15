@@ -73,7 +73,7 @@ router.put("/profile", authenticateJWT, async (req: any, res) => {
     if (!candidate) return res.status(404).json({ message: "Candidate not found" });
 
     // Update fields
-    if (fullName) candidate.fullName = fullName.toUpperCase();
+    if (fullName) candidate.fullName = fullName;
     if (phoneNumber) candidate.phoneNumber = phoneNumber;
     if (stateOfOrigin) candidate.stateOfOrigin = stateOfOrigin;
     if (lga) candidate.lga = lga;

@@ -52,12 +52,12 @@ export default function AdminAuth() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-slate-900 selection:bg-primary/20  text-slate-100">
+    <div className="relative min-h-screen flex flex-col bg-slate-900 selection:bg-primary/20 text-slate-100">
       <nav className="sticky top-0 w-full bg-slate-400/80 backdrop-blur-md border-b-2 border-white/5 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>
-            <span className="font-black text-xl tracking-tighter text-white">Viv</span>
+            <span className="font-black text-xl tracking-tighter text-white">VIVI Admin</span>
           </div>
           <div className="h-8 w-[1px] bg-white/10 hidden md:block" />
           <div className="hidden md:flex items-center gap-2 text-white/40">
@@ -91,7 +91,7 @@ export default function AdminAuth() {
               <ShieldCheck className="w-12 h-12 text-primary" />
             </div>
             <h1 className="text-3xl font-black tracking-tighter text-white leading-none mb-2">Admin Page</h1>
-            <p className="text-[10px] font-black text-primary/40 tracking-[0.4em]">System ADminstration </p>
+            <p className="text-[10px] font-black text-primary/40 tracking-[0.4em]">System Administration</p>
           </div>
 
           <Card className="rounded-[40px] border-2 border-white/2 bg-slate-400 shadow-1xl overflow-hidden">
@@ -183,9 +183,9 @@ export default function AdminAuth() {
                         }}
                         className="w-full h-14 rounded-2xl border-2 border-dashed border-white/10 text-slate-400 font-black text-[10px] hover:border-primary hover:text-white transition-all gap-2 bg-transparent"
                       >
-                        <Terminal className="w-4 h-4" />  EMERGENCY ACCESS
+                        <Terminal className="w-4 h-4" /> Emergency Access
                       </Button>
-                      <p className="text-[7px] text-slate-400 font-bold text-center px-4 leading-tight uppercase">
+                      <p className="text-[7px] text-slate-400 font-bold text-center px-4 leading-tight">
                         Use only if credentials fail.
                       </p>
                    </div>

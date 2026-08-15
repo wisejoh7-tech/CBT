@@ -56,16 +56,16 @@ export default function StaffLogin() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
 
         <div className="hidden md:flex items-center gap-8">
-          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">HOME</button>
+          <button onClick={() => navigate('/')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">HOME</button>
           <button onClick={() => navigate('/candidate-login')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CANDIDATE LOGIN</button>
-          <button onClick={() => navigate('/results')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CHECK RESULT</button>
+          <button onClick={() => navigate('/results')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CHECK RESULT</button>
           <Separator orientation="vertical" className="h-4 bg-primary/10" />
-          <button onClick={() => navigate('/staff')} className="text-[14px] font-black tracking-widest text-primary transition-colors flex items-center gap-2">
+          <button onClick={() => navigate('/staff')} className="text-[11px] font-black tracking-widest text-primary transition-colors flex items-center gap-2">
             <User className="w-3 h-3" /> STAFF LOGIN
           </button>
         </div>

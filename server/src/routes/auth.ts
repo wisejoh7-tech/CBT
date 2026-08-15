@@ -106,7 +106,7 @@ router.post("/candidate/register", async (req, res) => {
 
     const candidate = candidateRepository.create({
       examNumber,
-      fullName: fullName.toUpperCase(),
+      fullName: fullName,
       email,
       phoneNumber,
       stateOfOrigin,
@@ -136,7 +136,7 @@ router.post("/candidate/register", async (req, res) => {
               <h1 style="color: white; margin: 0; font-size: 24px;">REGISTRATION COMPLETE</h1>
             </div>
             <div style="padding: 40px; background-color: white;">
-              <p style="color: #64748b; line-height: 1.6;">Dear <b>${fullName.toUpperCase()}</b>,</p>
+              <p style="color: #64748b; line-height: 1.6;">Dear <b>${fullName}</b>,</p>
               <p style="color: #64748b; line-height: 1.6;">Congratulations! Your registration for the VIVI CBT 2026 examination has been successfully processed.</p>
 
               <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 20px; margin: 30px 0;">

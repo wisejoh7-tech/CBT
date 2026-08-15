@@ -99,7 +99,7 @@ export default function CandidateDashboard() {
     }
   };
 
-  if (loading) return <div className="p-20 text-center font-black animate-pulse text-primary tracking-widest">LOADING PORTAL...</div>;
+  if (loading) return <div className="p-20 text-center font-black animate-pulse text-primary tracking-widest">Loading Portal...</div>;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 font-sans relative antialiased tracking-tight">
@@ -109,10 +109,10 @@ export default function CandidateDashboard() {
       <header className="h-16 bg-white border-b border-primary/5 px-6 flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white"><GraduationCap className="w-4.5 h-4.5" /></div>
-          <h1 className="font-black text-sm tracking-tighter text-primary uppercase">Candidate Portal</h1>
+          <h1 className="font-black text-sm tracking-tighter text-primary">Candidate Portal</h1>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/')} className="text-[11px] font-bold text-primary/40 hover:text-primary transition-colors flex items-center gap-1.5 uppercase">
+          <button onClick={() => navigate('/')} className="text-[11px] font-bold text-primary/40 hover:text-primary transition-colors flex items-center gap-1.5">
             <HomeIcon className="w-3.5 h-3.5" /> Home
           </button>
           <div className="h-4 w-[1px] bg-primary/10" />
@@ -131,8 +131,8 @@ export default function CandidateDashboard() {
                    <BookOpen className="w-7 h-7 text-white" />
                 </div>
                 <div className="space-y-1">
-                   <h3 className="text-xl font-black tracking-tight leading-none uppercase">Ready for Examination?</h3>
-                   <p className="text-[11px] font-medium text-white/60 tracking-wide uppercase">Proceed to the terminal to begin your scheduled session.</p>
+                   <h3 className="text-xl font-black tracking-tight leading-none">Ready for Examination?</h3>
+                   <p className="text-[11px] font-medium text-white/60 tracking-wide">Proceed to the terminal to begin your scheduled session.</p>
                 </div>
              </div>
              <Button
@@ -162,8 +162,8 @@ export default function CandidateDashboard() {
                           <div>
                             <h2 className="text-3xl font-black tracking-tighter text-slate-900 leading-none mb-2">{dashboardData?.fullName}</h2>
                             <div className="flex flex-wrap gap-2">
-                              <Badge className="bg-primary text-white border-none px-3 py-1 font-black text-[10px] tracking-wider uppercase">NO: {dashboardData?.examNumber}</Badge>
-                              <Badge variant="outline" className="border-primary/10 text-primary/40 px-3 py-1 font-black text-[10px] tracking-wider uppercase">
+                              <Badge className="bg-primary text-white border-none px-3 py-1 font-black text-[10px] tracking-wider">NO: {dashboardData?.examNumber}</Badge>
+                              <Badge variant="outline" className="border-primary/10 text-primary/40 px-3 py-1 font-black text-[10px] tracking-wider">
                                 {dashboardData?.stateOfOrigin || "N/A"} • {dashboardData?.lga || "LGA"}
                               </Badge>
                             </div>
@@ -177,7 +177,7 @@ export default function CandidateDashboard() {
 
                     <div className="grid gap-8">
                        <div className="space-y-4">
-                          <p className="text-[10px] font-black text-primary/20 uppercase tracking-[0.25em]">Biographic Profile</p>
+                          <p className="text-[10px] font-black text-primary/20 tracking-[0.25em]">Biographic Profile</p>
                           <div className="grid grid-cols-2 gap-y-6 gap-x-8">
                              {[
                                { label: 'Institution', value: dashboardData?.schoolAttended },
@@ -186,7 +186,7 @@ export default function CandidateDashboard() {
                                { label: 'Residential', value: dashboardData?.address },
                              ].map((item) => (
                                <div key={item.label} className="space-y-1">
-                                  <p className="text-[9px] font-black text-primary/40 uppercase tracking-widest">{item.label}</p>
+                                  <p className="text-[9px] font-black text-primary/40 tracking-widest">{item.label}</p>
                                   <p className="text-[13px] font-bold text-slate-700 truncate">{item.value || 'N/A'}</p>
                                </div>
                              ))}
@@ -194,10 +194,10 @@ export default function CandidateDashboard() {
                        </div>
 
                        <div className="space-y-4">
-                          <p className="text-[10px] font-black text-primary/20 uppercase tracking-[0.25em]">Curriculum Selection</p>
+                          <p className="text-[10px] font-black text-primary/20 tracking-[0.25em]">Curriculum Selection</p>
                           <div className="flex flex-wrap gap-3">
                              {dashboardData?.subjectCombination?.map((s: string) => (
-                               <div key={s} className="px-5 py-3 rounded-2xl bg-slate-50 border border-primary/5 font-black text-[11px] text-primary/60 uppercase tracking-wider shadow-sm">
+                               <div key={s} className="px-5 py-3 rounded-2xl bg-slate-50 border border-primary/5 font-black text-[11px] text-primary/60 tracking-wider shadow-sm">
                                   {s}
                                </div>
                              ))}
@@ -209,45 +209,45 @@ export default function CandidateDashboard() {
                   <motion.div key="edit" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="p-10 bg-slate-50/50">
                     <form onSubmit={handleUpdateProfile} className="space-y-6">
                       <div className="flex justify-between items-center">
-                        <h3 className="text-sm font-black text-primary uppercase tracking-widest">Update Information</h3>
+                        <h3 className="text-sm font-black text-primary tracking-widest">Update Information</h3>
                         <Button type="button" variant="ghost" size="icon" onClick={() => setIsEditing(false)} className="rounded-full h-8 w-8"><X className="w-4 h-4" /></Button>
                       </div>
 
                       <div className="grid sm:grid-cols-2 gap-5">
                         <div className="space-y-1.5">
-                          <Label className="text-[9px] font-black text-primary/40 uppercase ml-1">Full Name</Label>
+                          <Label className="text-[9px] font-black text-primary/40 ml-1">Full Name</Label>
                           <Input value={editForm.fullName || ''} onChange={e => setEditEditForm({...editForm, fullName: e.target.value})} className="h-11 rounded-xl font-bold text-sm bg-white border-primary/5" />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-[9px] font-black text-primary/40 uppercase ml-1">Phone Number</Label>
+                          <Label className="text-[9px] font-black text-primary/40 ml-1">Phone Number</Label>
                           <Input value={editForm.phoneNumber || ''} onChange={e => setEditEditForm({...editForm, phoneNumber: e.target.value})} className="h-11 rounded-xl font-bold text-sm bg-white border-primary/5" />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-[9px] font-black text-primary/40 uppercase ml-1">State</Label>
+                          <Label className="text-[9px] font-black text-primary/40 ml-1">State</Label>
                           <select value={editForm.stateOfOrigin || ''} onChange={e => setEditEditForm({ ...editForm, stateOfOrigin: e.target.value, lga: '' })} className="w-full h-11 px-3 rounded-xl bg-white border border-primary/5 font-bold text-xs outline-none">
-                            <option value="">SELECT STATE</option>
-                            {NIGERIAN_STATES.map(state => <option key={state} value={state}>{state.toUpperCase()}</option>)}
+                            <option value="">Select State</option>
+                            {NIGERIAN_STATES.map(state => <option key={state} value={state}>{state}</option>)}
                           </select>
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-[9px] font-black text-primary/40 uppercase ml-1">L.G.A</Label>
+                          <Label className="text-[9px] font-black text-primary/40 ml-1">L.G.A</Label>
                           <select value={editForm.lga || ''} onChange={e => setEditEditForm({ ...editForm, lga: e.target.value })} className="w-full h-11 px-3 rounded-xl bg-white border border-primary/5 font-bold text-xs outline-none" disabled={!editForm.stateOfOrigin}>
-                            <option value="">SELECT LGA</option>
-                            {editForm.stateOfOrigin && STATE_LGAS[editForm.stateOfOrigin]?.map(lga => <option key={lga} value={lga}>{lga.toUpperCase()}</option>)}
+                            <option value="">Select LGA</option>
+                            {editForm.stateOfOrigin && STATE_LGAS[editForm.stateOfOrigin]?.map(lga => <option key={lga} value={lga}>{lga}</option>)}
                           </select>
                         </div>
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black text-primary/40 uppercase ml-1">Residential Address</Label>
+                        <Label className="text-[9px] font-black text-primary/40 ml-1">Residential Address</Label>
                         <Input value={editForm.address || ''} onChange={e => setEditEditForm({...editForm, address: e.target.value})} className="h-11 rounded-xl font-bold text-sm bg-white border-primary/5" />
                       </div>
 
                       <div className="flex gap-3 pt-4">
-                        <Button type="submit" disabled={loading} className="flex-1 h-12 bg-primary text-white rounded-xl font-black text-[11px] tracking-widest shadow-lg shadow-primary/20 uppercase">
+                        <Button type="submit" disabled={loading} className="flex-1 h-12 bg-primary text-white rounded-xl font-black text-[11px] tracking-widest shadow-lg shadow-primary/20">
                           {loading ? "SAVING..." : "Save Changes"}
                         </Button>
-                        <Button type="button" variant="outline" onClick={() => setIsEditing(false)} className="h-12 px-8 rounded-xl font-black text-[11px] uppercase border-primary/10">Cancel</Button>
+                        <Button type="button" variant="outline" onClick={() => setIsEditing(false)} className="h-12 px-8 rounded-xl font-black text-[11px] border-primary/10">Cancel</Button>
                       </div>
                     </form>
                   </motion.div>
@@ -261,22 +261,22 @@ export default function CandidateDashboard() {
               <Card className="p-8 rounded-[32px] border border-primary/5 bg-white shadow-xl">
                  <div className="flex items-center gap-3 mb-8">
                    <CalendarIcon className="w-5 h-5 text-primary/40" />
-                   <h3 className="font-black text-xs uppercase tracking-widest">Exam Schedule</h3>
+                   <h3 className="font-black text-xs tracking-widest">Exam Schedule</h3>
                  </div>
 
                  <div className="space-y-5">
                     <div className="space-y-1 bg-slate-50 p-4 rounded-2xl border border-primary/5">
-                       <p className="text-[9px] font-black text-primary/20 uppercase tracking-widest flex items-center gap-2"><MapPin className="w-3 h-3" /> Venue</p>
-                       <p className="font-black text-[13px] text-primary/80 truncate uppercase">{dashboardData?.examVenue || "TO BE ASSIGNED"}</p>
+                       <p className="text-[9px] font-black text-primary/20 tracking-widest flex items-center gap-2"><MapPin className="w-3 h-3" /> Venue</p>
+                       <p className="font-black text-[13px] text-primary/80 truncate">{dashboardData?.examVenue || "TO BE ASSIGNED"}</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-1 bg-slate-50 p-4 rounded-2xl border border-primary/5">
-                          <p className="text-[9px] font-black text-primary/20 uppercase tracking-widest flex items-center gap-2"><CalendarIcon className="w-3 h-3" /> Date</p>
+                          <p className="text-[9px] font-black text-primary/20 tracking-widest flex items-center gap-2"><CalendarIcon className="w-3 h-3" /> Date</p>
                           <p className="font-black text-[13px] text-primary/80">{dashboardData?.examDate || "TBA"}</p>
                        </div>
                        <div className="space-y-1 bg-slate-50 p-4 rounded-2xl border border-primary/5">
-                          <p className="text-[9px] font-black text-primary/20 uppercase tracking-widest flex items-center gap-2"><Clock className="w-3 h-3" /> Time</p>
+                          <p className="text-[9px] font-black text-primary/20 tracking-widest flex items-center gap-2"><Clock className="w-3 h-3" /> Time</p>
                           <p className="font-black text-[13px] text-primary/80">{dashboardData?.examTime || "TBA"}</p>
                        </div>
                     </div>
@@ -284,7 +284,7 @@ export default function CandidateDashboard() {
 
                  <Button
                    onClick={() => handlePrint('schedule')}
-                   className="mt-10 h-14 w-full bg-slate-900 text-white rounded-2xl font-black text-[11px] tracking-widest uppercase flex gap-3 hover:bg-black shadow-lg"
+                   className="mt-10 h-14 w-full bg-slate-900 text-white rounded-2xl font-black text-[11px] tracking-widest flex gap-3 hover:bg-black shadow-lg"
                  >
                    <Printer className="w-4 h-4" /> Print Exam Slip
                  </Button>
@@ -295,20 +295,20 @@ export default function CandidateDashboard() {
                 <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full translate-x-1/2 -translate-y-1/2 blur-2xl" />
                 <div className="flex items-center gap-3 mb-8 relative z-10">
                   <Award className="w-5 h-5 text-emerald-400" />
-                  <h3 className="font-black text-xs uppercase tracking-widest">Academic Records</h3>
+                  <h3 className="font-black text-xs tracking-widest">Academic Records</h3>
                 </div>
 
                 <div className="space-y-3 relative z-10">
                   {attempts.length === 0 ? (
                     <div className="h-32 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-white/10 rounded-2xl">
                       <FileText className="w-6 h-6 text-white/10 mb-2" />
-                      <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">No results yet</p>
+                      <p className="text-[9px] font-black text-white/20 tracking-widest">No results yet</p>
                     </div>
                   ) : (
                     attempts.map(attempt => (
                       <div key={attempt.id} className="p-5 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center shadow-inner hover:bg-white/10 transition-all">
                         <div>
-                          <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Session Score</p>
+                          <p className="text-[8px] font-black text-white/30 tracking-widest">Session Score</p>
                           <p className="font-black text-xl">{attempt.isReleased ? `${attempt.score} / ${attempt.totalPossible}` : "PENDING"}</p>
                         </div>
                         {attempt.isReleased ? (
@@ -316,7 +316,7 @@ export default function CandidateDashboard() {
                             <Printer className="w-4 h-4 text-white" />
                           </button>
                         ) : (
-                          <Badge className="bg-amber-500/20 text-amber-400 border-none font-black text-[8px] uppercase px-2 py-1">Processing</Badge>
+                          <Badge className="bg-amber-500/20 text-amber-400 border-none font-black text-[8px] px-2 py-1">Processing</Badge>
                         )}
                       </div>
                     ))
@@ -329,7 +329,7 @@ export default function CandidateDashboard() {
       </main>
 
       <footer className="py-12 text-center bg-white border-t border-primary/5">
-        <p className="text-[10px] font-bold text-primary/10 tracking-widest uppercase">&copy; {new Date().getFullYear()} VIVI CBT SYSTEMS • Secure Registration Portal</p>
+        <p className="text-[10px] font-bold text-primary/10 tracking-widest">&copy; {new Date().getFullYear()} VIVI CBT SYSTEMS • Secure Registration Portal</p>
       </footer>
     </div>
   );

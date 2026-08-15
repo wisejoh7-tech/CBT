@@ -153,7 +153,7 @@ export default function CandidateRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col uppercase relative">
+    <div className="min-h-screen bg-slate-50 flex flex-col relative">
       <div className="cbt-background opacity-[0.05]" />
 
       <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b-2 border-primary/10 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
@@ -168,15 +168,15 @@ export default function CandidateRegister() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
+            <span className="text-[10px] font-black tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
         <div className="hidden md:flex items-center gap-8">
-          <button onClick={() => navigate('/')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase flex items-center gap-1">
+          <button onClick={() => navigate('/')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-1">
             <ArrowLeft className="w-4 h-4" /> Home
           </button>
-          <button onClick={() => navigate('/candidate-login')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase">Login</button>
-          <button onClick={() => navigate('/results')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase">Check Result</button>
+          <button onClick={() => navigate('/candidate-login')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Login</button>
+          <button onClick={() => navigate('/results')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Check Result</button>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -199,19 +199,19 @@ export default function CandidateRegister() {
               <div className="flex flex-col p-6 gap-4">
                 <button
                   onClick={() => { navigate('/'); setIsMenuOpen(false); }}
-                  className="text-left text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase py-2 flex items-center gap-2"
+                  className="text-left text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors py-2 flex items-center gap-2"
                 >
                   <ArrowLeft className="w-4 h-4" /> Home
                 </button>
                 <button
                   onClick={() => { navigate('/candidate-login'); setIsMenuOpen(false); }}
-                  className="text-left text-[11px] font-black tracking-widest text-primary/40 hover:text-primary uppercase py-2"
+                  className="text-left text-[11px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
                 >
                   Login
                 </button>
                 <button
                   onClick={() => { navigate('/results'); setIsMenuOpen(false); }}
-                  className="text-left text-[11px] font-black tracking-widest text-primary/40 hover:text-primary uppercase py-2"
+                  className="text-left text-[11px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
                 >
                   Check Result
                 </button>
@@ -224,8 +224,8 @@ export default function CandidateRegister() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
           <div className="text-center mb-6">
-            <h2 className="text-1xl text-white tracking-tighter text-primary leading-none mb-2 uppercase">Registration Portal</h2>
-            <p className="text-[10px] text-primary/60 text-white tracking-[0.4em] uppercase">Step {step} of 3</p>
+            <h2 className="text-1xl text-white tracking-tighter text-primary leading-none mb-2">Registration Portal</h2>
+            <p className="text-[10px] text-primary/60 text-white tracking-[0.4em]">Step {step} of 3</p>
           </div>
 
           <Card className="rounded-[20px] border-2 border-primary/10 bg-white shadow-2xl overflow-hidden">
@@ -256,7 +256,7 @@ export default function CandidateRegister() {
                 {step === 2 && (
                   <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-2 max-w-[280px] mx-auto">
                     <div className="text-center">
-                       <h3 className="text-[11px] font-black text-primary tracking-widest uppercase">Verification</h3>
+                       <h3 className="text-[11px] font-black text-primary tracking-widest">Verification</h3>
                     </div>
 
                     <div className="space-y-2">
@@ -294,16 +294,16 @@ export default function CandidateRegister() {
                                 <div className="w-8 h-8 rounded-xl bg-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform">
                                    <Camera className="w-5 h-5 text-primary/40 group-hover:text-primary" />
                                 </div>
-                                <span className="text-[8px] font-black text-primary/30 uppercase tracking-[0.1em]">Start Camera</span>
+                                <span className="text-[8px] font-black text-primary/30 tracking-[0.1em]">Start Camera</span>
                              </button>
                           )}
                       </div>
                     </div>
 
                     {formData.faceUrl && (
-                      <Button onClick={() => setStep(3)} className="w-full h-10 bg-slate-900 text-white rounded-lg font-black tracking-widest text-[9px] uppercase">Continue</Button>
+                      <Button onClick={() => setStep(3)} className="w-full h-10 bg-slate-900 text-white rounded-lg font-black tracking-widest text-[9px]">Continue</Button>
                     )}
-                    <button type="button" onClick={() => setStep(1)} className="w-full text-[8px] font-black text-primary/20 hover:text-primary transition-colors uppercase">Back</button>
+                    <button type="button" onClick={() => setStep(1)} className="w-full text-[8px] font-black text-primary/20 hover:text-primary transition-colors">Back</button>
                   </motion.div>
                 )}
 
@@ -311,7 +311,7 @@ export default function CandidateRegister() {
                   <motion.form key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleFinalRegister} className="space-y-6">
                     <div className="space-y-4">
                       <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Full Name</Label>
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Full Name</Label>
                         <div className="relative group">
                           <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                           <Input
@@ -325,7 +325,7 @@ export default function CandidateRegister() {
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Phone Number</Label>
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Phone Number</Label>
                         <div className="relative group">
                           <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                           <Input
@@ -340,7 +340,7 @@ export default function CandidateRegister() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">State of Origin</Label>
+                          <Label className="text-[10px] font-black text-primary/40 tracking-widest">State of Origin</Label>
                           <select
                             value={formData.stateOfOrigin}
                             onChange={e => setFormData({ ...formData, stateOfOrigin: e.target.value, lga: '' })}
@@ -349,13 +349,13 @@ export default function CandidateRegister() {
                           >
                             <option value="">SELECT STATE</option>
                             {NIGERIAN_STATES.map(state => (
-                              <option key={state} value={state}>{state.toUpperCase()}</option>
+                              <option key={state} value={state}>{state}</option>
                             ))}
                           </select>
                         </div>
 
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">LGA of Origin</Label>
+                          <Label className="text-[10px] font-black text-primary/40 tracking-widest">LGA of Origin</Label>
                           <select
                             value={formData.lga}
                             onChange={e => setFormData({ ...formData, lga: e.target.value })}
@@ -365,14 +365,14 @@ export default function CandidateRegister() {
                           >
                             <option value="">SELECT LGA</option>
                             {formData.stateOfOrigin && STATE_LGAS[formData.stateOfOrigin]?.map(lga => (
-                              <option key={lga} value={lga}>{lga.toUpperCase()}</option>
+                              <option key={lga} value={lga}>{lga}</option>
                             ))}
                           </select>
                         </div>
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Institution Attended</Label>
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Institution Attended</Label>
                         <div className="relative group">
                           <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                           <Input
@@ -386,7 +386,7 @@ export default function CandidateRegister() {
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Residential Address</Label>
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Residential Address</Label>
                         <div className="relative group">
                           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                           <Input
@@ -400,7 +400,7 @@ export default function CandidateRegister() {
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Create Password</Label>
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Create Password</Label>
                         <div className="relative group">
                           <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                           <Input
@@ -415,7 +415,7 @@ export default function CandidateRegister() {
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Date of Birth</Label>
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Date of Birth</Label>
                         <div className="relative group">
                           <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                           <Input
@@ -429,7 +429,7 @@ export default function CandidateRegister() {
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Upload Identification (WAEC / NECO / NABTEB)</Label>
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Upload Identification (WAEC / NECO / NABTEB)</Label>
                         <div className="relative group">
                           <Input
                             type="file"
@@ -451,7 +451,7 @@ export default function CandidateRegister() {
                       </div>
 
                       <div className="space-y-3">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest flex justify-between uppercase">
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest flex justify-between">
                           Select 4 Subjects <span>({formData.subjectCombination.length}/4)</span>
                         </Label>
                         <div className="grid grid-cols-2 gap-2">
@@ -461,26 +461,26 @@ export default function CandidateRegister() {
                               type="button"
                               onClick={() => toggleSubject(s.name)}
                               className={cn(
-                                "h-10 rounded-xl border-2 font-black text-[10px] transition-all uppercase",
+                                "h-10 rounded-xl border-2 font-black text-[10px] transition-all",
                                 formData.subjectCombination.includes(s.name)
                                   ? "bg-primary text-white border-primary"
                                   : "bg-slate-50 border-primary/5 text-primary/40 hover:border-primary/20"
                               )}
                             >
-                              {s.name.toUpperCase()}
+                              {s.name}
                             </button>
                           ))}
                           {offeredSubjects.filter(s => s.isActive).length === 0 && (
-                            <p className="col-span-2 text-center text-[8px] font-black opacity-20 uppercase py-4">No subjects available yet</p>
+                            <p className="col-span-2 text-center text-[8px] font-black opacity-20 py-4">No subjects available yet</p>
                           )}
                         </div>
                       </div>
                     </div>
 
                     <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px]">
-                      {loading ? "PROCESSING..." : "COMPLETE REGISTRATION"}
+                      {loading ? "Processing..." : "Complete Registration"}
                     </Button>
-                    <button type="button" onClick={() => setStep(2)} className="w-full text-[10px] font-black text-primary/20 hover:text-primary transition-colors uppercase">Redo Biometrics</button>
+                    <button type="button" onClick={() => setStep(2)} className="w-full text-[10px] font-black text-primary/20 hover:text-primary transition-colors">Redo Biometrics</button>
                   </motion.form>
                 )}
               </AnimatePresence>
@@ -490,7 +490,19 @@ export default function CandidateRegister() {
       </div>
 
       <footer className="py-12 z-10 w-full text-center border-t border-primary/5 bg-white">
-        <p className="text-[10px] font-bold text-primary/20 tracking-widest uppercase">&copy; {new Date().getFullYear()} VIVI CBT Systems. Secure Registration Terminal.</p>
+        <p className="text-[10px] font-bold text-primary/20 tracking-widest">&copy; {new Date().getFullYear()} VIVI CBT Systems. Secure Registration Terminal.</p>
+      </footer>
+    </div>
+  );
+}
+              </AnimatePresence>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      <footer className="py-12 z-10 w-full text-center border-t border-primary/5 bg-white">
+        <p className="text-[10px] font-bold text-primary/20 tracking-widest">&copy; {new Date().getFullYear()} VIVI CBT Systems. Secure Registration Terminal.</p>
       </footer>
     </div>
   );

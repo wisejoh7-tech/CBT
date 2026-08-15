@@ -306,7 +306,7 @@ export default function Admin() {
         const parts = line.split(',').map(s => s.trim());
         if (parts[0] && parts[1]) {
           payload.push({
-            fullName: parts[0].toUpperCase(),
+            fullName: parts[0],
             examNumber: `${new Date().getFullYear()}${Math.floor(Math.random()*1000000)}`,
             dateOfBirth: parts[1],
             subjectCombination: parts.slice(2, 6),
@@ -432,7 +432,7 @@ export default function Admin() {
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-screen bg-white">
       <div className="w-10 h-10 bg-primary rounded-xl animate-bounce mb-4 flex items-center justify-center text-white font-black">V</div>
-      <p className="font-black text-xs tracking-widest text-primary/40 uppercase animate-pulse">Initializing Command Center...</p>
+      <p className="font-black text-xs tracking-widest text-primary/40 animate-pulse">Loading....</p>
     </div>
   );
 
@@ -445,7 +445,7 @@ export default function Admin() {
       )}>
         <div className="p-6 flex items-center gap-3">
           <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white font-black text-lg shrink-0">V</div>
-          {isSidebarOpen && <span className="font-black text-lg tracking-tighter text-primary truncate">VIVI ADMIN</span>}
+          {isSidebarOpen && <span className="font-black text-lg tracking-tighter text-primary truncate">Admin Portal</span>}
         </div>
 
         <ScrollArea className="flex-1 px-3">
@@ -462,7 +462,7 @@ export default function Admin() {
                 )}
               >
                 <item.icon className={cn("w-5 h-5 shrink-0", activeTab === item.id ? "text-white" : "group-hover:scale-110 transition-transform")} />
-                {isSidebarOpen && <span className="text-[11px] font-black uppercase tracking-wider truncate">{item.label}</span>}
+                {isSidebarOpen && <span className="text-[11px] font-black tracking-wider truncate">{item.label}</span>}
                 {activeTab === item.id && isSidebarOpen && <ChevronRight className="w-3.5 h-3.5 ml-auto text-white/40" />}
               </button>
             ))}
@@ -475,7 +475,7 @@ export default function Admin() {
             className="w-full flex items-center gap-3 px-3 h-11 rounded-xl text-rose-500 hover:bg-rose-50 transition-all"
           >
             <LogOut className="w-5 h-5 shrink-0" />
-            {isSidebarOpen && <span className="text-[11px] font-black uppercase tracking-wider">Logout</span>}
+            {isSidebarOpen && <span className="text-[11px] font-black tracking-wider">Logout</span>}
           </button>
         </div>
       </aside>
@@ -490,14 +490,14 @@ export default function Admin() {
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-primary/40 hover:text-primary bg-primary/5 rounded-lg transition-colors">
               {isSidebarOpen ? <Menu className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </button>
-            <h2 className="text-sm font-black uppercase tracking-widest text-primary/40">
+            <h2 className="text-sm font-black tracking-widest text-primary/40">
               {menuItems.find(m => m.id === activeTab)?.label}
             </h2>
           </div>
           <div className="flex items-center gap-6 text-right">
              <div className="hidden sm:block">
                 <p className="font-black text-[12px] text-primary tracking-tight leading-none mb-1">{profile?.displayName}</p>
-                <p className="text-[9px] font-bold text-primary/40 uppercase tracking-widest leading-none">{profile?.role?.replace('_', ' ')}</p>
+                <p className="text-[9px] font-bold text-primary/40 tracking-widest leading-none">{profile?.role?.replace('_', ' ')}</p>
              </div>
              <div className="w-9 h-9 rounded-xl bg-slate-100 border border-primary/5 flex items-center justify-center font-black text-primary/20 text-sm">
                 {profile?.displayName?.charAt(0)}
@@ -528,7 +528,7 @@ export default function Admin() {
                             <div className={cn("w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-white transition-colors", stat.color)}>
                               <stat.icon className="w-6 h-6" />
                             </div>
-                            <p className="text-[10px] font-black text-primary/30 mb-1 uppercase tracking-widest">{stat.label}</p>
+                            <p className="text-[10px] font-black text-primary/30 mb-1 tracking-widest">{stat.label}</p>
                             <h4 className="text-4xl font-black text-primary tracking-tighter">{stat.value}</h4>
                           </Card>
                         ))}
@@ -537,19 +537,19 @@ export default function Admin() {
                         <Card className="p-10 rounded-[40px] border-none shadow-2xl bg-primary text-white overflow-hidden relative">
                            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full translate-x-1/3 -translate-y-1/3 blur-3xl" />
                            <div className="relative z-10 space-y-6">
-                              <h3 className="text-xl font-black uppercase tracking-tight">System Status</h3>
+                              <h3 className="text-xl font-black tracking-tight">System Status</h3>
                               <div className="space-y-4">
                                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                                    <span className="text-[11px] font-bold text-white/60 uppercase">Cloud Database</span>
-                                    <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black uppercase">Active</Badge>
+                                    <span className="text-[11px] font-bold text-white/60">Cloud Database</span>
+                                    <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black">Active</Badge>
                                  </div>
                                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                                    <span className="text-[11px] font-bold text-white/60 uppercase">Real-time Node</span>
-                                    <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black uppercase">Online</Badge>
+                                    <span className="text-[11px] font-bold text-white/60">Real-time Node</span>
+                                    <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black">Online</Badge>
                                  </div>
                                  <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-bold text-white/60 uppercase">AI Processor</span>
-                                    <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black uppercase">Idle</Badge>
+                                    <span className="text-[11px] font-bold text-white/60">AI Processor</span>
+                                    <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black">Idle</Badge>
                                  </div>
                               </div>
                            </div>
@@ -558,8 +558,8 @@ export default function Admin() {
                            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
                               <ShieldAlert className="w-10 h-10 text-primary/10" />
                            </div>
-                           <h3 className="font-black text-lg uppercase text-primary">Command Center</h3>
-                           <p className="text-[11px] font-medium text-primary/40 mt-2 max-w-xs leading-relaxed uppercase">Full oversight of the VIVI examination ecosystem. Monitor integrity and manage institutional data.</p>
+                           <h3 className="font-black text-lg text-primary">Command Center</h3>
+                           <p className="text-[11px] font-medium text-primary/40 mt-2 max-w-xs leading-relaxed">Full oversight of the VIVI examination ecosystem. Monitor integrity and manage institutional data.</p>
                         </Card>
                      </div>
                   </div>
@@ -569,12 +569,12 @@ export default function Admin() {
                   <div className="space-y-8">
                     <div className="flex justify-between items-center">
                        <div className="space-y-1">
-                          <h3 className="text-xl font-black text-primary uppercase">Candidate Registry</h3>
-                          <p className="text-[10px] font-bold text-primary/30 uppercase tracking-[0.2em]">{candidates.length} Registered Students</p>
+                          <h3 className="text-xl font-black text-primary ">Candidate Registry</h3>
+                          <p className="text-[10px] font-bold text-primary/30  tracking-[0.2em]">{candidates.length} Registered Students</p>
                        </div>
                        <div className="flex gap-3">
-                          <Button onClick={() => setShowAddCandidate(true)} className="h-11 px-8 bg-primary text-white rounded-xl font-black text-[10px] tracking-widest uppercase shadow-lg shadow-primary/20">Enroll Candidate</Button>
-                          <label className="h-11 px-8 border-2 border-primary/5 bg-white text-primary rounded-xl font-black text-[10px] tracking-widest uppercase flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
+                          <Button onClick={() => setShowAddCandidate(true)} className="h-11 px-8 bg-primary text-white rounded-xl font-black text-[10px] tracking-widest">Register Candidate</Button>
+                          <label className="h-11 px-8 border-2 border-primary/5 bg-white text-primary rounded-xl font-black text-[10px] tracking-widest flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-all">
                              <Upload className="w-3.5 h-3.5 mr-2" /> Bulk Upload
                              <input type="file" className="hidden" accept=".csv" onChange={handleBulkUpload} />
                           </label>
@@ -582,18 +582,18 @@ export default function Admin() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                        {candidates.map(c => (
-                         <Card key={c.examNumber} className="p-6 rounded-[32px] border-none bg-white shadow-xl group">
+                         <Card key={c.examNumber} className="p-6 rounded-[20px] border-none bg-white shadow-xl group">
                             <div className="flex items-start gap-4 mb-6">
-                               <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                               <div className="w-11 h-11 rounded-1 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
                                   {c.faceUrl ? <img src={c.faceUrl} className="w-full h-full object-cover" /> : <User className="w-6 h-6 text-primary/10" />}
                                </div>
                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-black text-sm text-primary uppercase truncate mb-1">{c.fullName}</h4>
+                              <h3 className="font-black text-sm text-primary truncate mb-1">{c.fullName}</h3>
                                   <p className="text-[10px] font-black text-primary/30 tracking-widest">{c.examNumber}</p>
                                </div>
                             </div>
                             <div className="flex gap-2 border-t border-primary/5 pt-4">
-                               <Button variant="ghost" className="flex-1 h-9 rounded-xl bg-slate-50 text-primary/40 text-[9px] font-black uppercase hover:bg-primary/5 hover:text-primary transition-all flex items-center justify-center gap-2" onClick={() => navigate(`/exam-slip/${c.examNumber}`)}><Printer className="w-3.5 h-3.5" /> Exam Slip</Button>
+                               <Button variant="ghost" className="flex-1 h-9 rounded-xl bg-slate-50 text-primary/40 text-[9px] font-black hover:bg-primary/5 hover:text-primary transition-all flex items-center justify-center gap-2" onClick={() => navigate(`/exam-slip/${c.examNumber}`)}><Printer className="w-3.5 h-3.5" /> Exam Slip</Button>
                                <Button variant="ghost" className="w-9 h-9 rounded-xl bg-rose-50 text-rose-300 hover:text-rose-500 transition-all flex items-center justify-center" onClick={async () => { if(confirm("Delete candidate?")) { await fetch(getApiUrl(`/candidates/${c.examNumber}`), { method: 'DELETE', headers: getHeaders() }); fetchCandidates(); } }}><Trash2 className="w-4 h-4" /></Button>
                             </div>
                          </Card>
@@ -606,11 +606,11 @@ export default function Admin() {
                   <div className="space-y-8">
                     <div className="flex justify-between items-center">
                        <div className="space-y-1">
-                          <h3 className="text-xl font-black text-primary uppercase">Staff Directory</h3>
-                          <p className="text-[10px] font-bold text-primary/30 uppercase tracking-[0.2em]">{staff.length} Authorized Personnel</p>
+                          <h3 className="text-xl font-black text-primary ">Staff Registration</h3>
+                          <p className="text-[10px] font-bold text-primary/30 tracking-[0.2em]">{staff.length} Authorized Staff</p>
                        </div>
-                       <Button onClick={() => setShowAddStaff(true)} className="h-11 px-8 bg-primary text-white rounded-xl font-black text-[10px] tracking-widest uppercase shadow-lg shadow-primary/20">
-                          Provision New Account
+                       <Button onClick={() => setShowAddStaff(true)} className="h-11 px-8 bg-primary text-white rounded-xl font-black text-[10px] tracking-widest shadow-lg shadow-primary/20">
+                        Create New Account
                        </Button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -619,17 +619,17 @@ export default function Admin() {
                             <div className="flex items-center gap-5 mb-6">
                                <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center font-black text-primary/20 text-xl group-hover:bg-primary group-hover:text-white transition-all">{s.displayName.charAt(0)}</div>
                                <div className="min-w-0">
-                                  <h4 className="font-black text-sm text-primary uppercase truncate">{s.displayName}</h4>
-                                  <Badge className="mt-1 bg-slate-50 text-primary/40 border-none text-[8px] font-black uppercase px-2 py-0.5 rounded-lg">{s.role.replace('_', ' ')}</Badge>
+                                  <h4 className="font-black text-sm text-primary  truncate">{s.displayName}</h4>
+                                  <Badge className="mt-1 bg-slate-50 text-primary/40 border-none text-[8px] font-black px-2 py-0.5 rounded-lg">{s.role.replace('_', ' ')}</Badge>
                                </div>
                             </div>
                             <div className="space-y-4">
                                <div className="p-4 bg-slate-50 rounded-2xl border border-primary/5">
-                                  <p className="text-[8px] font-black text-primary/20 uppercase tracking-widest">Access Point</p>
+                                  <p className="text-[8px] font-black text-primary/20 tracking-widest">Access Point</p>
                                   <p className="text-[11px] font-bold text-primary truncate mt-0.5">{s.email}</p>
                                </div>
                                {s.role !== 'super_admin' && (
-                                 <Button variant="ghost" className="w-full h-11 rounded-2xl bg-rose-50 text-rose-300 hover:text-rose-500 transition-all font-black text-[9px] uppercase tracking-widest" onClick={async () => { if(confirm("Revoke staff access?")) { await fetch(getApiUrl(`/auth/staff/${s.id}`), { method: 'DELETE', headers: getHeaders() }); fetchStaff(); } }}><Lock className="w-3.5 h-3.5 mr-2" /> Revoke Access</Button>
+                                 <Button variant="ghost" className="w-full h-11 rounded-2xl bg-rose-50 text-rose-300 hover:text-rose-500 transition-all font-black text-[9px] tracking-widest" onClick={async () => { if(confirm("Revoke staff access?")) { await fetch(getApiUrl(`/auth/staff/${s.id}`), { method: 'DELETE', headers: getHeaders() }); fetchStaff(); } }}><Lock className="w-3.5 h-3.5 mr-2" /> Retrieve Access</Button>
                                )}
                             </div>
                          </Card>
@@ -642,21 +642,21 @@ export default function Admin() {
                   <div className="space-y-8">
                      <div className="flex justify-between items-center">
                         <div className="space-y-1">
-                           <h2 className="text-xl font-black text-primary uppercase">Institutional Curriculum</h2>
-                           <p className="text-[10px] font-bold text-primary/30 uppercase tracking-[0.2em]">{offeredSubjects.length} Registered Subjects</p>
+                           <h2 className="text-xl font-black text-primary">Institutional Curriculum</h2>
+                           <p className="text-[10px] font-bold text-primary/30 tracking-[0.2em]">{offeredSubjects.length} Registered Subjects</p>
                         </div>
-                        <Button onClick={() => setShowAddSubject(true)} className="h-11 px-8 bg-primary text-white rounded-xl font-black text-[10px] tracking-widest uppercase shadow-lg shadow-primary/20">Add Subject</Button>
+                        <Button onClick={() => setShowAddSubject(true)} className="h-11 px-8 bg-primary text-white rounded-xl font-black text-[10px] tracking-widest shadow-lg shadow-primary/20">Add Subject</Button>
                      </div>
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {offeredSubjects.map(s => (
                            <Card key={s.id} className="p-8 rounded-[40px] border-none bg-white shadow-xl group">
                               <div className="flex justify-between items-start mb-6">
                                  <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all"><BookOpen className="w-6 h-6" /></div>
-                                 <Badge className={cn("border-none text-[8px] font-black uppercase px-2 py-0.5 rounded-lg", s.isActive ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600")}>{s.isActive ? "Offered" : "Disabled"}</Badge>
+                                 <Badge className={cn("border-none text-[8px] font-black px-2 py-0.5 rounded-lg", s.isActive ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600")}>{s.isActive ? "Offered" : "Disabled"}</Badge>
                               </div>
-                              <h4 className="font-black text-sm text-primary uppercase mb-6">{s.name}</h4>
+                              <h4 className="font-black text-sm text-primary mb-6">{s.name}</h4>
                               <div className="flex gap-2">
-                                 <Button variant="ghost" className="flex-1 h-10 rounded-xl bg-slate-50 text-primary/30 hover:text-emerald-500 hover:bg-emerald-50 transition-all font-black text-[9px] uppercase" onClick={() => toggleSubjectStatus(s.id)}><CheckCircle className="w-4 h-4 mr-1.5" /> Status</Button>
+                                 <Button variant="ghost" className="flex-1 h-10 rounded-xl bg-slate-50 text-primary/30 hover:text-emerald-500 hover:bg-emerald-50 transition-all font-black text-[9px]" onClick={() => toggleSubjectStatus(s.id)}><CheckCircle className="w-4 h-4 mr-1.5" /> Status</Button>
                                  <Button variant="ghost" className="w-10 h-10 rounded-xl bg-rose-50 text-rose-300 hover:text-rose-500 transition-all" onClick={() => handleDeleteOfferedSubject(s.id)}><Trash2 className="w-4 h-4" /></Button>
                               </div>
                            </Card>
@@ -669,15 +669,15 @@ export default function Admin() {
                   <div className="space-y-8">
                      <div className="flex justify-between items-center">
                         <div className="space-y-1">
-                           <h3 className="text-xl font-black text-primary uppercase">Performance Registry</h3>
-                           <p className="text-[10px] font-bold text-primary/30 uppercase tracking-[0.2em]">{attempts.filter(a => a.status === 'completed').length} Submitted Transcripts</p>
+                           <h3 className="text-xl font-black text-primary">Performance Registry</h3>
+                           <p className="text-[10px] font-bold text-primary/30 tracking-[0.2em]">{attempts.filter(a => a.status === 'completed').length} Submitted Transcripts</p>
                         </div>
-                        <Button onClick={() => { const unreleased = attempts.filter(a => a.status === 'completed' && !a.isReleased).map(a => a.id); handleReleaseResults(unreleased); }} disabled={releasingResults || attempts.filter(a => a.status === 'completed' && !a.isReleased).length === 0} className="h-12 px-10 bg-emerald-600 text-white font-black text-[10px] tracking-widest rounded-xl shadow-xl hover:bg-emerald-700 uppercase">{releasingResults ? "Releasing..." : "Authorize All Results"}</Button>
+                        <Button onClick={() => { const unreleased = attempts.filter(a => a.status === 'completed' && !a.isReleased).map(a => a.id); handleReleaseResults(unreleased); }} disabled={releasingResults || attempts.filter(a => a.status === 'completed' && !a.isReleased).length === 0} className="h-12 px-10 bg-emerald-600 text-white font-black text-[10px] tracking-widest rounded-xl shadow-xl hover:bg-emerald-700">{releasingResults ? "Releasing..." : "Authorize All Results"}</Button>
                      </div>
                      <div className="bg-white rounded-[40px] border border-primary/5 overflow-hidden shadow-2xl">
                         <table className="w-full text-left">
                            <thead className="bg-slate-50/50 border-b border-primary/5">
-                              <tr className="text-[10px] font-black tracking-widest text-primary/30 uppercase">
+                              <tr className="text-[10px] font-black tracking-widest text-primary/30">
                                  <th className="p-8">Candidate Profile</th>
                                  <th className="p-8 text-center">Score Data</th>
                                  <th className="p-8 text-center">Identity</th>
@@ -692,7 +692,7 @@ export default function Admin() {
                                      <td className="p-8">
                                         <div className="flex items-center gap-4">
                                            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-primary/20 text-xs">{candidate?.fullName?.charAt(0) || '?'}</div>
-                                           <div><p className="font-black text-[13px] text-primary uppercase leading-tight">{candidate?.fullName || "REMOVED"}</p><p className="text-[9px] font-bold text-primary/30 tracking-widest mt-0.5">{a.userId}</p></div>
+                                           <div><p className="font-black text-[13px] text-primary leading-tight">{candidate?.fullName || "REMOVED"}</p><p className="text-[9px] font-bold text-primary/30 tracking-widest mt-0.5">{a.userId}</p></div>
                                         </div>
                                      </td>
                                      <td className="p-8 text-center"><span className="text-xl font-black text-primary leading-none">{a.score} / {a.totalPossible}</span></td>
@@ -710,8 +710,8 @@ export default function Admin() {
                 {activeTab === 'monitor' && (
                   <div className="space-y-8">
                     <div className="flex justify-between items-end">
-                      <h2 className="text-xl font-black text-primary uppercase">Surveillance Terminal</h2>
-                      <Badge className="bg-emerald-500 text-white border-none font-black text-[10px] px-5 py-2.5 rounded-2xl animate-pulse shadow-lg uppercase">{attempts.filter(a => a.status === 'in-progress').length} Active Sessions</Badge>
+                      <h2 className="text-xl font-black text-primary">Surveillance Terminal</h2>
+                      <Badge className="bg-emerald-500 text-white border-none font-black text-[10px] px-5 py-2.5 rounded-2xl animate-pulse shadow-lg">{attempts.filter(a => a.status === 'in-progress').length} Active Sessions</Badge>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {attempts.filter(a => a.status === 'in-progress').map(s => {
@@ -720,10 +720,11 @@ export default function Admin() {
                           <Card key={s.id} className="p-8 rounded-[40px] border-none bg-white flex flex-col gap-6 relative shadow-xl hover:shadow-2xl transition-all group overflow-hidden">
                             <div className={cn("absolute top-0 left-0 right-0 h-1.5", (s.trustScore || 100) < 70 ? "bg-rose-500" : "bg-emerald-500")} />
                             <div className="flex justify-between items-start">
-                              <div className="flex items-center gap-4"><div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center font-black text-primary/20 text-sm">{candidate?.fullName?.charAt(0) || 'U'}</div><div><h4 className="font-black text-[13px] text-primary uppercase leading-tight">{candidate?.fullName || s.userId}</h4><p className="text-[9px] font-bold text-primary/30 uppercase tracking-widest mt-1">Exam: {s.examId}</p></div></div>
-                              <div className="text-right"><p className="text-[8px] font-black text-primary/20 uppercase tracking-widest">Integrity</p><p className={cn("font-black text-2xl tracking-tighter leading-none mt-1", (s.trustScore || 100) < 70 ? "text-rose-500" : "text-emerald-500")}>{Math.round(s.trustScore || 100)}%</p></div>
+                              <div className="flex items-center gap-4"><div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center font-black text-primary/20 text-sm">{candidate?.fullName?.charAt(0) || 'U'}</div><div><h4 className="font-black text-[13px] text-primary leading-tight">{candidate?.fullName || s.userId}</h4><p className="text-[9px] font-bold text-primary/30 tracking-widest mt-1">Exam: {s.examId}</p></div></div>
+                              <div className="text-right"><p className="text-[8px] font-black text-primary/20 tracking-widest">Integrity</p><p className={cn("font-black text-2xl tracking-tighter leading-none mt-1", (s.trustScore || 100) < 70 ? "text-rose-500" : "text-emerald-500")}>{Math.round(s.trustScore || 100)}%</p></div>
                             </div>
-                            <div className="flex gap-2"><Button onClick={() => setViewingSnaps(s.id)} className="flex-1 h-11 rounded-2xl bg-slate-50 text-primary/40 text-[10px] font-black uppercase hover:bg-primary/5 hover:text-primary flex items-center justify-center gap-2 transition-all"><Camera className="w-4 h-4" /> Live Snaps</Button><Button onClick={() => { setActiveChatId(s.userId); setActiveTab('chat'); }} className="h-11 w-12 rounded-2xl bg-slate-50 text-primary/40 hover:bg-primary/5 hover:text-primary transition-all flex items-center justify-center shadow-inner"><MessageCircle className="w-4.5 h-4.5" /></Button></div>
+                            <div className="flex gap-2"><Button onClick={() => setViewingSnaps(s.id)} className="flex-1 h-11 rounded-2xl bg-slate-50 text-primary/40 text-[10px] font-black hover:bg-primary/5 hover:text-primary flex items-center justify-center gap-2 transition-all"><Camera className="w-4 h-4" /> Live Snaps</Button>
+Button onClick={() => { setActiveChatId(s.userId); setActiveTab('chat'); }} className="h-11 w-12 rounded-2xl bg-slate-50 text-primary/40 hover:bg-primary/5 hover:text-primary transition-all flex items-center justify-center shadow-inner"><MessageCircle className="w-4.5 h-4.5" /></Button></div>
                           </Card>
                         );
                       })}
@@ -734,7 +735,7 @@ export default function Admin() {
                 {activeTab === 'chat' && (
                   <div className="h-[75vh] grid md:grid-cols-[320px_1fr] border border-primary/5 bg-white rounded-[40px] overflow-hidden shadow-2xl">
                     <aside className="border-r border-primary/5 flex flex-col bg-slate-50/50">
-                      <div className="p-8 border-b border-primary/5"><h3 className="text-[11px] font-black text-primary/40 uppercase tracking-[0.3em]">Support Requests</h3></div>
+                      <div className="p-8 border-b border-primary/5"><h3 className="text-[11px] font-black text-primary/40 tracking-[0.3em]">Support Requests</h3></div>
                       <ScrollArea className="flex-1">
                         <div className="p-4 space-y-3">
                           {Array.from(new Set([...messages.map(m => m.from === 'admin' ? m.to : m.from), ...attempts.filter(a => a.status === 'in-progress').map(a => a.userId)])).map(id => {
@@ -756,7 +757,7 @@ export default function Admin() {
                         <>
                           <div className="p-8 border-b border-primary/5 flex justify-between items-center bg-white"><div><h4 className="font-black text-sm text-primary uppercase tracking-widest">{activeChatId}</h4><div className="flex items-center gap-2 mt-1"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /><p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest leading-none pt-0.5">Encrypted Tunnel Active</p></div></div><Button variant="ghost" size="icon" onClick={() => setActiveChatId(null)} className="h-10 w-10 text-primary/20 hover:text-primary rounded-xl transition-all"><CircleX className="w-5 h-5" /></Button></div>
                           <ScrollArea className="flex-1 p-10 bg-slate-50/30"><div className="space-y-6">{messages.filter(m => m.from === activeChatId || (m.from === 'admin' && m.to === activeChatId)).map((m, i) => (<div key={i} className={cn("flex flex-col", m.from === 'admin' ? "items-end" : "items-start")}><div className={cn("max-w-[80%] p-5 rounded-[24px] text-[13px] font-bold shadow-sm", m.from === 'admin' ? "bg-primary text-white rounded-tr-none" : "bg-white text-primary border border-primary/5 rounded-tl-none")}>{m.message}</div><span className="text-[8px] font-black text-primary/20 mt-2 uppercase tracking-widest">{new Date(m.timestamp).toLocaleTimeString()}</span></div>))}<div ref={chatEndRef} /></div></ScrollArea>
-                          <form onSubmit={sendChatMessage} className="p-8 border-t border-primary/5 bg-white flex gap-4"><Input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Authorize response to terminal..." className="h-14 px-8 rounded-2xl bg-slate-50 border-none font-bold text-sm focus:bg-slate-100 transition-all" /><Button type="submit" className="h-14 px-10 bg-primary text-white rounded-2xl font-black tracking-widest text-[10px] shadow-xl uppercase">Transmit</Button></form>
+                          <form onSubmit={sendChatMessage} className="p-8 border-t border-primary/5 bg-white flex gap-4"><Input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Authorize response to terminal..." className="h-14 px-8 rounded-2xl bg-slate-50 border-none font-bold text-sm focus:bg-slate-100 transition-all" /><Button type="submit" className="h-14 px-10 bg-primary text-white rounded-2xl font-black tracking-widest text-[10px] shadow-xl">Transmit</Button></form>
                         </>
                       ) : (<div className="flex-1 flex flex-col items-center justify-center opacity-20 text-center p-20 space-y-4"><MessageCircle className="w-20 h-20" /><h3 className="text-xl font-black text-primary uppercase tracking-widest">Support Core</h3><p className="max-w-xs font-bold text-xs uppercase tracking-widest">Establish a secure link with an active terminal to provide proctoring support.</p></div>)}
                     </section>
@@ -765,12 +766,12 @@ export default function Admin() {
 
                 {activeTab === 'audit' && (
                   <div className="space-y-8">
-                     <h2 className="text-xl font-black text-primary uppercase">System Audit Trail</h2>
+                     <h2 className="text-xl font-black text-primary">System Audit Trail</h2>
                      <div className="bg-white rounded-[40px] border border-primary/5 overflow-hidden shadow-2xl">
                         <table className="w-full text-left">
-                           <thead className="bg-slate-50 border-b border-primary/5"><tr className="text-[10px] font-black tracking-widest text-primary/30 uppercase"><th className="p-8">Timestamp</th><th className="p-8">Type</th><th className="p-8">Event</th><th className="p-8">User ID</th></tr></thead>
+                           <thead className="bg-slate-50 border-b border-primary/5"><tr className="text-[10px] font-black tracking-widest text-primary/30"><th className="p-8">Timestamp</th><th className="p-8">Type</th><th className="p-8">Event</th><th className="p-8">User ID</th></tr></thead>
                            <tbody className="divide-y divide-primary/5">
-                              {logs.map(log => (<tr key={log.id} className="hover:bg-slate-50/50 transition-colors"><td className="p-8 text-[11px] font-bold text-primary/40 uppercase">{new Date(log.timestamp).toLocaleString()}</td><td className="p-8"><Badge className={cn("text-[9px] font-black border-none uppercase px-3 py-1 rounded-lg", log.type === 'security' ? "bg-red-100 text-red-500" : "bg-sky-100 text-sky-500")}>{log.type}</Badge></td><td className="p-8 text-[12px] font-bold text-primary uppercase leading-relaxed">{log.message}</td><td className="p-8 text-[11px] font-black text-primary/20 uppercase tracking-widest">{log.userId || 'System'}</td></tr>))}
+                              {logs.map(log => (<tr key={log.id} className="hover:bg-slate-50/50 transition-colors"><td className="p-8 text-[11px] font-bold text-primary/40 ">{new Date(log.timestamp).toLocaleString()}</td><td className="p-8"><Badge className={cn("text-[9px] font-black border-none  px-3 py-1 rounded-lg", log.type === 'security' ? "bg-red-100 text-red-500" : "bg-sky-100 text-sky-500")}>{log.type}</Badge></td><td className="p-8 text-[12px] font-bold text-primary  leading-relaxed">{log.message}</td><td className="p-8 text-[11px] font-black text-primary/20  tracking-widest">{log.userId || 'System'}</td></tr>))}
                            </tbody>
                         </table>
                      </div>
@@ -779,20 +780,20 @@ export default function Admin() {
 
                 {activeTab === 'security' && (
                   <div className="space-y-8">
-                     <h2 className="text-xl font-black text-primary uppercase">Proctoring Intelligence</h2>
+                     <h2 className="text-xl font-black text-primary">Proctoring Intelligence</h2>
                      <div className="bg-white rounded-[40px] border border-primary/5 overflow-hidden shadow-2xl">
                         <table className="w-full text-left">
-                           <thead className="bg-slate-50 border-b border-primary/5"><tr className="text-[10px] font-black tracking-widest text-primary/30 uppercase"><th className="p-8">Candidate / Exam</th><th className="p-8 text-center">Trust Score</th><th className="p-8">Identity Status</th><th className="p-8">Primary Violation</th><th className="p-8 text-right">Evidence</th></tr></thead>
+                           <thead className="bg-slate-50 border-b border-primary/5"><tr className="text-[10px] font-black tracking-widest text-primary/30"><th className="p-8">Candidate / Exam</th><th className="p-8 text-center">Trust Score</th><th className="p-8">Identity Status</th><th className="p-8">Primary Violation</th><th className="p-8 text-right">Evidence</th></tr></thead>
                            <tbody className="divide-y divide-primary/5">
                               {attempts.filter(a => (a.violationLogs?.length || 0) > 0 || a.isIdentityVerified === false).map(a => {
                                  const candidate = candidates.find(c => c.examNumber === a.userId);
                                  const latestViolation = a.violationLogs && a.violationLogs.length > 0 ? a.violationLogs[a.violationLogs.length - 1].reason : "N/A";
                                  return (
                                     <tr key={a.id} className="hover:bg-slate-50/50 transition-colors">
-                                       <td className="p-8"><p className="font-black text-[13px] text-primary uppercase leading-tight">{candidate?.fullName || "UNKNOWN"}</p><p className="text-[9px] font-bold text-primary/30 uppercase tracking-widest mt-1">{a.userId} • {a.examId}</p></td>
+                                       <td className="p-8"><p className="font-black text-[13px] text-primary leading-tight">{candidate?.fullName || "UNKNOWN"}</p><p className="text-[9px] font-bold text-primary/30 tracking-widest mt-1">{a.userId} • {a.examId}</p></td>
                                        <td className="p-8 text-center"><div className="inline-flex flex-col items-center"><span className={cn("text-xl font-black", a.trustScore < 70 ? "text-rose-500" : "text-emerald-500")}>{Math.round(a.trustScore || 0)}%</span><div className="w-16 h-1.5 bg-slate-100 rounded-full mt-2 overflow-hidden shadow-inner"><div className={cn("h-full", a.trustScore < 70 ? "bg-rose-500" : "bg-emerald-500")} style={{ width: `${a.trustScore}%` }} /></div></div></td>
-                                       <td className="p-8">{a.isIdentityVerified === false ? (<Badge className="bg-rose-100 text-rose-600 border-none font-black text-[9px] px-3 py-1 rounded-lg uppercase">Identity Mismatch</Badge>) : (<Badge className="bg-emerald-100 text-emerald-600 border-none font-black text-[9px] px-3 py-1 rounded-lg uppercase">Authenticated</Badge>)}</td>
-                                       <td className="p-8 max-w-xs"><p className="text-[11px] font-bold text-slate-600 leading-relaxed uppercase">{latestViolation}</p></td>
+                                       <td className="p-8">{a.isIdentityVerified === false ? (<Badge className="bg-rose-100 text-rose-600 border-none font-black text-[9px] px-3 py-1 rounded-lg">Identity Mismatch</Badge>) : (<Badge className="bg-emerald-100 text-emerald-600 border-none font-black text-[9px] px-3 py-1 rounded-lg">Authenticated</Badge>)}</td>
+                                       <td className="p-8 max-w-xs"><p className="text-[11px] font-bold text-slate-600 leading-relaxed">{latestViolation}</p></td>
                                        <td className="p-8 text-right"><div className="flex justify-end gap-2"><Button variant="ghost" size="icon" onClick={() => setViewingSnaps(a.id)} className="h-10 w-10 text-primary/30 hover:text-primary hover:bg-primary/5 rounded-xl"><Camera className="w-4.5 h-4.5" /></Button><Button variant="ghost" size="icon" onClick={async () => { if(confirm("Permanently delete?")) { await fetch(getApiUrl(`/exams/attempt/${a.id}`), { method: 'DELETE', headers: getHeaders() }); fetchAttempts(); } }} className="h-10 w-10 text-rose-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4.5 h-4.5" /></Button></div></td>
                                     </tr>
                                  );
@@ -811,15 +812,24 @@ export default function Admin() {
       {/* MODALS */}
       <AnimatePresence>
         {showAddCandidate && (
-          <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-xl bg-white rounded-[48px] shadow-2xl overflow-hidden border border-primary/5"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><div className="space-y-1"><h3 className="text-xl font-black text-primary uppercase">Enroll Candidate</h3><p className="text-[10px] font-bold text-primary/30 uppercase tracking-widest">Create institutional identifier</p></div><Button variant="ghost" onClick={() => setShowAddCandidate(false)} className="h-12 w-12 rounded-2xl text-primary/20 hover:text-primary"><X className="w-6 h-6" /></Button></div><ScrollArea className="max-h-[70vh]"><form onSubmit={handleCreateCandidate} className="p-10 space-y-8"><div className="flex justify-center mb-6">{newCandidate.faceUrl ? (<div className="relative group"><img src={newCandidate.faceUrl} className="w-32 h-32 rounded-3xl object-cover border-4 border-primary shadow-xl" /><button type="button" onClick={() => setNewCandidate({...newCandidate, faceUrl: ''})} className="absolute -top-3 -right-3 bg-rose-500 text-white p-2.5 rounded-full shadow-2xl hover:scale-110 transition-transform"><Trash2 className="w-4.5 h-4.5" /></button></div>) : isCapturing ? (<div className="space-y-4 text-center w-full max-w-xs"><div className="relative overflow-hidden rounded-[40px] border-4 border-primary/10 bg-black aspect-video flex items-center justify-center"><video ref={videoRef} autoPlay className="w-full h-full object-cover" /><div className="absolute top-0 left-0 w-full h-0.5 bg-primary/40 animate-[scan_2s_linear_infinite]" /></div><Button type="button" onClick={capturePhoto} className="h-11 w-full bg-primary text-white font-black rounded-xl tracking-widest text-[9px] uppercase">Capture</Button></div>) : (<button type="button" onClick={startCapture} className="w-full h-40 rounded-[40px] border-2 border-dashed border-primary/10 flex flex-col items-center justify-center gap-4 hover:border-primary/20 transition-all group bg-slate-50/50"><div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary/20 group-hover:text-primary"><Camera className="w-6 h-6" /></div><span className="text-[10px] font-black text-primary/20 uppercase tracking-[0.25em]">Live Biometric Capture</span></button>)}</div><div className="grid grid-cols-2 gap-6"><div className="col-span-2 space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Full Legal Name</Label><Input value={newCandidate.fullName} onChange={e => setNewCandidate({...newCandidate, fullName: e.target.value})} placeholder="SURNAME FIRSTNAME MIDDLENAME" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Access Email</Label><Input type="email" value={newCandidate.email} onChange={e => setNewCandidate({...newCandidate, email: e.target.value})} placeholder="email@address.com" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Secure Password</Label><Input type="password" value={newCandidate.password} onChange={e => setNewCandidate({...newCandidate, password: e.target.value})} placeholder="••••••••" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Manual Exam No (Optional)</Label><Input value={newCandidate.examNumber} onChange={e => setNewCandidate({...newCandidate, examNumber: e.target.value})} placeholder="Leave for Auto" className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">State of Origin</Label><select value={newCandidate.stateOfOrigin} onChange={e => setNewCandidate({ ...newCandidate, stateOfOrigin: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-xs outline-none uppercase tracking-widest"><option value="">Select State</option>{NIGERIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}</select></div></div><div className="p-8 bg-slate-50 rounded-[32px] space-y-4"><p className="text-[9px] font-black text-primary/30 uppercase tracking-[0.25em] ml-2">Select Electives (Max 4)</p><div className="grid grid-cols-2 gap-3">{offeredSubjects.filter(s => s.isActive).map(s => (<label key={s.id} className={cn("flex items-center gap-3 px-5 py-3 rounded-2xl border-2 transition-all cursor-pointer", newCandidate.subjects.includes(s.name) ? "bg-primary border-primary text-white" : "bg-white border-transparent hover:border-primary/5 text-primary/40")}><input type="checkbox" className="hidden" checked={newCandidate.subjects.includes(s.name)} onChange={e => { const subs = e.target.checked ? [...newCandidate.subjects, s.name] : newCandidate.subjects.filter(x => x !== s.name); if (subs.length <= 4) setNewCandidate({...newCandidate, subjects: subs}); }} /><span className="text-[10px] font-black uppercase truncate">{s.name}</span>{newCandidate.subjects.includes(s.name) && <BadgeCheck className="w-3.5 h-3.5 ml-auto text-white/50" />}</label>))}</div></div><Button type="submit" className="w-full h-16 bg-primary text-white font-black rounded-2xl tracking-widest uppercase shadow-2xl mt-4">Authorize Enrollment</Button></form></ScrollArea></motion.div></div>
+          <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-xl bg-white rounded-[48px] shadow-2xl overflow-hidden border border-primary/5">
+          <div className="p-10 border-b border-primary/5 flex justify-between items-center"><div className="space-y-1"><h3 className="text-xl font-black text-primary">Register Candidate</h3>
+          <p className="text-[10px] font-bold text-primary/30 tracking-widest">Create institutional identifier</p></div>
+          <Button variant="ghost" onClick={() => setShowAddCandidate(false)} className="h-12 w-12 rounded-2xl text-primary/20 hover:text-primary"><X className="w-6 h-6" /></Button></div>
+          <ScrollArea className="max-h-[70vh]">
+          <form onSubmit={handleCreateCandidate} className="p-10 space-y-8">
+          <div className="flex justify-center mb-6">{newCandidate.faceUrl ? (<div className="relative group"><img src={newCandidate.faceUrl} className="w-32 h-32 rounded-3xl object-cover border-4 border-primary shadow-xl" /><button type="button" onClick={() => setNewCandidate({...newCandidate, faceUrl: ''})} className="absolute -top-3 -right-3 bg-rose-500 text-white p-2.5 rounded-full shadow-2xl hover:scale-110 transition-transform"><Trash2 className="w-4.5 h-4.5" />
+          </button></div>) : isCapturing ? (<div className="space-y-4 text-center w-full max-w-xs"><div className="relative overflow-hidden rounded-[40px] border-4 border-primary/10 bg-black aspect-video flex items-center justify-center"><video ref={videoRef} autoPlay className="w-full h-full object-cover" /><div className="absolute top-0 left-0 w-full h-0.5 bg-primary/40 animate-[scan_2s_linear_infinite]" /></div><Button type="button" onClick={capturePhoto} className="h-11 w-full bg-primary text-white font-black rounded-xl tracking-widest text-[9px] uppercase">Capture</Button></div>) : (<button type="button" onClick={startCapture} className="w-full h-40 rounded-[40px] border-2 border-dashed border-primary/10 flex flex-col items-center justify-center gap-4 hover:border-primary/20 transition-all group bg-slate-50/50"><div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary/20 group-hover:text-primary"><Camera className="w-6 h-6" /></div><span className="text-[10px] font-black text-primary/20 uppercase tracking-[0.25em]">Live Biometric Capture</span></button>)}</div><div className="grid grid-cols-2 gap-6"><div className="col-span-2 space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Full Legal Name</Label><Input value={newCandidate.fullName} onChange={e => setNewCandidate({...newCandidate, fullName: e.target.value})} placeholder="SURNAME FIRSTNAME MIDDLENAME" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Access Email</Label><Input type="email" value={newCandidate.email} onChange={e => setNewCandidate({...newCandidate, email: e.target.value})} placeholder="email@address.com" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Secure Password</Label><Input type="password" value={newCandidate.password} onChange={e => setNewCandidate({...newCandidate, password: e.target.value})} placeholder="••••••••" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Manual Exam No (Optional)</Label><Input value={newCandidate.examNumber} onChange={e => setNewCandidate({...newCandidate, examNumber: e.target.value})} placeholder="Leave for Auto" className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">State of Origin</Label><select value={newCandidate.stateOfOrigin} onChange={e => setNewCandidate({ ...newCandidate, stateOfOrigin: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-xs outline-none uppercase tracking-widest"><option value="">Select State</option>{NIGERIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}</select></div></div><div className="p-8 bg-slate-50 rounded-[32px] space-y-4"><p className="text-[9px] font-black text-primary/30 uppercase tracking-[0.25em] ml-2">Select Electives (Max 4)</p><div className="grid grid-cols-2 gap-3">{offeredSubjects.filter(s => s.isActive).map(s => (<label key={s.id} className={cn("flex items-center gap-3 px-5 py-3 rounded-2xl border-2 transition-all cursor-pointer", newCandidate.subjects.includes(s.name) ? "bg-primary border-primary text-white" : "bg-white border-transparent hover:border-primary/5 text-primary/40")}><input type="checkbox" className="hidden" checked={newCandidate.subjects.includes(s.name)} onChange={e => { const subs = e.target.checked ? [...newCandidate.subjects, s.name] : newCandidate.subjects.filter(x => x !== s.name); if (subs.length <= 4) setNewCandidate({...newCandidate, subjects: subs}); }} /><span className="text-[10px] font-black uppercase truncate">{s.name}</span>{newCandidate.subjects.includes(s.name) && <BadgeCheck className="w-3.5 h-3.5 ml-auto text-white/50" />}</label>))}</div></div><Button type="submit" className="w-full h-16 bg-primary text-white font-black rounded-2xl tracking-widest uppercase shadow-2xl mt-4">Authorize Enrollment</Button></form></ScrollArea></motion.div></div>
         )}
 
         {showAddStaff && (
-          <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-lg bg-white rounded-[48px] shadow-2xl overflow-hidden border border-primary/5"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><div className="space-y-1"><h3 className="text-xl font-black text-primary uppercase">Provision Staff</h3><p className="text-[10px] font-bold text-primary/30 uppercase tracking-widest">Create administrative access</p></div><Button variant="ghost" onClick={() => setShowAddStaff(false)} className="h-12 w-12 rounded-2xl text-primary/20 hover:text-primary"><X className="w-6 h-6" /></Button></div><form onSubmit={handleCreateStaff} className="p-10 space-y-8"><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Display Name</Label><Input value={newStaff.displayName} onChange={e => setNewStaff({...newStaff, displayName: e.target.value})} placeholder="e.g. Registry Officer" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Email Address</Label><Input type="email" value={newStaff.email} onChange={e => setNewStaff({...newStaff, email: e.target.value})} placeholder="staff@vivicbt.com" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Initial Password</Label><Input type="password" value={newStaff.password} onChange={e => setNewStaff({...newStaff, password: e.target.value})} placeholder="••••••••" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Security Role</Label><select value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: e.target.value as any})} className="w-full h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-xs outline-none uppercase tracking-widest"><option value="admin">Administrator</option><option value="reg_admin">Registry Officer</option></select></div><Button type="submit" className="w-full h-16 bg-primary text-white font-black rounded-2xl tracking-widest uppercase shadow-2xl mt-4">Confirm Provisioning</Button></form></motion.div></div>
+          <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-lg bg-white rounded-[48px] shadow-2xl overflow-hidden border border-primary/5"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><div className="space-y-1"><h3 className="text-xl font-black text-primary uppercase"> Staff</h3><p className="text-[10px] font-bold text-primary/30 uppercase tracking-widest">Create administrative access</p></div><Button variant="ghost" onClick={() => setShowAddStaff(false)} className="h-12 w-12 rounded-2xl text-primary/20 hover:text-primary"><X className="w-6 h-6" /></Button></div><form onSubmit={handleCreateStaff} className="p-10 space-y-8"><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Full Name</Label><Input value={newStaff.displayName} onChange={e => setNewStaff({...newStaff, displayName: e.target.value})} placeholder="e.g. Registry Officer" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Email Address</Label><Input type="email" value={newStaff.email} onChange={e => setNewStaff({...newStaff, email: e.target.value})} placeholder="staff@vivicbt.com" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Initial Password</Label><Input type="password" value={newStaff.password} onChange={e => setNewStaff({...newStaff, password: e.target.value})} placeholder="••••••••" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Security Role</Label><select value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: e.target.value as any})} className="w-full h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-xs outline-none uppercase tracking-widest"><option value="admin">Administrator</option><option value="reg_admin">Registry Officer</option></select></div><Button type="submit" className="w-full h-16 bg-primary text-white font-black rounded-2xl tracking-widest uppercase shadow-2xl mt-4">Confirm Provisioning</Button></form></motion.div></div>
         )}
 
         {showAddExam && (
-          <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-lg bg-white rounded-[48px] shadow-2xl overflow-hidden border border-primary/5"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><div className="space-y-1"><h3 className="text-xl font-black text-primary uppercase">New Exam Module</h3><p className="text-[10px] font-bold text-primary/30 uppercase tracking-widest">Define Curricular Assessment</p></div><Button variant="ghost" onClick={() => setShowAddExam(false)} className="h-12 w-12 rounded-2xl text-primary/20 hover:text-primary"><X className="w-6 h-6" /></Button></div><form onSubmit={handleCreateExam} className="p-10 space-y-8"><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Global Subject</Label><select value={newExam.subject} onChange={e => setNewExam({...newExam, subject: e.target.value})} required className="w-full h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-xs outline-none uppercase"><option value="">Select Subject</option>{offeredSubjects.map(s => <option key={s.id} value={s.name}>{s.name.toUpperCase()}</option>)}</select></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Academic Title</Label><Input placeholder="e.g. Advanced Placement 2026" value={newExam.title} onChange={e => setNewExam({...newExam, title: e.target.value})} required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="grid grid-cols-2 gap-6"><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Duration (Min)</Label><Input type="number" value={newExam.durationMinutes} onChange={e => setNewExam({...newExam, durationMinutes: parseInt(e.target.value)})} required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2 flex flex-col justify-end"><Button type="submit" className="h-14 w-full bg-primary text-white font-black rounded-2xl tracking-widest uppercase shadow-xl">Create Module</Button></div></div></form></motion.div></div>
+          <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-lg bg-white rounded-[48px] shadow-2xl overflow-hidden border border-primary/5"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><div className="space-y-1"><h3 className="text-xl font-black text-primary uppercase">New Exam Module</h3><p className="text-[10px] font-bold text-primary/30 uppercase tracking-widest">Define Curricular Assessment</p></div><Button variant="ghost" onClick={() => setShowAddExam(false)} className="h-12 w-12 rounded-2xl text-primary/20 hover:text-primary"><X className="w-6 h-6" /></Button></div><form onSubmit={handleCreateExam} className="p-10 space-y-8"><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Global Subject</Label><select value={newExam.subject} onChange={e => setNewExam({...newExam, subject: e.target.value})} required className="w-full h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-xs outline-none"><option value="">Select Subject</option>{offeredSubjects.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}</select>
+</div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Academic Title</Label><Input placeholder="e.g. Advanced Placement 2026" value={newExam.title} onChange={e => setNewExam({...newExam, title: e.target.value})} required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="grid grid-cols-2 gap-6"><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 uppercase ml-2">Duration (Min)</Label><Input type="number" value={newExam.durationMinutes} onChange={e => setNewExam({...newExam, durationMinutes: parseInt(e.target.value)})} required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm" /></div><div className="space-y-2 flex flex-col justify-end"><Button type="submit" className="h-14 w-full bg-primary text-white font-black rounded-2xl tracking-widest uppercase shadow-xl">Create Module</Button></div></div></form></motion.div></div>
         )}
 
         {showAddSubject && (

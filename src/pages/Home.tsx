@@ -32,7 +32,7 @@ export default function Home() {
             <button
               key={item.label}
               onClick={() => navigate(item.path)}
-              className="text-[11px] font-black tracking-widest text-primary/60 hover:text-primary transition-colors uppercase"
+              className="text-[11px] font-black tracking-widest text-primary/60 hover:text-primary transition-colors"
             >
               {item.label}
             </button>
@@ -40,7 +40,7 @@ export default function Home() {
           {user && (
             <Button
               onClick={() => navigate(isAdmin ? '/admin' : '/dashboard')}
-              className="h-10 px-6 bg-primary text-white rounded-xl font-black text-[10px] tracking-widest uppercase shadow-md hover:scale-105 transition-all"
+              className="h-10 px-6 bg-primary text-white rounded-xl font-black text-[10px] tracking-widest shadow-md hover:scale-105 transition-all"
             >
               Go to Portal
             </Button>
@@ -68,7 +68,7 @@ export default function Home() {
                 <button
                   key={item.label}
                   onClick={() => { navigate(item.path); setIsMenuOpen(false); }}
-                  className="text-left text-[14px] font-black tracking-[0.2em] text-primary/60 uppercase"
+                  className="text-left text-[12px] font-black tracking-widest text-primary/60"
                 >
                   {item.label}
                 </button>
@@ -82,17 +82,17 @@ export default function Home() {
       <header className="relative pt-24 pb-16 px-8 bg-slate-50/50 overflow-hidden min-h-[60vh] flex items-center">
         <div className="absolute inset-0 z-0 pointer-events-none">
           <div className="cbt-background opacity-[0.15]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/40 to-transparent" />
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:40px_40px] opacity-[0.08]" />
         </div>
         <div className="container mx-auto text-center max-w-4xl relative z-10">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 mb-8 px-6 py-2 rounded-full border-2 border-primary/10 bg-white shadow-md">
             <ShieldCheck className="w-4 h-4 text-primary" />
-            <span className="text-[9px] font-black tracking-[0.3em] text-primary uppercase">Standard Examination Portal</span>
+            <span className="text-[9px] font-black tracking-[0.3em] text-primary">Standard Examination Portal</span>
           </motion.div>
 
           <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-4xl md:text-5xl font-black text-primary tracking-tighter leading-[1] mb-8 ">
-            The Gold Standard <br/> <span className="text-primary/30 uppercase">In CBT Excellence</span>
+            The Gold Standard <br/> <span className="text-primary/30">In CBT Excellence</span>
           </motion.h1>
 
           <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-sm md:text-base text-primary/60 font-medium mb-12 max-w-2xl mx-auto leading-relaxed">
@@ -126,7 +126,7 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-primary tracking-tighter">{stat.value}</h3>
-                  <p className="text-[9px] font-black text-primary/30 uppercase tracking-[0.2em]">{stat.label}</p>
+                  <p className="text-[9px] font-black text-primary/30 tracking-[0.2em]">{stat.label}</p>
                 </div>
               </div>
             ))}
@@ -140,14 +140,14 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="space-y-8 text-center md:text-left">
               <div className="space-y-3">
-                <h2 className="text-3xl font-black uppercase tracking-tighter text-primary leading-none">Intelligent <br/>Proctoring Systems</h2>
-                <p className="text-base text-primary/60 leading-relaxed font-medium">
+                <h2 className="text-3xl font-black tracking-tighter text-primary leading-none text-balance">Intelligent <br/>Proctoring Systems</h2>
+                <p className="text-base text-primary/60 leading-relaxed font-medium text-balance">
                   Our platform integrates advanced AI behavioral monitoring and biometric verification to ensure absolute integrity during every examination session.
                 </p>
               </div>
               <div className="space-y-3 inline-block text-left">
                 {['Live Biometric Verification', 'Real-time Threat Detection', 'Automated Session Recovery'].map(item => (
-                  <div key={item} className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-primary/80">
+                  <div key={item} className="flex items-center gap-4 text-[10px] font-black tracking-widest text-primary/80">
                     <div className="w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center">
                       <CheckCircle className="w-4 h-4 text-emerald-500" />
                     </div>
@@ -161,15 +161,15 @@ export default function Home() {
                 <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
                    <Monitor className="w-7 h-7 text-blue-600" />
                 </div>
-                <h4 className="font-black text-xs uppercase mb-3 tracking-widest">Digital Interface</h4>
-                <p className="text-[10px] font-bold text-primary/40 leading-relaxed uppercase">High-fidelity VIVI CBT simulation terminal designed for peak performance.</p>
+                <h4 className="font-black text-xs mb-3 tracking-widest">Digital Interface</h4>
+                <p className="text-[10px] font-bold text-primary/40 leading-relaxed">High-fidelity VIVI CBT simulation terminal designed for peak performance.</p>
               </Card>
               <Card className="p-8 bg-primary rounded-[32px] text-white shadow-2xl shadow-primary/20 hover:scale-105 transition-all">
                 <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
                    <BookOpen className="w-7 h-7 text-white" />
                 </div>
-                <h4 className="font-black text-sm uppercase mb-3 tracking-widest">Global Curriculum</h4>
-                <p className="text-[10px] font-bold text-white/40 leading-relaxed uppercase">Comprehensive management for all UTME elective subjects and combinations.</p>
+                <h4 className="font-black text-sm mb-3 tracking-widest">Global Curriculum</h4>
+                <p className="text-[10px] font-bold text-white/40 leading-relaxed">Comprehensive management for all UTME elective subjects and combinations.</p>
               </Card>
             </div>
           </div>
@@ -179,7 +179,7 @@ export default function Home() {
       {/* Steps Section */}
       <section className="py-20 bg-white px-8">
         <div className="container mx-auto max-w-5xl text-center">
-          <h2 className="text-xl font-black uppercase tracking-[0.3em] text-primary/20 mb-12">The Journey</h2>
+          <h2 className="text-xl font-black tracking-[0.3em] text-primary/20 mb-12">The Journey</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
             {[
               { step: '01', label: 'Registration', desc: 'Secure Enrollment' },
@@ -193,8 +193,8 @@ export default function Home() {
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">{s.label}</p>
-                  <p className="text-[8px] font-bold text-primary/30 uppercase tracking-widest">{s.desc}</p>
+                  <p className="text-xs font-black tracking-[0.2em] text-primary mb-1">{s.label}</p>
+                  <p className="text-[8px] font-bold text-primary/30 tracking-widest">{s.desc}</p>
                 </div>
               </div>
             ))}
@@ -209,12 +209,12 @@ export default function Home() {
           <span className="font-black text-lg tracking-tighter text-primary">VIVI CBT SYSTEMS</span>
         </div>
         <div className="max-w-2xl mx-auto space-y-8">
-          <p className="text-[10px] font-black text-primary/30 tracking-[0.3em] uppercase leading-relaxed">
+          <p className="text-[10px] font-black text-primary/30 tracking-[0.3em] leading-relaxed">
             &copy; {new Date().getFullYear()} VIVI CBT Systems. All Rights Reserved. <br/>
             Engineered for academic integrity and global excellence.
           </p>
           <div className="flex justify-center gap-8">
-            <button onClick={() => navigate('/admin/auth')} className="text-[8px] font-black text-primary/10 hover:text-primary transition-colors flex items-center gap-2 uppercase tracking-widest">
+            <button onClick={() => navigate('/admin/auth')} className="text-[8px] font-black text-primary/10 hover:text-primary transition-colors flex items-center gap-2 tracking-widest">
               <Lock className="w-2.5 h-2.5" /> Staff Access
             </button>
           </div>
