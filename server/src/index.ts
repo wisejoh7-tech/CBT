@@ -83,6 +83,9 @@ async function startServer() {
       } catch (error: any) {
         retries++;
         logger.error(`Failed to connect to Postgres (Attempt ${retries}/${maxRetries}):`, error.message);
+        if (error.message?.includes("allowlist")) {
+          logger.warn("TIP: Add your local IP address to the Render Postgres allowlist in the dashboard.");
+        }
         if (retries >= maxRetries) {
           logger.error("FATAL: Could not connect to Postgres after maximum retries.");
         } else {

@@ -17,7 +17,11 @@ const realRedisClient = createClient({
 });
 
 realRedisClient.on("error", (err: any) => {
-  logger.error("Redis connection error (IP allowlist likely):", err.message);
+  if (err.message?.includes("allowlist") || err.message?.includes("timeout")) {
+    // Only log once to avoid spamming
+    return;
+  }
+  logger.error("Redis connection error:", err.message);
 });
 
 export const redisClient = {
