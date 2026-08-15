@@ -47,7 +47,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
         const res = await fetch(getApiUrl('/exams/public/check-result'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ examNumber: examNumber.toUpperCase() })
+          body: JSON.stringify({ examNumber: examNumber })
         });
 
         const data = await res.json();
@@ -64,7 +64,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
     fetchResultData();
   }, [examNumber]);
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-black text-primary animate-pulse uppercase tracking-widest">Generating Official Transcript...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center font-black text-primary animate-pulse tracking-widest">Generating Official Transcript...</div>;
 
   if (!candidate || !unifiedAttempt) {
     return (
@@ -93,7 +93,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans uppercase relative">
+    <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans relative">
       <div className="cbt-background opacity-[0.03]" />
       <nav className="max-w-4xl mx-auto mb-10 bg-white/80 backdrop-blur-md border-2 border-primary/10 px-8 py-4 rounded-[24px] flex justify-between items-center shadow-sm relative z-10">
         <div className="flex items-center gap-4">
@@ -107,7 +107,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
           </div>
         </div>
         <div className="flex items-center gap-6">
@@ -135,7 +135,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
              <div className="flex items-center justify-center gap-2 mb-4">
                 <div className="bg-emerald-500 text-white px-4 py-1.5 rounded-full flex items-center gap-2 shadow-lg shadow-emerald-100">
                    <ShieldCheck className="w-4 h-4" />
-                   <span className="text-[10px] font-black tracking-widest uppercase">Official Verification: Authenticated</span>
+                   <span className="text-[10px] font-black tracking-widest">Official Verification: Authenticated</span>
                 </div>
              </div>
           )}
@@ -182,7 +182,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
               </tbody>
               <tfoot className="bg-primary text-white font-black">
                  <tr>
-                    <td className="p-4 uppercase tracking-widest">Aggregate Total</td>
+                    <td className="p-4 tracking-widest">Aggregate Total</td>
                     <td className="p-4 text-right text-2xl">{totalScore} <span className="text-[10px] opacity-60">/ {totalPossible}</span></td>
                  </tr>
               </tfoot>
@@ -191,7 +191,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
 
         {unifiedAttempt.results?.topics && (
            <div className="mb-8">
-              <h3 className="text-[10px] font-black opacity-30 tracking-widest mb-4 uppercase">Topic Performance Analysis</h3>
+              <h3 className="text-[10px] font-black opacity-30 tracking-widest mb-4">Topic Performance Analysis</h3>
               <div className="grid grid-cols-2 gap-4">
                  {Object.entries(unifiedAttempt.results.topics).map(([topic, stats]: [string, any], i) => (
                     <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-primary/5">
@@ -213,7 +213,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
               <div className="flex items-center gap-3">
                  <ShieldCheck className={cn("w-6 h-6", unifiedAttempt.trustScore < 80 ? "text-red-500" : "text-emerald-500")} />
                  <div>
-                    <p className="text-[10px] font-black opacity-40 uppercase">Security Trust Score</p>
+                    <p className="text-[10px] font-black opacity-40">Security Trust Score</p>
                     <p className="font-black text-lg">{Math.round(unifiedAttempt.trustScore)}%</p>
                  </div>
               </div>
@@ -235,21 +235,21 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-8 rounded-[32px] border-2 border-primary/20 bg-slate-50 mb-8">
               <div className="flex items-center gap-3 mb-6">
                  <Award className="w-6 h-6 text-primary" />
-                 <h3 className="text-sm font-black uppercase tracking-widest">Personalized AI Study Guide</h3>
+                 <h3 className="text-sm font-black tracking-widest">Personalized AI Study Guide</h3>
               </div>
               <p className="text-[11px] font-bold text-primary/70 leading-relaxed mb-6 italic">"{studyGuide.summary}"</p>
 
               <div className="space-y-6">
                  <div>
-                    <p className="text-[9px] font-black opacity-30 uppercase tracking-[0.2em] mb-3">Priority Focus Areas</p>
+                    <p className="text-[9px] font-black opacity-30 tracking-[0.2em] mb-3">Priority Focus Areas</p>
                     <div className="flex flex-wrap gap-2">
                        {studyGuide.weakAreas?.map((area: string, i: number) => (
-                          <Badge key={i} className="bg-red-100 text-red-600 border-none px-3 py-1 text-[9px] font-black">{area.toUpperCase()}</Badge>
+                          <Badge key={i} className="bg-red-100 text-red-600 border-none px-3 py-1 text-[9px] font-black">{area}</Badge>
                        ))}
                     </div>
                  </div>
                  <div>
-                    <p className="text-[9px] font-black opacity-30 uppercase tracking-[0.2em] mb-3">AI Recommendations</p>
+                    <p className="text-[9px] font-black opacity-30 tracking-[0.2em] mb-3">AI Recommendations</p>
                     <ul className="space-y-2">
                        {studyGuide.recommendations?.map((rec: string, i: number) => (
                           <li key={i} className="flex gap-3 text-[10px] font-bold">
@@ -269,7 +269,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
 
         <div className="flex justify-between items-end border-t-2 border-primary/5 pt-8">
            <div className="space-y-1">
-              <p className="text-[8px] font-black opacity-30 uppercase">Digital Verification Signature</p>
+              <p className="text-[8px] font-black opacity-30">Digital Verification Signature</p>
               <p className="font-mono text-[7px] opacity-50">{unifiedAttempt.id}</p>
            </div>
            <div className="text-right">
@@ -278,7 +278,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
                  className="w-16 h-16 ml-auto mb-2 grayscale opacity-80"
                  alt="Verification QR"
               />
-              <p className="text-[7px] font-black opacity-30 uppercase">Scan to Verify Authenticity</p>
+              <p className="text-[7px] font-black opacity-30">Scan to Verify Authenticity</p>
            </div>
         </div>
       </div>

@@ -435,8 +435,8 @@ export default function ExamPlayer() {
       <div className="min-h-screen bg-background flex items-center justify-center p-6 text-black selection:bg-slate-100">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-xl w-full bg-white p-12 rounded-[48px] shadow-2xl border border-primary/10 text-center">
           <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-6" />
-          <h2 className="text-3xl font-black mb-4 uppercase tracking-tighter">Session Terminated Successfully</h2>
-          <p className="text-slate-500 font-bold text-sm mb-10 leading-relaxed uppercase">
+          <h2 className="text-3xl font-black mb-4 tracking-tighter">Session Terminated Successfully</h2>
+          <p className="text-slate-500 font-bold text-sm mb-10 leading-relaxed">
             Your responses have been securely uploaded to the central server. <br/>
             Results will be released to your candidate dashboard <br/>
             following final administrative verification.
@@ -457,7 +457,7 @@ export default function ExamPlayer() {
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-xl">V</div>
             <div>
               <h1 className="font-black tracking-tight leading-none">CBT PLAYER</h1>
-              <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest mt-1">Session: {profile?.displayName}</p>
+              <p className="text-[10px] font-bold text-primary/40 tracking-widest mt-1">Session: {profile?.displayName}</p>
             </div>
           </div>
           <div className="h-8 w-[1px] bg-primary/10 hidden md:block" />
@@ -466,13 +466,13 @@ export default function ExamPlayer() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
           </div>
         </div>
 
         <div className="flex gap-8 items-center">
           <div className="flex items-center gap-3 text-right pr-4 border-r border-primary/10">
-            <p className="text-[10px] font-black text-primary/30 uppercase tracking-widest">Time Remaining</p>
+            <p className="text-[10px] font-black text-primary/30 tracking-widest">Time Remaining</p>
             <p className={cn("text-2xl font-mono font-black", timeLeft! < 300 ? "text-red-500 animate-pulse" : "")}>{formatTime(timeLeft || 0)}</p>
           </div>
           <Button variant="ghost" onClick={handleSuspendSession} className="text-primary/30 hover:text-red-500">
@@ -492,7 +492,7 @@ export default function ExamPlayer() {
             key={ex.id}
             onClick={() => { setActiveExamIndex(idx); setCurrentQuestionIndex(0); }}
             className={cn(
-              "h-full px-6 text-[10px] font-black uppercase tracking-widest transition-all",
+              "h-full px-6 text-[10px] font-black tracking-widest transition-all",
               activeExamIndex === idx ? "bg-primary text-white" : "text-primary/40 hover:bg-primary/10"
             )}
           >
@@ -536,7 +536,7 @@ export default function ExamPlayer() {
         </section>
 
         <aside className="w-80 border-l-2 border-primary/10 bg-white p-8 overflow-y-auto">
-          <h4 className="text-[10px] font-black text-primary/20 uppercase tracking-[0.2em] mb-6">Question Answered</h4>
+          <h4 className="text-[10px] font-black text-primary/20 tracking-[0.2em] mb-6">Question Answered</h4>
           <div className="grid grid-cols-4 gap-3">
             {questions.map((q, idx) => (
               <button key={q.id} onClick={() => setCurrentQuestionIndex(idx)} className={cn(

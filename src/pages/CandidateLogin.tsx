@@ -78,7 +78,7 @@ export default function CandidateLogin() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
 
@@ -110,19 +110,19 @@ export default function CandidateLogin() {
               <div className="flex flex-col p-6 gap-4">
                 <button
                   onClick={() => { navigate('/'); setIsMenuOpen(false); }}
-                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase py-2 flex items-center gap-2"
+                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors py-2 flex items-center gap-2"
                 >
                   <ArrowLeft className="w-4 h-4" /> HOME
                 </button>
                 <button
                   onClick={() => { navigate('/candidate-register'); setIsMenuOpen(false); }}
-                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary uppercase py-2"
+                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
                 >
                   REGISTER
                 </button>
                 <button
                   onClick={() => { navigate('/results'); setIsMenuOpen(false); }}
-                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary uppercase py-2"
+                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
                 >
                   CHECK RESULT
                 </button>
@@ -141,7 +141,7 @@ export default function CandidateLogin() {
 
           <div className="bg-white rounded-[32px] border-2 border-primary shadow-2xl relative overflow-hidden">
             <div className="p-6 border-b-2 border-primary/5 bg-slate-50">
-               <h2 className="font-black text-[12px] tracking-[0.2em] text-primary uppercase">LOGIN PORTAL</h2>
+               <h2 className="font-black text-[12px] tracking-[0.2em] text-primary">LOGIN PORTAL</h2>
             </div>
 
             <div className="p-10 space-y-8">
@@ -164,7 +164,7 @@ export default function CandidateLogin() {
                 {loginMethod === 'examNumber' ? (
                   <motion.form key="exam" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 2.5, x: 0 }} exit={{ opacity: 0, x: -10 }} onSubmit={handleExamNumberLogin} className="space-y-6">
                      <div className="space-y-2 text-left">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Examination Number</Label>
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Examination Number</Label>
                         <div className="relative group">
 
                           <Input
@@ -186,7 +186,7 @@ export default function CandidateLogin() {
                   <motion.form key="email" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} onSubmit={handleEmailLogin} className="space-y-6">
                     <div className="space-y-4 text-left">
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Email Address</Label>
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Email Address</Label>
                         <div className="relative group">
 
                           <Input
@@ -202,7 +202,7 @@ export default function CandidateLogin() {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Password</Label>
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Password</Label>
                         <div className="relative group">
 
                           <Input
@@ -253,7 +253,7 @@ export default function CandidateLogin() {
       </div>
 
       <footer className="py-12 z-10 w-full text-center border-t border-primary/5 bg-white">
-        <p className="text-[10px] font-bold text-primary/20 tracking-widest uppercase">&copy; {new Date().getFullYear()} VIVI CBT Systems. All Rights Reserved.</p>
+        <p className="text-[10px] font-bold text-primary/20 tracking-widest">&copy; {new Date().getFullYear()} VIVI CBT Systems. All Rights Reserved.</p>
       </footer>
     </div>
   );

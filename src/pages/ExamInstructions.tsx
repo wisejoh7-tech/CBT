@@ -55,10 +55,10 @@ export default function ExamInstructions() {
     fetchInstructions();
   }, [examId, profile]);
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-black animate-pulse uppercase">Loading...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center font-black animate-pulse">Loading...</div>;
 
   if (exams.length === 0) return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-6 text-black uppercase font-black">
+    <div className="min-h-screen bg-white flex items-center justify-center p-6 text-black font-black">
       <div className="max-w-md w-full text-center space-y-6">
         <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto border-2 border-rose-100">
           <AlertCircle className="w-10 h-10 text-rose-500" />
@@ -68,7 +68,7 @@ export default function ExamInstructions() {
           <div className="space-y-2 text-xs text-slate-500 leading-relaxed font-bold">
             <p>The examination terminal could not find any active modules matching your profile.</p>
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-left normal-case font-medium">
-               <p className="font-black text-[9px] uppercase mb-2 text-primary">Troubleshooting Steps:</p>
+               <p className="font-black text-[9px] mb-2 text-primary">Troubleshooting Steps:</p>
                <ul className="list-disc list-inside space-y-1">
                  <li>Ensure exams have been created in the <b>Admin Panel</b>.</li>
                  <li>Check if the exams are marked as <b>Active</b> (Green indicator).</li>
@@ -88,7 +88,7 @@ export default function ExamInstructions() {
   const totalQuestions = exams.reduce((acc, curr) => acc + curr.totalQuestions, 0);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center uppercase selection:bg-slate-100 relative text-black">
+    <div className="min-h-screen bg-white flex flex-col items-center selection:bg-slate-100 relative text-black">
       <nav className="sticky top-0 w-full bg-white border-b-2 border-slate-100 px-8 py-4 flex justify-between items-center z-[100] shadow-sm mb-12">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
@@ -97,11 +97,11 @@ export default function ExamInstructions() {
           </div>
           <div className="h-8 w-[1px] bg-slate-100 hidden md:block" />
           <div className="hidden md:flex items-center gap-2 text-slate-400">
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
         <div className="flex items-center gap-8">
-          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-slate-400 hover:text-black transition-colors uppercase flex items-center gap-1">
+          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-slate-400 hover:text-black transition-colors flex items-center gap-1">
             <ArrowLeft className="w-4 h-4" /> Home
           </button>
           <div className="flex items-center gap-4 border-l pl-8 border-slate-100">
@@ -116,7 +116,7 @@ export default function ExamInstructions() {
       <div className="max-w-2xl w-full space-y-8 px-6 pb-20">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-slate-50 border-2 border-slate-100 shadow-sm mb-4">
-            <span className="text-[10px] font-black text-black tracking-widest uppercase">EXAMINATION Subjects</span>
+            <span className="text-[10px] font-black text-black tracking-widest">EXAMINATION Subjects</span>
           </div>
           <h1 className="text-2xl font-black tracking-tighter text-black leading-none">
             {examId === 'unified' ? 'UNIFIED Examination' : exams[0].subject}
@@ -129,11 +129,11 @@ export default function ExamInstructions() {
         <Card className="rounded-[40px] border-2 border-slate-100 bg-white shadow-2xl overflow-hidden p-10">
           <div className="grid grid-cols-2 gap-8 mb-10 border-b-2 border-slate-50 pb-10">
              <div className="space-y-1">
-                <p className="text-[9px] font-black opacity-30 uppercase">DURATION</p>
+                <p className="text-[9px] font-black opacity-30">DURATION</p>
                 <p className="text-1xl font-black text-black">{totalDuration} MINUTES</p>
              </div>
              <div className="space-y-1">
-                <p className="text-[9px] font-black opacity-30 uppercase">TOTAL ITEMS</p>
+                <p className="text-[9px] font-black opacity-30">TOTAL ITEMS</p>
                 <p className="text-1xl font-black text-black">{totalQuestions} QUESTIONS</p>
              </div>
           </div>
@@ -152,7 +152,7 @@ export default function ExamInstructions() {
                 </div>
              )}
              <div className="space-y-4">
-                <h3 className="text-sm font-black tracking-widest uppercase text-black">CANDIDATE INSTRUCTIONS</h3>
+                <h3 className="text-sm font-black tracking-widest text-black">CANDIDATE INSTRUCTIONS</h3>
                 <div className="space-y-3">
                    {[
                      "DO NOT minimize the browser window or switch tabs. Any exit from fullscreen mode will be logged as a violation.",
@@ -174,7 +174,7 @@ export default function ExamInstructions() {
              <div className="flex flex-col gap-4">
                 <Button
                     onClick={() => navigate(`/exam/${examId}`)}
-                    className="w-full h-15 bg-black text-white rounded-2xl font-black text-xl tracking-widest shadow-2xl shadow-black/20 flex gap-4 hover:bg-slate-800 transition-all border-none active:scale-95 uppercase"
+                    className="w-full h-15 bg-black text-white rounded-2xl font-black text-xl tracking-widest shadow-2xl shadow-black/20 flex gap-4 hover:bg-slate-800 transition-all border-none active:scale-95"
                 >
                   BEGIN EXAMINATION
                 </Button>
@@ -188,7 +188,7 @@ export default function ExamInstructions() {
                     }
                   }}
                   variant="ghost"
-                  className="w-full h-12 text-slate-400 font-black text-[10px] tracking-[0.3em] uppercase hover:text-black hover:bg-transparent"
+                  className="w-full h-12 text-slate-400 font-black text-[10px] tracking-[0.3em] hover:text-black hover:bg-transparent"
                 >
                   Return
                 </Button>

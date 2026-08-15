@@ -42,7 +42,7 @@ export default function StaffLogin() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-slate-50 selection:bg-primary/10 uppercase">
+    <div className="relative min-h-screen flex flex-col bg-slate-50 selection:bg-primary/10">
       {/* Navigation */}
       <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b-2 border-primary/10 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
         <div className="flex items-center gap-4">
@@ -56,7 +56,7 @@ export default function StaffLogin() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
 
@@ -146,7 +146,7 @@ export default function StaffLogin() {
       </div>
 
       <footer className="py-12 z-10 w-full text-center border-t border-primary/5 bg-white">
-        <p className="text-[10px] font-bold text-primary/20 tracking-widest uppercase">&copy; {new Date().getFullYear()} VIVI CBT Systems. All Rights Reserved.</p>
+        <p className="text-[10px] font-bold text-primary/20 tracking-widest">&copy; {new Date().getFullYear()} VIVI CBT Systems. All Rights Reserved.</p>
       </footer>
     </div>
   );

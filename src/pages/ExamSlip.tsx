@@ -28,12 +28,12 @@ export default function ExamSlip() {
     fetchCandidate();
   }, [examNumber]);
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-black animate-pulse uppercase">Retrieving Registration Data...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center font-black animate-pulse">Retrieving Registration Data...</div>;
 
   if (!candidate) return <div className="p-20 text-center">Candidate not found.</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans uppercase relative">
+    <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans relative">
       <div className="cbt-background opacity-[0.03]" />
       <nav className="max-w-4xl mx-auto mb-10 bg-white/80 backdrop-blur-md border-2 border-primary/10 px-8 py-4 rounded-[24px] flex justify-between items-center shadow-sm relative z-10">
         <div className="flex items-center gap-4">
@@ -47,7 +47,7 @@ export default function ExamSlip() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
         <button onClick={() => navigate('/')} className="text-[12px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Portal Home</button>
@@ -78,7 +78,7 @@ export default function ExamSlip() {
               <div><p className="text-[11px] font-black opacity-30">Full Name</p><p className="font-black text-1xl">{candidate.fullName}</p></div>
               <div className="grid grid-cols-2 gap-4">
                  <div><p className="text-[10px] font-black opacity-30">Exam Number</p><p className="font-bold">{candidate.examNumber}</p></div>
-                 <div><p className="text-[10px] font-black opacity-30 ">PIN</p><p className="font-bold tracking-widest ">{candidate.pin || <span className="text-[8px] opacity-40 uppercase font-black tracking-tight">Not Set</span>}</p></div>
+                 <div><p className="text-[10px] font-black opacity-30 ">PIN</p><p className="font-bold tracking-widest ">{candidate.pin || <span className="text-[8px] opacity-40 font-black tracking-tight">Not Set</span>}</p></div>
               </div>
            </div>
         </div>
@@ -87,27 +87,27 @@ export default function ExamSlip() {
            <div className="p-6 bg-slate-50 rounded-3xl border-2 border-primary/5">
               <div className="flex items-center gap-3 mb-4">
                  <MapPin className="w-5 h-5 text-primary" />
-                 <p className="text-[10px] font-black uppercase tracking-widest">Assigned Center</p>
+                 <p className="text-[10px] font-black tracking-widest">Assigned Center</p>
               </div>
               <p className="font-bold text-sm">{candidate.examVenue || 'NOT YET ASSIGNED'}</p>
-              <p className="text-[10px] font-bold opacity-40 mt-1 uppercase">Seat: {candidate.assignedSeatNumber || 'ASSIGNED ON ARRIVAL'}</p>
+              <p className="text-[10px] font-bold opacity-40 mt-1">Seat: {candidate.assignedSeatNumber || 'ASSIGNED ON ARRIVAL'}</p>
            </div>
            <div className="p-6 bg-slate-50 rounded-3xl border-2 border-primary/5">
               <div className="flex items-center gap-3 mb-4">
                  <Calendar className="w-5 h-5 text-primary" />
-                 <p className="text-[10px] font-black uppercase tracking-widest">Schedule Info</p>
+                 <p className="text-[10px] font-black tracking-widest">Schedule Info</p>
               </div>
               <p className="font-bold text-sm">Date: {candidate.examDate || 'TBA'}</p>
-              <p className="text-[10px] font-bold opacity-40 mt-1 uppercase">Time: {candidate.examTime || 'TBA'}</p>
+              <p className="text-[10px] font-bold opacity-40 mt-1">Time: {candidate.examTime || 'TBA'}</p>
            </div>
         </div>
 
         <div className="mb-8">
-           <p className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-4">Subject Combination</p>
+           <p className="text-[10px] font-black opacity-30 tracking-widest mb-4">Subject Combination</p>
            <div className="flex flex-wrap gap-2">
               {candidate.subjectCombination.map((s, i) => (
                  <div key={i} className="px-4 py-2 bg-primary/5 rounded-xl border border-primary/10 font-black text-[10px] text-primary">
-                    {s.toUpperCase()}
+                    {s}
                  </div>
               ))}
            </div>
@@ -116,7 +116,7 @@ export default function ExamSlip() {
         <div className="p-6 bg-primary text-white rounded-3xl">
            <div className="flex items-center gap-2 mb-2">
               <ShieldCheck className="w-4 h-4" />
-              <p className="text-[10px] font-black uppercase tracking-widest">Security Instructions</p>
+              <p className="text-[10px] font-black tracking-widest">Security Instructions</p>
            </div>
            <ul className="text-[9px] font-bold space-y-1 opacity-80 list-disc list-inside">
               <li>Candidates must arrive 30 minutes before the scheduled time.</li>

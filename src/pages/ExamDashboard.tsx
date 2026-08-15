@@ -90,7 +90,7 @@ export default function ExamDashboard() {
   if (loading) return <div className="p-20 text-center font-black">Loading</div>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-900 uppercase relative overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-slate-900 relative overflow-hidden">
       {/* Intense futuristic background for exam terminal */}
       <div className="absolute inset-0 z-0">
          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#0EA5E910,transparent)]" />
@@ -122,7 +122,7 @@ export default function ExamDashboard() {
         >
           <div className="mb-8 space-y-2">
              <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-white leading-none">READY TO<br/><span className="text-primary">BEGIN?</span></h2>
-             <p className="text-white/40 font-bold tracking-[0.2em] uppercase text-[9px]">VIVI Standard Examination Protocol v2.0</p>
+             <p className="text-white/40 font-bold tracking-[0.2em] text-[9px]">VIVI Standard Examination Protocol v2.0</p>
           </div>
 
           <Card className="p-8 rounded-3xl border-2 border-white/10 bg-white/5 backdrop-blur-2xl shadow-2xl relative overflow-hidden">
@@ -130,8 +130,8 @@ export default function ExamDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                    {profile?.subjectCombination?.map(s => (
                      <div key={s} className="p-3 rounded-xl bg-white/5 border border-white/10">
-                        <p className="text-[8px] font-black text-white/40 uppercase mb-0.5">Subject</p>
-                        <p className="text-[10px] font-black text-white">{s.toUpperCase()}</p>
+                        <p className="text-[8px] font-black text-white/40 mb-0.5">Subject</p>
+                        <p className="text-[10px] font-black text-white">{s}</p>
                      </div>
                    ))}
                 </div>
@@ -147,13 +147,13 @@ export default function ExamDashboard() {
                   ) : (
                     <div className="p-6 bg-emerald-500/10 border-2 border-emerald-500/20 rounded-2xl text-center">
                        <Award className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-                       <h3 className="text-lg font-black text-white mb-1 uppercase">SESSION COMPLETED</h3>
+                       <h3 className="text-lg font-black text-white mb-1">SESSION COMPLETED</h3>
                        <p className="text-emerald-500/60 font-bold text-xs">Your responses have been securely transmitted.</p>
-                       <Button onClick={() => navigate('/dashboard')} variant="link" className="mt-3 h-auto p-0 text-primary font-black uppercase tracking-widest text-[8px]">Go to Profile for Results</Button>
+                       <Button onClick={() => navigate('/dashboard')} variant="link" className="mt-3 h-auto p-0 text-primary font-black tracking-widest text-[8px]">Go to Profile for Results</Button>
                     </div>
                   )}
 
-                  <p className="text-white/20 text-[8px] font-bold tracking-widest uppercase">
+                  <p className="text-white/20 text-[8px] font-bold tracking-widest">
                     By clicking start, you agree to the examination code of conduct.
                   </p>
                 </div>
@@ -164,7 +164,7 @@ export default function ExamDashboard() {
       </main>
 
       <footer className="p-4 text-center relative z-10">
-         <p className="text-[8px] font-bold text-white/20 tracking-[0.3em] uppercase">Secure Terminal ID: {Math.random().toString(36).substring(7).toUpperCase()}</p>
+         <p className="text-[8px] font-bold text-white/20 tracking-[0.3em]">Secure Terminal ID: {Math.random().toString(36).substring(7)}</p>
       </footer>
     </div>
   );

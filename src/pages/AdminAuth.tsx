@@ -65,7 +65,7 @@ export default function AdminAuth() {
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
 
@@ -197,7 +197,7 @@ export default function AdminAuth() {
       </div>
 
       <footer className="py-8 z-10 w-full text-center border-t border-white/5 bg-slate-900">
-        <p className="text-[10px] font-bold text-slate-600 tracking-widest uppercase">&copy; {new Date().getFullYear()} VIVI CBT Systems. Secure Master Terminal.</p>
+        <p className="text-[10px] font-bold text-slate-600 tracking-widest">&copy; {new Date().getFullYear()} VIVI CBT Systems. Secure Master Terminal.</p>
       </footer>
     </div>
   );

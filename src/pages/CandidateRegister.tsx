@@ -9,6 +9,7 @@ import { Mail, User, BookOpen, Key, Calendar, ArrowRight, CheckCircle, Monitor, 
 import { toast } from 'sonner';
 import { getApiUrl } from '@/src/lib/api-config';
 import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
+import { cn } from '@/src/lib/utils/utils';
 
 export default function CandidateRegister() {
   const navigate = useNavigate();
@@ -71,8 +72,6 @@ export default function CandidateRegister() {
     setStep(3); // Auto-advance to details
   };
 
-  const subjects = ["English", "Math", "Physics", "Chemistry", "Biology", "Economics", "Government"];
-
   const handleSendToken = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -113,19 +112,8 @@ export default function CandidateRegister() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: formData.email,
-          token: formData.token,
-          fullName: formData.fullName,
-          phoneNumber: formData.phoneNumber,
-          stateOfOrigin: formData.stateOfOrigin,
-          lga: formData.lga,
-          schoolAttended: formData.schoolAttended,
-          address: formData.address,
-          dateOfBirth: formData.dateOfBirth,
-          waecResultUrl: formData.waecResultUrl,
-          faceUrl: formData.faceUrl,
-          subjectCombination: formData.subjectCombination,
-          password: formData.password
+          ...formData,
+          fullName: formData.fullName.trim()
         })
       });
       const data = await res.json();
@@ -315,7 +303,7 @@ export default function CandidateRegister() {
                         <div className="relative group">
                           <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                           <Input
-                            placeholder="SURNAME FIRSTNAME"
+                            placeholder="Surname Firstname"
                             value={formData.fullName}
                             onChange={e => setFormData({...formData, fullName: e.target.value})}
                             className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
@@ -347,7 +335,7 @@ export default function CandidateRegister() {
                             className="w-full h-14 px-4 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-sm transition-all outline-none focus:ring-0"
                             required
                           >
-                            <option value="">SELECT STATE</option>
+                            <option value="">Select State</option>
                             {NIGERIAN_STATES.map(state => (
                               <option key={state} value={state}>{state}</option>
                             ))}
@@ -363,7 +351,7 @@ export default function CandidateRegister() {
                             required
                             disabled={!formData.stateOfOrigin}
                           >
-                            <option value="">SELECT LGA</option>
+                            <option value="">Select LGA</option>
                             {formData.stateOfOrigin && STATE_LGAS[formData.stateOfOrigin]?.map(lga => (
                               <option key={lga} value={lga}>{lga}</option>
                             ))}
@@ -376,7 +364,7 @@ export default function CandidateRegister() {
                         <div className="relative group">
                           <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                           <Input
-                            placeholder="NAME OF SECONDARY SCHOOL"
+                            placeholder="Name of Secondary School"
                             value={formData.schoolAttended}
                             onChange={e => setFormData({...formData, schoolAttended: e.target.value})}
                             className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
@@ -390,7 +378,7 @@ export default function CandidateRegister() {
                         <div className="relative group">
                           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                           <Input
-                            placeholder="HOME ADDRESS"
+                            placeholder="Home Address"
                             value={formData.address}
                             onChange={e => setFormData({...formData, address: e.target.value})}
                             className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
@@ -495,20 +483,3 @@ export default function CandidateRegister() {
     </div>
   );
 }
-              </AnimatePresence>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-
-      <footer className="py-12 z-10 w-full text-center border-t border-primary/5 bg-white">
-        <p className="text-[10px] font-bold text-primary/20 tracking-widest">&copy; {new Date().getFullYear()} VIVI CBT Systems. Secure Registration Terminal.</p>
-      </footer>
-    </div>
-  );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
-}
-
