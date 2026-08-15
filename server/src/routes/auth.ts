@@ -185,12 +185,12 @@ router.post("/candidate/login-email", async (req, res) => {
     });
 
     if (!candidate || !candidate.password) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({ message: "Incorrect password or email" });
     }
 
     const isMatch = await bcrypt.compare(password, candidate.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({ message: "Incorrect password or email" });
     }
 
     if (candidate.status !== "active") {
@@ -243,12 +243,12 @@ router.post("/login", async (req, res) => {
 
     const user = await userRepository.findOneBy({ email });
     if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Incorrect password or email" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Incorrect password or email" });
     }
 
     const token = jwt.sign(

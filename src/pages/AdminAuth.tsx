@@ -47,7 +47,7 @@ export default function AdminAuth() {
       }
       navigate('/admin');
     } catch (error: any) {
-      toast.error(error.message || "Master Access Denied.");
+      // Errors are toasted in AuthContext
     }
   };
 
