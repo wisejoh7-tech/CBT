@@ -8,7 +8,7 @@ import { ScrollArea } from '@/lib/ui/scroll-area';
 import { Badge } from '@/lib/ui/badge';
 import { toast } from 'sonner';
 import { 
-  Trash2, BookOpen, PlusCircle, Users, Search, BarChart2, Shield, LogOut, Camera, Printer, Upload, Database, CameraOff, User, Eye, CircleX, Monitor, MessageCircle, Mail, Lock, Calendar, CheckCircle, BadgeCheck, LayoutDashboard, Settings, Activity, ShieldAlert, Cpu, ChevronRight, Menu, X, HelpCircle, ArrowLeft, Plus
+  Trash2, BookOpen, PlusCircle, Users, Search, BarChart2, Shield, LogOut, Camera, Printer, Upload, Database, CameraOff, User, Eye, CircleX, Monitor, MessageCircle, Mail, Lock, Calendar, CheckCircle, BadgeCheck, LayoutDashboard, Settings, Activity, ShieldAlert, Cpu, ChevronRight, Menu, X, HelpCircle, ArrowLeft, Plus, Send
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -16,7 +16,7 @@ import { useAuth } from '@/src/context/AuthContext';
 import { useSocket } from '@/src/context/SocketContext';
 import { cn } from '@/src/lib/utils/utils';
 import { getApiUrl } from '@/src/lib/api-config';
-import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
+import { NIGERIAN_STATES } from '@/src/lib/constants/nigeria-data';
 
 export default function Admin() {
   const { profile, logOut } = useAuth();
@@ -64,43 +64,59 @@ export default function Admin() {
   }), []);
 
   const fetchAnalytics = useCallback(async () => {
-    const res = await fetch(getApiUrl('/analytics/summary'), { headers: getHeaders() });
-    if (res.ok) setAnalytics(await res.json());
+    try {
+      const res = await fetch(getApiUrl('/analytics/summary'), { headers: getHeaders() });
+      if (res.ok) setAnalytics(await res.json());
+    } catch (e) {}
   }, [getHeaders]);
 
   const fetchExams = useCallback(async () => {
-    const res = await fetch(getApiUrl('/exams'), { headers: getHeaders() });
-    if (res.ok) setExams(await res.json());
+    try {
+      const res = await fetch(getApiUrl('/exams'), { headers: getHeaders() });
+      if (res.ok) setExams(await res.json());
+    } catch (e) {}
   }, [getHeaders]);
 
   const fetchCandidates = useCallback(async () => {
-    const res = await fetch(getApiUrl('/candidates'), { headers: getHeaders() });
-    if (res.ok) setCandidates(await res.json());
+    try {
+      const res = await fetch(getApiUrl('/candidates'), { headers: getHeaders() });
+      if (res.ok) setCandidates(await res.json());
+    } catch (e) {}
   }, [getHeaders]);
 
   const fetchStaff = useCallback(async () => {
-    const res = await fetch(getApiUrl('/auth/staff'), { headers: getHeaders() });
-    if (res.ok) setStaff(await res.json());
+    try {
+      const res = await fetch(getApiUrl('/auth/staff'), { headers: getHeaders() });
+      if (res.ok) setStaff(await res.json());
+    } catch (e) {}
   }, [getHeaders]);
 
   const fetchAttempts = useCallback(async () => {
-    const res = await fetch(getApiUrl('/exams/attempts/all'), { headers: getHeaders() });
-    if (res.ok) setAttempts(await res.json());
+    try {
+      const res = await fetch(getApiUrl('/exams/attempts/all'), { headers: getHeaders() });
+      if (res.ok) setAttempts(await res.json());
+    } catch (e) {}
   }, [getHeaders]);
 
   const fetchSeats = useCallback(async () => {
-    const res = await fetch(getApiUrl('/center/seats'), { headers: getHeaders() });
-    if (res.ok) setSeats(await res.json());
+    try {
+      const res = await fetch(getApiUrl('/center/seats'), { headers: getHeaders() });
+      if (res.ok) setSeats(await res.json());
+    } catch (e) {}
   }, [getHeaders]);
 
   const fetchLogs = useCallback(async () => {
-    const res = await fetch(getApiUrl('/analytics/logs'), { headers: getHeaders() });
-    if (res.ok) setLogs(await res.json());
+    try {
+      const res = await fetch(getApiUrl('/analytics/logs'), { headers: getHeaders() });
+      if (res.ok) setLogs(await res.json());
+    } catch (e) {}
   }, [getHeaders]);
 
   const fetchOfferedSubjects = useCallback(async () => {
-    const res = await fetch(getApiUrl('/subjects'), { headers: getHeaders() });
-    if (res.ok) setOfferedSubjects(await res.json());
+    try {
+      const res = await fetch(getApiUrl('/subjects'), { headers: getHeaders() });
+      if (res.ok) setOfferedSubjects(await res.json());
+    } catch (e) {}
   }, [getHeaders]);
 
   useEffect(() => {
@@ -108,7 +124,7 @@ export default function Admin() {
     socket.emit('join-admin');
     socket.on('progress-updated', () => fetchAttempts());
     socket.on('security-alert', (data: any) => {
-      toast.error(`Security Alert: ${data.userId} trust score dropped - ${data.reason}`, { duration: 5000 });
+      toast.error(`Security Alert: ${data.userId} trust score dropped - ${data.reason}`);
       fetchAttempts();
     });
     socket.on('new-message', (msg: any) => {
@@ -148,9 +164,7 @@ export default function Admin() {
   }, [getHeaders]);
 
   useEffect(() => {
-    if (selectedExamId) {
-      fetchQuestions(selectedExamId);
-    }
+    if (selectedExamId) fetchQuestions(selectedExamId);
   }, [selectedExamId, fetchQuestions]);
 
   const toggleExamStatus = async (exam: Exam) => {
@@ -171,21 +185,18 @@ export default function Admin() {
 
   const handleCreateExam = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload: any = { ...newExam, createdBy: profile?.displayName || "Administrator", totalQuestions: 0 };
     try {
-      const res = await fetch(getApiUrl('/exams'), { method: 'POST', headers: getHeaders(), body: JSON.stringify(payload) });
+      const res = await fetch(getApiUrl('/exams'), {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ ...newExam, createdBy: profile?.displayName })
+      });
       if (res.ok) {
         toast.success("Exam module created");
-        setNewExam({ title: '', subject: '', durationMinutes: 30, startTime: '', endTime: '' });
         setShowAddExam(false);
         fetchExams();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || "Failed to create");
       }
-    } catch (e) {
-      toast.error("Network error");
-    }
+    } catch (e) { toast.error("Failed to create exam"); }
   };
 
   const handleAddQuestion = async (e: React.FormEvent) => {
@@ -197,31 +208,10 @@ export default function Admin() {
       body: JSON.stringify(newQuestion)
     });
     if (res.ok) {
-      toast.success("Question added successfully");
-      setNewQuestion({ text: '', options: ['', '', '', ''], correctOptionIndex: 0, topic: 'General' });
+      toast.success("Question added");
       setShowAddQuestion(false);
       fetchQuestions(selectedExamId);
-      fetchExams(); // Update question count
-    }
-  };
-
-  const handleCreateCandidate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = await fetch(getApiUrl('/candidates'), {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({
-        ...newCandidate,
-        status: 'active',
-        subjectCombination: newCandidate.subjects,
-        registrationDate: new Date().toISOString()
-      })
-    });
-    if (res.ok) {
-      toast.success("Candidate enrolled");
-      setNewCandidate({ fullName: '', email: '', password: '', examNumber: '', pin: '', subjects: [], assignedIp: '', assignedSeatNumber: '', faceUrl: '', waecResultUrl: '' });
-      setShowAddCandidate(false);
-      fetchCandidates();
+      fetchExams();
     }
   };
 
@@ -233,8 +223,7 @@ export default function Admin() {
       body: JSON.stringify(newStaff)
     });
     if (res.ok) {
-      toast.success("Staff provisioned successfully");
-      setNewStaff({ displayName: '', email: '', password: '', role: 'admin' });
+      toast.success("Staff registered");
       setShowAddStaff(false);
       fetchStaff();
     } else {
@@ -253,115 +242,40 @@ export default function Admin() {
         body: JSON.stringify({ name: newOfferedSubject.trim() })
       });
       if (res.ok) {
-        toast.success("Subject added to curriculum");
+        toast.success("Subject added");
         setNewOfferedSubject('');
         setShowAddSubject(false);
         fetchOfferedSubjects();
       }
-    } catch (e) {
-      toast.error("Network error");
-    }
+    } catch (e) { toast.error("Error adding subject"); }
   };
 
   const toggleSubjectStatus = async (id: string) => {
-    try {
-      const res = await fetch(getApiUrl(`/subjects/${id}`), {
-        method: 'PUT',
-        headers: getHeaders(),
-        body: JSON.stringify({})
-      });
-      if (res.ok) {
-        toast.success("Status updated");
-        fetchOfferedSubjects();
-      }
-    } catch (e) {
-      toast.error("Update failed");
-    }
+    await fetch(getApiUrl(`/subjects/${id}`), { method: 'PUT', headers: getHeaders() });
+    fetchOfferedSubjects();
   };
 
-  const handleDeleteOfferedSubject = async (id: string) => {
-    if (!confirm("Are you sure? This will remove the subject from all new enrollments.")) return;
-    try {
-      const res = await fetch(getApiUrl(`/subjects/${id}`), {
-        method: 'DELETE',
-        headers: getHeaders()
-      });
-      if (res.ok) {
-        toast.success("Subject removed");
-        fetchOfferedSubjects();
-      }
-    } catch (e) {
-      toast.error("Deletion failed");
-    }
-  };
-
-  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const lines = (ev.target?.result as string).split('\n').filter(l => l.trim());
-      const payload: any[] = [];
-      for (const line of lines) {
-        const parts = line.split(',').map(s => s.trim());
-        if (parts[0] && parts[1]) {
-          payload.push({
-            fullName: parts[0],
-            examNumber: `${new Date().getFullYear()}${Math.floor(Math.random()*1000000)}`,
-            dateOfBirth: parts[1],
-            subjectCombination: parts.slice(2, 6),
-            status: 'active',
-            registrationDate: new Date().toISOString()
-          });
-        }
-      }
-      const res = await fetch(getApiUrl('/candidates/bulk'), { method: 'POST', headers: getHeaders(), body: JSON.stringify(payload) });
-      if (res.ok) { toast.success("Bulk Upload Successful"); fetchCandidates(); }
-    };
-    reader.readAsText(file);
-  };
-
-  const handleReleaseResults = async (attemptIds: string[]) => {
-    if (attemptIds.length === 0) return;
-    setReleasingResults(true);
-    try {
-      const res = await fetch(getApiUrl('/exams/admin/release-results'), {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ attemptIds })
-      });
-      if (res.ok) {
-        toast.success("Results released successfully");
-        fetchAttempts();
-      }
-    } finally {
-      setReleasingResults(false);
-    }
+  const handleDeleteStaff = async (id: string) => {
+    if (!confirm("Remove staff access?")) return;
+    await fetch(getApiUrl(`/auth/staff/${id}`), { method: 'DELETE', headers: getHeaders() });
+    fetchStaff();
   };
 
   const sendChatMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !activeChatId || !socket) return;
-
     const msg = {
       from: 'admin',
       to: activeChatId,
-      fromName: profile?.displayName || 'System Admin',
+      fromName: profile?.displayName || 'Admin',
       message: newMessage.trim(),
       timestamp: new Date().toISOString()
     };
-
     socket.emit('admin-message', msg);
     setMessages(prev => [...prev, msg]);
     setNewMessage('');
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   };
-
-  useEffect(() => {
-    if (activeChatId) {
-      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-    }
-  }, [activeChatId, messages]);
 
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, roles: ['super_admin', 'admin'] },
@@ -380,441 +294,317 @@ export default function Admin() {
 
   const filteredMenuItems = menuItems.filter(m => m.roles.includes(profile?.role || ''));
 
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center h-screen bg-white">
-      <div className="w-10 h-10 bg-primary rounded-xl animate-bounce mb-4 flex items-center justify-center text-white font-black">V</div>
-      <p className="font-black text-xs tracking-widest text-primary/40 animate-pulse">Initializing Terminal...</p>
-    </div>
-  );
+  if (loading) return <div className="h-screen flex items-center justify-center font-black animate-pulse text-primary uppercase">Initializing...</div>;
 
   return (
-    <div className="min-h-screen flex bg-slate-50 font-sans relative antialiased tracking-tight">
+    <div className="min-h-screen flex bg-slate-50 font-sans antialiased text-slate-900">
       {/* Sidebar */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 bg-white border-r border-primary/5 transition-all duration-300 z-[100] flex flex-col",
-        isSidebarOpen ? "w-64" : "w-20"
-      )}>
+      <aside className={cn("fixed inset-y-0 left-0 bg-white border-r border-primary/5 transition-all duration-300 z-[100] flex flex-col", isSidebarOpen ? "w-64" : "w-20")}>
         <div className="p-6 flex items-center gap-3">
-          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white font-black text-lg shrink-0">V</div>
-          {isSidebarOpen && <span className="font-black text-lg tracking-tighter text-primary truncate">Admin Portal</span>}
+          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white font-black text-lg">V</div>
+          {isSidebarOpen && <span className="font-black text-lg tracking-tighter text-primary">Admin Portal</span>}
         </div>
-
         <ScrollArea className="flex-1 px-3">
           <div className="space-y-1 py-4">
-            {filteredMenuItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => { setActiveTab(item.id); setSelectedExamId(null); }}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 h-11 rounded-xl transition-all group",
-                  activeTab === item.id
-                    ? "bg-primary text-white shadow-lg shadow-primary/20"
-                    : "text-primary/40 hover:bg-primary/5 hover:text-primary"
-                )}
-              >
-                <item.icon className={cn("w-5 h-5 shrink-0", activeTab === item.id ? "text-white" : "group-hover:scale-110 transition-transform")} />
-                {isSidebarOpen && <span className="text-[11px] font-black tracking-wider truncate">{item.label}</span>}
-                {activeTab === item.id && isSidebarOpen && <ChevronRight className="w-3.5 h-3.5 ml-auto text-white/40" />}
+            {filteredMenuItems.map(item => (
+              <button key={item.id} onClick={() => { setActiveTab(item.id); setSelectedExamId(null); }} className={cn("w-full flex items-center gap-3 px-3 h-11 rounded-xl transition-all group", activeTab === item.id ? "bg-primary text-white shadow-lg" : "text-slate-400 hover:bg-primary/5 hover:text-primary")}>
+                <item.icon className="w-5 h-5 shrink-0" />
+                {isSidebarOpen && <span className="text-[11px] font-black uppercase tracking-wider truncate">{item.label}</span>}
               </button>
             ))}
           </div>
         </ScrollArea>
-
         <div className="p-3 border-t border-primary/5">
-          <button
-            onClick={() => { logOut?.(); navigate('/'); }}
-            className="w-full flex items-center gap-3 px-3 h-11 rounded-xl text-rose-500 hover:bg-rose-50 transition-all"
-          >
+          <button onClick={() => { logOut?.(); navigate('/'); }} className="w-full flex items-center gap-3 px-3 h-11 rounded-xl text-rose-500 hover:bg-rose-50 transition-all font-black uppercase text-[10px]">
             <LogOut className="w-5 h-5 shrink-0" />
-            {isSidebarOpen && <span className="text-[11px] font-black tracking-wider">Logout</span>}
+            {isSidebarOpen && <span>Logout</span>}
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className={cn(
-        "flex-1 flex flex-col transition-all duration-300",
-        isSidebarOpen ? "ml-64" : "ml-20"
-      )}>
-        <header className="h-16 bg-white border-b border-primary/5 px-8 flex justify-between items-center sticky top-0 z-50 backdrop-blur-md bg-white/90">
+      <main className={cn("flex-1 transition-all duration-300", isSidebarOpen ? "ml-64" : "ml-20")}>
+        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-primary/5 px-8 flex justify-between items-center sticky top-0 z-50">
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-primary/40 hover:text-primary bg-primary/5 rounded-lg transition-colors">
-              {isSidebarOpen ? <Menu className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-            </button>
-            <h2 className="text-sm font-black tracking-widest text-primary/40">
-              {menuItems.find(m => m.id === activeTab)?.label}
-              {selectedExamId && " > Questions"}
-            </h2>
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-primary/40 hover:text-primary bg-primary/5 rounded-lg"><Menu className="w-4 h-4" /></button>
+            <h2 className="text-xs font-black uppercase tracking-widest text-primary/40">{activeTab.replace('-', ' ')}</h2>
           </div>
-          <div className="flex items-center gap-6 text-right">
-             <div className="hidden sm:block">
-                <p className="font-black text-[12px] text-primary tracking-tight leading-none mb-1">{profile?.displayName}</p>
-                <p className="text-[9px] font-bold text-primary/40 tracking-widest leading-none">{profile?.role?.replace('_', ' ')}</p>
-             </div>
-             <div className="w-9 h-9 rounded-xl bg-slate-100 border border-primary/5 flex items-center justify-center font-black text-primary/20 text-sm">
-                {profile?.displayName?.charAt(0)}
-             </div>
+          <div className="flex items-center gap-3 text-right">
+             <div className="hidden sm:block"><p className="font-black text-[12px] leading-none mb-1">{profile?.displayName}</p><p className="text-[9px] font-bold text-slate-400 uppercase">{profile?.role}</p></div>
+             <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center font-black text-primary/20 text-sm">{profile?.displayName?.charAt(0)}</div>
           </div>
         </header>
 
-        <div className="p-8">
-          <div className="max-w-6xl mx-auto w-full">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab + (selectedExamId || '')}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                {activeTab === 'overview' && (
-                  <div className="space-y-10">
-                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        {[
-                          { label: 'Exams', value: exams.length, icon: BookOpen, color: 'text-blue-500' },
-                          { label: 'Candidates', value: candidates.length, icon: Users, color: 'text-purple-500' },
-                          { label: 'Avg Score', value: analytics?.averageScore || '0.0', icon: BarChart2, color: 'text-emerald-500' },
-                          { label: 'Pass Rate', value: (analytics?.passRate || '0') + '%', icon: Shield, color: 'text-amber-500' }
-                        ].map((stat, i) => (
-                          <Card key={i} className="p-8 rounded-[32px] border-none shadow-xl bg-white group hover:scale-[1.02] transition-all">
-                            <div className={cn("w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-white transition-colors", stat.color)}>
-                              <stat.icon className="w-6 h-6" />
+        <div className="p-8 max-w-6xl mx-auto w-full">
+          <AnimatePresence mode="wait">
+            <motion.div key={activeTab + (selectedExamId || '')} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+
+              {/* Overview */}
+              {activeTab === 'overview' && (
+                <div className="space-y-10">
+                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                      {[
+                        { label: 'Exams', value: exams.length, icon: BookOpen, color: 'text-blue-500' },
+                        { label: 'Candidates', value: candidates.length, icon: Users, color: 'text-purple-500' },
+                        { label: 'Avg Score', value: analytics?.averageScore || '0', icon: BarChart2, color: 'text-emerald-500' },
+                        { label: 'Pass Rate', value: (analytics?.passRate || '0') + '%', icon: Shield, color: 'text-amber-500' }
+                      ].map((stat, i) => (
+                        <Card key={i} className="p-8 rounded-[32px] border-none shadow-xl bg-white group">
+                          <div className={cn("w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mb-6", stat.color)}><stat.icon className="w-6 h-6" /></div>
+                          <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">{stat.label}</p>
+                          <h4 className="text-4xl font-black tracking-tighter">{stat.value}</h4>
+                        </Card>
+                      ))}
+                   </div>
+                </div>
+              )}
+
+              {/* Curriculum - Table View */}
+              {activeTab === 'subjects' && (
+                <div className="space-y-8">
+                   <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-black">Institutional Curriculum</h3>
+                      <Button onClick={() => setShowAddSubject(true)} className="bg-primary text-white font-black text-[10px] tracking-widest uppercase">Add Subject</Button>
+                   </div>
+                   <div className="bg-white rounded-[40px] border border-primary/5 overflow-hidden shadow-2xl">
+                      <table className="w-full text-left">
+                         <thead className="bg-slate-50/50 border-b border-primary/5"><tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-8">Subject Name</th><th className="p-8 text-center">Status</th><th className="p-8 text-right">Actions</th></tr></thead>
+                         <tbody className="divide-y divide-primary/5">
+                            {offeredSubjects.map(s => (
+                               <tr key={s.id} className="hover:bg-slate-50/30 transition-colors">
+                                  <td className="p-8 font-black uppercase">{s.name}</td>
+                                  <td className="p-8 text-center"><Badge className={cn("text-[9px] font-black", s.isActive ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")}>{s.isActive ? "ACTIVE" : "DISABLED"}</Badge></td>
+                                  <td className="p-8 text-right"><div className="flex justify-end gap-2"><Button variant="ghost" size="icon" onClick={() => toggleSubjectStatus(s.id)} className="text-emerald-400 hover:bg-emerald-50"><CheckCircle className="w-5 h-5" /></Button><Button variant="ghost" size="icon" onClick={() => handleDeleteOfferedSubject(s.id)} className="text-rose-400 hover:bg-rose-50"><Trash2 className="w-5 h-5" /></Button></div></td>
+                               </tr>
+                            ))}
+                         </tbody>
+                      </table>
+                   </div>
+                </div>
+              )}
+
+              {/* Exam Modules - Question Management */}
+              {activeTab === 'exams' && !selectedExamId && (
+                <div className="space-y-8">
+                   <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-black">Assessment Modules</h3>
+                      <Button onClick={() => setShowAddExam(true)} className="bg-primary text-white font-black text-[10px] tracking-widest uppercase">New Module</Button>
+                   </div>
+                   <div className="bg-white rounded-[40px] border border-primary/5 overflow-hidden shadow-2xl">
+                      <table className="w-full text-left">
+                         <thead className="bg-slate-50/50 border-b border-primary/5"><tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-8">Module</th><th className="p-8 text-center">Questions</th><th className="p-8 text-center">Duration</th><th className="p-8 text-right">Settings</th></tr></thead>
+                         <tbody className="divide-y divide-primary/5">
+                            {exams.map(e => (
+                               <tr key={e.id} className="hover:bg-slate-50/30 transition-colors">
+                                  <td className="p-8 font-black uppercase">{e.title}</td>
+                                  <td className="p-8 text-center font-bold">{e.totalQuestions || 0} Items</td>
+                                  <td className="p-8 text-center">{e.durationMinutes} Min</td>
+                                  <td className="p-8 text-right"><Button variant="outline" size="sm" onClick={() => setSelectedExamId(e.id)} className="h-9 px-4 rounded-xl font-black text-[9px] uppercase transition-all hover:bg-slate-100">Set Questions</Button></td>
+                               </tr>
+                            ))}
+                         </tbody>
+                      </table>
+                   </div>
+                </div>
+              )}
+
+              {activeTab === 'exams' && selectedExamId && (
+                <div className="space-y-8">
+                   <div className="flex items-center gap-4">
+                      <Button variant="ghost" onClick={() => setSelectedExamId(null)} className="rounded-xl"><ArrowLeft className="w-5 h-5" /></Button>
+                      <h3 className="text-xl font-black">{exams.find(e => e.id === selectedExamId)?.title} - Questions</h3>
+                      <Button onClick={() => setShowAddQuestion(true)} className="ml-auto bg-slate-900 text-white font-black text-[10px] uppercase">Set New Item</Button>
+                   </div>
+                   <div className="space-y-4">
+                      {questions.map((q, i) => (
+                         <Card key={q.id} className="p-8 rounded-[32px] bg-white shadow-xl relative overflow-hidden group">
+                            <Badge className="absolute top-8 right-8 bg-slate-100 text-slate-400 border-none">Item #{i+1}</Badge>
+                            <div className="space-y-6">
+                               <p className="font-bold text-lg leading-relaxed">{q.text}</p>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {q.options.map((opt, idx) => (
+                                     <div key={idx} className={cn("p-4 rounded-2xl border font-bold text-sm", idx === q.correctOptionIndex ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-slate-50 border-transparent text-slate-500")}>
+                                        {String.fromCharCode(65+idx)}. {opt}
+                                     </div>
+                                  ))}
+                               </div>
+                               <Button variant="ghost" onClick={async () => { await fetch(getApiUrl(`/exams/${selectedExamId}/questions/${q.id}`), { method: 'DELETE', headers: getHeaders() }); fetchQuestions(selectedExamId); }} className="text-rose-300 hover:text-rose-500 p-0 font-black text-[10px] uppercase">Delete Item</Button>
                             </div>
-                            <p className="text-[10px] font-black text-primary/30 mb-1 tracking-widest">{stat.label}</p>
-                            <h4 className="text-4xl font-black text-primary tracking-tighter">{stat.value}</h4>
-                          </Card>
-                        ))}
-                     </div>
-                     <div className="grid md:grid-cols-2 gap-8">
-                        <Card className="p-10 rounded-[40px] border-none shadow-2xl bg-primary text-white overflow-hidden relative">
-                           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full translate-x-1/3 -translate-y-1/3 blur-3xl" />
-                           <div className="relative z-10 space-y-6">
-                              <h3 className="text-xl font-black tracking-tight">System Status</h3>
-                              <div className="space-y-4">
-                                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                                    <span className="text-[11px] font-bold text-white/60">Cloud Database</span>
-                                    <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black">Active</Badge>
-                                 </div>
-                                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                                    <span className="text-[11px] font-bold text-white/60">Real-time Node</span>
-                                    <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black">Online</Badge>
-                                 </div>
-                                 <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-bold text-white/60">AI Processor</span>
-                                    <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black">Idle</Badge>
-                                 </div>
-                              </div>
-                           </div>
-                        </Card>
-                        <Card className="p-10 rounded-[40px] border-none shadow-2xl bg-white flex flex-col justify-center items-center text-center">
-                           <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                              <ShieldAlert className="w-10 h-10 text-primary/10" />
-                           </div>
-                           <h3 className="font-black text-lg text-primary">Command Center</h3>
-                           <p className="text-[11px] font-medium text-primary/40 mt-2 max-w-xs leading-relaxed uppercase">Full oversight of the VIVI examination ecosystem. Monitor integrity and manage institutional data.</p>
-                        </Card>
-                     </div>
-                  </div>
-                )}
+                         </Card>
+                      ))}
+                   </div>
+                </div>
+              )}
 
-                {activeTab === 'subjects' && (
-                  <div className="space-y-8">
-                     <div className="flex justify-between items-center">
-                        <div className="space-y-1">
-                           <h3 className="text-xl font-black text-primary">Institutional Curriculum</h3>
-                           <p className="text-[10px] font-bold text-primary/30 tracking-[0.2em]">{offeredSubjects.length} Registered Subjects</p>
-                        </div>
-                        <Button onClick={() => setShowAddSubject(true)} className="h-11 px-8 bg-primary text-white rounded-xl font-black text-[10px] tracking-widest shadow-lg shadow-primary/20">Provision New Subject</Button>
-                     </div>
-
-                     <div className="bg-white rounded-[40px] border border-primary/5 overflow-hidden shadow-2xl">
-                        <table className="w-full text-left">
-                           <thead className="bg-slate-50/50 border-b border-primary/5">
-                              <tr className="text-[10px] font-black tracking-widest text-primary/30">
-                                 <th className="p-8">Subject Name</th>
-                                 <th className="p-8 text-center">Status</th>
-                                 <th className="p-8 text-right">Actions</th>
-                              </tr>
-                           </thead>
-                           <tbody className="divide-y divide-primary/5">
-                              {offeredSubjects.map(s => (
-                                 <tr key={s.id} className="hover:bg-slate-50/30 transition-colors">
-                                    <td className="p-8">
-                                       <div className="flex items-center gap-4">
-                                          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-primary/20"><BookOpen className="w-5 h-5" /></div>
-                                          <span className="font-black text-sm text-primary uppercase">{s.name}</span>
-                                       </div>
-                                    </td>
-                                    <td className="p-8 text-center">
-                                       <Badge className={cn("text-[9px] font-black border-none px-3 py-1 rounded-lg", s.isActive ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")}>
-                                          {s.isActive ? "ACTIVE" : "DISABLED"}
-                                       </Badge>
-                                    </td>
-                                    <td className="p-8 text-right">
-                                       <div className="flex justify-end gap-3">
-                                          <Button variant="ghost" size="icon" onClick={() => toggleSubjectStatus(s.id)} className="h-10 w-10 text-primary/30 hover:text-emerald-500 hover:bg-emerald-50 rounded-xl">
-                                             <CheckCircle className="w-4.5 h-4.5" />
-                                          </Button>
-                                          <Button variant="ghost" size="icon" onClick={() => handleDeleteOfferedSubject(s.id)} className="h-10 w-10 text-rose-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl">
-                                             <Trash2 className="w-4.5 h-4.5" />
-                                          </Button>
-                                       </div>
-                                    </td>
-                                 </tr>
-                              ))}
-                           </tbody>
-                        </table>
-                     </div>
-                  </div>
-                )}
-
-                {activeTab === 'exams' && !selectedExamId && (
-                  <div className="space-y-8">
-                     <div className="flex justify-between items-center">
-                        <div className="space-y-1">
-                           <h3 className="text-xl font-black text-primary">Examination Modules</h3>
-                           <p className="text-[10px] font-bold text-primary/30 tracking-[0.2em]">{exams.length} Configured Assessments</p>
-                        </div>
-                        <Button onClick={() => setShowAddExam(true)} className="h-11 px-8 bg-primary text-white rounded-xl font-black text-[10px] tracking-widest shadow-lg shadow-primary/20">Initialize New Module</Button>
-                     </div>
-
-                     <div className="bg-white rounded-[40px] border border-primary/5 overflow-hidden shadow-2xl">
-                        <table className="w-full text-left">
-                           <thead className="bg-slate-50/50 border-b border-primary/5">
-                              <tr className="text-[10px] font-black tracking-widest text-primary/30">
-                                 <th className="p-8">Assessment Details</th>
-                                 <th className="p-8 text-center">Questions</th>
-                                 <th className="p-8 text-center">Duration</th>
-                                 <th className="p-8 text-center">Status</th>
-                                 <th className="p-8 text-right">Actions</th>
-                              </tr>
-                           </thead>
-                           <tbody className="divide-y divide-primary/5">
-                              {exams.map(exam => (
-                                 <tr key={exam.id} className="hover:bg-slate-50/30 transition-colors">
-                                    <td className="p-8">
-                                       <p className="font-black text-[13px] text-primary leading-tight">{exam.title}</p>
-                                       <p className="text-[9px] font-bold text-primary/30 tracking-widest mt-1 uppercase">{exam.subject}</p>
-                                    </td>
-                                    <td className="p-8 text-center">
-                                       <span className="font-black text-lg text-primary">{exam.totalQuestions || 0}</span>
-                                    </td>
-                                    <td className="p-8 text-center text-[12px] font-bold text-slate-600">{exam.durationMinutes} min</td>
-                                    <td className="p-8 text-center">
-                                       <Badge className={cn("text-[9px] font-black border-none px-3 py-1 rounded-lg", exam.isActive ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")}>
-                                          {exam.isActive ? "PUBLISHED" : "DRAFT"}
-                                       </Badge>
-                                    </td>
-                                    <td className="p-8 text-right">
-                                       <div className="flex justify-end gap-3">
-                                          <Button variant="ghost" size="icon" onClick={() => setSelectedExamId(exam.id)} className="h-10 w-10 text-primary/30 hover:text-primary hover:bg-primary/5 rounded-xl border border-transparent hover:border-primary/5">
-                                             <Settings className="w-4.5 h-4.5" />
-                                          </Button>
-                                          <Button variant="ghost" size="icon" onClick={() => toggleExamStatus(exam)} className={cn("h-10 w-10 rounded-xl", exam.isActive ? "text-rose-300 hover:text-rose-500 bg-rose-50/0 hover:bg-rose-50" : "text-emerald-300 hover:text-emerald-500")}>
-                                             {exam.isActive ? <X className="w-4.5 h-4.5" /> : <CheckCircle className="w-4.5 h-4.5" />}
-                                          </Button>
-                                       </div>
-                                    </td>
-                                 </tr>
-                              ))}
-                           </tbody>
-                        </table>
-                     </div>
-                  </div>
-                )}
-
-                {activeTab === 'exams' && selectedExamId && (
-                  <div className="space-y-8">
-                    <div className="flex items-center gap-4 mb-4">
-                      <Button variant="ghost" onClick={() => setSelectedExamId(null)} className="h-10 w-10 rounded-xl text-primary/30 hover:text-primary bg-primary/5"><ArrowLeft className="w-5 h-5" /></Button>
-                      <div>
-                        <h3 className="text-xl font-black text-primary">Question Registry</h3>
-                        <p className="text-[10px] font-bold text-primary/30 tracking-widest">{exams.find(e => e.id === selectedExamId)?.title}</p>
-                      </div>
-                      <Button onClick={() => setShowAddQuestion(true)} className="ml-auto h-11 px-8 bg-slate-900 text-white rounded-xl font-black text-[10px] tracking-widest shadow-xl">SET NEW QUESTION</Button>
-                    </div>
-
-                    <div className="space-y-4">
-                      {questions.length === 0 ? (
-                        <div className="p-20 text-center bg-white rounded-[40px] border-2 border-dashed border-primary/5 opacity-20">
-                          <PlusCircle className="w-12 h-12 mx-auto mb-4" />
-                          <p className="font-black text-sm uppercase">Empty Question Bank</p>
-                        </div>
-                      ) : (
-                        questions.map((q, i) => (
-                          <Card key={q.id} className="p-8 rounded-[32px] border border-primary/5 bg-white shadow-xl hover:shadow-2xl transition-all">
-                             <div className="flex justify-between gap-6">
-                                <div className="space-y-4 flex-1">
-                                   <div className="flex items-center gap-3">
-                                      <Badge className="bg-slate-100 text-primary/40 border-none font-black text-[10px]">Q.{i + 1}</Badge>
-                                      <span className="text-[9px] font-black text-primary/20 tracking-widest uppercase">{q.topic}</span>
-                                   </div>
-                                   <p className="text-[14px] font-bold text-slate-800 leading-relaxed">{q.text}</p>
-                                   <div className="grid grid-cols-2 gap-3 pt-2">
-                                      {q.options.map((opt, idx) => (
-                                         <div key={idx} className={cn(
-                                            "px-5 py-3 rounded-2xl border text-[12px] font-bold transition-all",
-                                            idx === q.correctOptionIndex ? "bg-emerald-50 border-emerald-500 text-emerald-700" : "bg-slate-50 border-transparent text-slate-500"
-                                         )}>
-                                            {String.fromCharCode(65 + idx)}. {opt}
-                                         </div>
-                                      ))}
-                                   </div>
-                                </div>
-                                <Button variant="ghost" size="icon" className="text-rose-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl" onClick={async () => {
-                                   if(confirm("Delete this question?")) {
-                                      await fetch(getApiUrl(`/exams/${selectedExamId}/questions/${q.id}`), { method: 'DELETE', headers: getHeaders() });
-                                      fetchQuestions(selectedExamId);
-                                   }
-                                }}>
-                                   <Trash2 className="w-5 h-5" />
-                                </Button>
-                             </div>
-                          </Card>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'chat' && (
-                  <div className="h-[75vh] grid md:grid-cols-[320px_1fr] border border-primary/5 bg-white rounded-[40px] overflow-hidden shadow-2xl">
-                    <aside className="border-r border-primary/5 flex flex-col bg-slate-50/50">
-                      <div className="p-8 border-b border-primary/5"><h3 className="text-[11px] font-black text-primary/40 tracking-[0.3em]">Institutional Support</h3></div>
+              {/* Support & Chat */}
+              {activeTab === 'chat' && (
+                <div className="h-[75vh] grid md:grid-cols-[300px_1fr] border border-primary/5 bg-white rounded-[40px] overflow-hidden shadow-2xl">
+                   <aside className="bg-slate-50/50 border-r border-primary/5 flex flex-col">
+                      <div className="p-8 border-b border-primary/5"><h4 className="text-[11px] font-black uppercase tracking-widest opacity-30">Directories</h4></div>
                       <ScrollArea className="flex-1">
-                        <div className="p-4 space-y-3">
-                          {Array.from(new Set([...messages.map(m => m.from === 'admin' ? m.to : m.from), ...attempts.filter(a => a.status === 'in-progress').map(a => a.userId)])).map(id => {
-                            if (!id) return null;
-                            const lastMsg = [...messages].reverse().find(m => m.from === id || (m.from === 'admin' && m.to === id));
-                            const isActive = attempts.find(a => a.userId === id && a.status === 'in-progress');
-                            const name = candidates.find(c => c.examNumber === id)?.fullName;
-                            return (
-                              <button key={id} onClick={() => setActiveChatId(id)} className={cn("w-full p-6 rounded-[28px] text-left transition-all border-2 flex flex-col gap-1 relative overflow-hidden group", activeChatId === id ? "bg-primary border-primary text-white shadow-xl" : "bg-white border-transparent hover:border-primary/5 shadow-sm")}>
-                                <div className="flex justify-between items-center mb-1"><p className="font-black text-[11px] truncate flex-1 uppercase">{name || id}</p>{isActive && <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]" />}</div>
-                                <p className={cn("text-[10px] font-medium truncate", activeChatId === id ? "text-white/60" : "text-primary/30")}>{lastMsg?.message || "Encrypted tunnel established"}</p>
-                              </button>
-                            );
-                          })}
-                        </div>
+                         <div className="p-4 space-y-2">
+                            {Array.from(new Set([...messages.map(m => m.from === 'admin' ? m.to : m.from), ...attempts.filter(a => a.status === 'in-progress').map(a => a.userId)])).map(id => {
+                               if (!id) return null;
+                               const name = candidates.find(c => c.examNumber === id)?.fullName || id;
+                               return (
+                                  <button key={id} onClick={() => setActiveChatId(id)} className={cn("w-full p-5 rounded-2xl text-left transition-all font-black text-[11px] uppercase", activeChatId === id ? "bg-primary text-white shadow-lg" : "hover:bg-primary/5 text-slate-400")}>
+                                     {name}
+                                  </button>
+                               );
+                            })}
+                         </div>
                       </ScrollArea>
-                    </aside>
-                    <section className="flex flex-col bg-white">
+                   </aside>
+                   <section className="flex flex-col">
                       {activeChatId ? (
                         <>
-                          <div className="p-8 border-b border-primary/5 flex justify-between items-center bg-white">
-                             <div>
-                                <h4 className="font-black text-sm text-primary tracking-widest uppercase">{activeChatId}</h4>
-                                <div className="flex items-center gap-2 mt-1">
-                                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                                   <p className="text-[9px] font-black text-emerald-500 tracking-widest leading-none pt-0.5">BIOMETRIC AUTHENTICATED</p>
-                                </div>
-                             </div>
-                             <Button variant="ghost" size="icon" onClick={() => setActiveChatId(null)} className="h-10 w-10 text-primary/20 hover:text-primary rounded-xl transition-all"><CircleX className="w-5 h-5" /></Button>
-                          </div>
-                          <ScrollArea className="flex-1 p-10 bg-slate-50/30">
-                             <div className="space-y-6">
-                                {messages.filter(m => m.from === activeChatId || (m.from === 'admin' && m.to === activeChatId)).map((m, i) => (
-                                   <div key={i} className={cn("flex flex-col", m.from === 'admin' ? "items-end" : "items-start")}>
-                                      <div className={cn("max-w-[80%] p-5 rounded-[24px] text-[13px] font-bold shadow-sm", m.from === 'admin' ? "bg-primary text-white rounded-tr-none" : "bg-white text-primary border border-primary/5 rounded-tl-none")}>
-                                         {m.message}
-                                      </div>
-                                      <span className="text-[8px] font-black text-primary/20 mt-2 tracking-widest">{new Date(m.timestamp).toLocaleTimeString()}</span>
-                                   </div>
-                                ))}
-                                <div ref={chatEndRef} />
-                             </div>
-                          </ScrollArea>
-                          <form onSubmit={sendChatMessage} className="p-8 border-t border-primary/5 bg-white flex gap-4">
-                             <Input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Type authorized response..." className="h-14 px-8 rounded-2xl bg-slate-50 border-none font-bold text-sm focus:bg-slate-100 transition-all shadow-inner" />
-                             <Button type="submit" className="h-14 px-10 bg-primary text-white rounded-2xl font-black tracking-widest text-[10px] shadow-xl uppercase transition-transform active:scale-95">TRANSMIT</Button>
-                          </form>
+                           <div className="p-8 border-b border-primary/5 flex justify-between items-center bg-white"><h4 className="font-black uppercase tracking-widest text-sm">{activeChatId}</h4><Button variant="ghost" size="icon" onClick={() => setActiveChatId(null)} className="text-slate-300 hover:text-rose-500"><CircleX className="w-5 h-5" /></Button></div>
+                           <ScrollArea className="flex-1 p-8 bg-slate-50/30">
+                              <div className="space-y-6">
+                                 {messages.filter(m => m.from === activeChatId || (m.from === 'admin' && m.to === activeChatId)).map((m, i) => (
+                                    <div key={i} className={cn("flex flex-col", m.from === 'admin' ? "items-end" : "items-start")}>
+                                       <div className={cn("max-w-[80%] p-4 rounded-2xl font-bold text-sm shadow-sm", m.from === 'admin' ? "bg-primary text-white rounded-tr-none" : "bg-white text-slate-800 border border-primary/5 rounded-tl-none")}>{m.message}</div>
+                                       <span className="text-[8px] font-black opacity-20 mt-2">{new Date(m.timestamp).toLocaleTimeString()}</span>
+                                    </div>
+                                 ))}
+                                 <div ref={chatEndRef} />
+                              </div>
+                           </ScrollArea>
+                           <form onSubmit={sendChatMessage} className="p-6 border-t border-primary/5 flex gap-4"><Input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Type authorized response..." className="h-14 rounded-2xl bg-slate-50 border-none font-bold shadow-inner" /><Button type="submit" className="h-14 px-8 bg-primary text-white rounded-2xl font-black uppercase shadow-lg"><Send className="w-4 h-4" /></Button></form>
                         </>
-                      ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center opacity-20 text-center p-20 space-y-4 bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:40px_40px]">
-                           <div className="w-24 h-24 bg-primary/5 rounded-full flex items-center justify-center mb-4"><MessageCircle className="w-12 h-12 text-primary" /></div>
-                           <h3 className="text-xl font-black text-primary tracking-widest uppercase">Communication Core</h3>
-                           <p className="max-w-xs font-bold text-xs tracking-widest">Select an active candidate session from the directory to initiate secure proctor-to-terminal messaging.</p>
-                        </div>
-                      )}
-                    </section>
-                  </div>
-                )}
+                      ) : <div className="flex-1 flex flex-col items-center justify-center opacity-10 text-center p-20"><MessageCircle className="w-24 h-24 mb-6" /><h3 className="text-2xl font-black uppercase">Support Core</h3><p className="max-w-xs font-bold text-xs">Establish secure biometric link with active terminals.</p></div>}
+                   </section>
+                </div>
+              )}
 
-                {/* Audit, Security, Results table views go here (similar pattern to subjects/exams) */}
-                {activeTab === 'results' && (
-                  <div className="space-y-8">
-                     <div className="flex justify-between items-center">
-                        <div className="space-y-1">
-                           <h3 className="text-xl font-black text-primary">Academic Transcripts</h3>
-                           <p className="text-[10px] font-bold text-primary/30 tracking-[0.2em]">{attempts.filter(a => a.status === 'completed').length} Verified Submissions</p>
-                        </div>
-                        <Button onClick={() => { const unreleased = attempts.filter(a => a.status === 'completed' && !a.isReleased).map(a => a.id); handleReleaseResults(unreleased); }} disabled={releasingResults || attempts.filter(a => a.status === 'completed' && !a.isReleased).length === 0} className="h-12 px-10 bg-emerald-600 text-white font-black text-[10px] tracking-widest rounded-xl shadow-xl hover:bg-emerald-700">{releasingResults ? "RELEASING..." : "RELEASE ALL RESULTS"}</Button>
-                     </div>
-                     <div className="bg-white rounded-[40px] border border-primary/5 overflow-hidden shadow-2xl">
-                        <table className="w-full text-left">
-                           <thead className="bg-slate-50/50 border-b border-primary/5">
-                              <tr className="text-[10px] font-black tracking-widest text-primary/30">
-                                 <th className="p-8">Candidate Profile</th>
-                                 <th className="p-8 text-center">Performance</th>
-                                 <th className="p-8 text-center">Casing</th>
-                                 <th className="p-8 text-right">Actions</th>
-                              </tr>
-                           </thead>
-                           <tbody className="divide-y divide-primary/5">
-                              {attempts.filter(a => a.status === 'completed').map(a => {
-                                const candidate = candidates.find(c => c.examNumber === a.userId);
-                                return (
-                                  <tr key={a.id} className="hover:bg-slate-50/30 transition-colors">
-                                     <td className="p-8">
-                                        <div className="flex items-center gap-4">
-                                           <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-primary/20 text-xs">{candidate?.fullName?.charAt(0) || '?'}</div>
-                                           <div><p className="font-black text-[13px] text-primary leading-tight">{candidate?.fullName || "REMOVED"}</p><p className="text-[9px] font-bold text-primary/30 tracking-widest mt-0.5">{a.userId}</p></div>
-                                        </div>
-                                     </td>
-                                     <td className="p-8 text-center"><span className="text-xl font-black text-primary leading-none">{a.score} / {a.totalPossible}</span></td>
-                                     <td className="p-8 text-center"><Badge className={cn("text-[9px] font-black border-none px-3 py-1 rounded-lg", a.isReleased ? "bg-emerald-100 text-emerald-600" : "bg-amber-100 text-amber-600")}>{a.isReleased ? "AUTHENTICATED" : "QUEUED"}</Badge></td>
-                                     <td className="p-8 text-right"><div className="flex justify-end gap-3"><Button variant="ghost" size="icon" onClick={() => navigate(`/result-slip/${a.userId}`)} className="h-10 w-10 text-primary/30 hover:text-primary hover:bg-primary/5 rounded-xl transition-all"><Eye className="w-4.5 h-4.5" /></Button>{!a.isReleased && <Button variant="ghost" size="icon" onClick={() => handleReleaseResults([a.id])} className="h-10 w-10 text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl"><BadgeCheck className="w-4.5 h-4.5" /></Button>}</div></td>
-                                  </tr>
-                                );
-                              })}
-                           </tbody>
-                        </table>
-                     </div>
-                  </div>
-                )}
+              {/* Staff Management - Table View */}
+              {activeTab === 'staff' && (
+                <div className="space-y-8">
+                   <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-black">Authorized Personnel</h3>
+                      <Button onClick={() => setShowAddStaff(true)} className="bg-primary text-white font-black text-[10px] tracking-widest uppercase">Provision Staff</Button>
+                   </div>
+                   <div className="bg-white rounded-[40px] border border-primary/5 overflow-hidden shadow-2xl">
+                      <table className="w-full text-left">
+                         <thead className="bg-slate-50/50 border-b border-primary/5"><tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-8">Display Name</th><th className="p-8">Access Email</th><th className="p-8 text-center">Role</th><th className="p-8 text-right">Actions</th></tr></thead>
+                         <tbody className="divide-y divide-primary/5">
+                            {staff.map(s => (
+                               <tr key={s.id} className="hover:bg-slate-50/30 transition-colors">
+                                  <td className="p-8 font-black uppercase">{s.displayName}</td>
+                                  <td className="p-8 font-bold text-slate-500">{s.email}</td>
+                                  <td className="p-8 text-center"><Badge className="bg-slate-100 text-slate-400 border-none font-black text-[8px] uppercase">{s.role.replace('_', ' ')}</Badge></td>
+                                  <td className="p-8 text-right">{s.role !== 'super_admin' && <Button variant="ghost" size="icon" onClick={() => handleDeleteStaff(s.id)} className="text-rose-400 hover:bg-rose-50"><Trash2 className="w-5 h-5" /></Button>}</td>
+                               </tr>
+                            ))}
+                         </tbody>
+                      </table>
+                   </div>
+                </div>
+              )}
 
-              </motion.div>
-            </AnimatePresence>
-          </div>
+              {/* Center Hub */}
+              {activeTab === 'center' && (
+                 <div className="space-y-10">
+                    <div className="flex justify-between items-end">
+                       <h3 className="text-xl font-black">Operational Center Hub</h3>
+                       <div className="flex gap-4"><div className="px-6 py-4 bg-white rounded-2xl shadow-xl border border-primary/5 text-center"><p className="text-[8px] font-black opacity-30 uppercase">Capacity</p><p className="text-xl font-black">{seats.length} Seats</p></div><div className="px-6 py-4 bg-primary text-white rounded-2xl shadow-xl text-center"><p className="text-[8px] font-black opacity-30 uppercase">In Use</p><p className="text-xl font-black">{seats.filter(s => s.status === 'occupied').length}</p></div></div>
+                    </div>
+                    <div className="bg-white p-10 rounded-[56px] shadow-2xl border border-primary/5 grid grid-cols-5 sm:grid-cols-10 gap-3">
+                       {seats.length === 0 ? <p className="col-span-full py-20 text-center opacity-10 font-black uppercase">Center Hall Not Initialized</p> : seats.map(s => (<div key={s.id} className={cn("aspect-square rounded-xl flex items-center justify-center font-black text-[9px] border-2", s.status === 'occupied' ? "bg-emerald-50 border-emerald-500 text-emerald-600 shadow-md" : "bg-slate-50 border-slate-100 text-slate-300")}>{s.seatNumber}</div>))}
+                    </div>
+                 </div>
+              )}
+
+              {/* Intelligence (Analytics) */}
+              {activeTab === 'analytics' && (
+                 <div className="space-y-10">
+                    <h3 className="text-xl font-black">Institutional Intelligence</h3>
+                    <div className="grid md:grid-cols-2 gap-8">
+                       <Card className="p-10 rounded-[48px] bg-white shadow-2xl space-y-8">
+                          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Performance Matrix</h4>
+                          <div className="flex justify-between items-end"><span className="text-slate-400 font-bold">Academic Rating</span><span className="text-5xl font-black tracking-tighter text-primary">{analytics?.averageScore || '0.0'}</span></div>
+                          <div className="w-full h-2 bg-slate-50 rounded-full overflow-hidden shadow-inner"><motion.div initial={{ width: 0 }} animate={{ width: `${analytics?.passRate || 0}%` }} className="h-full bg-primary" /></div>
+                          <p className="text-[11px] font-black text-emerald-500 uppercase">{analytics?.passRate || 0}% Proficiency Verified</p>
+                       </Card>
+                       <Card className="p-10 rounded-[48px] bg-slate-900 text-white shadow-2xl flex flex-col justify-center items-center text-center">
+                          <Shield className="w-16 h-16 text-primary/40 mb-6" />
+                          <h4 className="text-xl font-black uppercase mb-2">Integrity Shield: Active</h4>
+                          <p className="text-[11px] font-medium text-white/40 leading-relaxed uppercase tracking-wider">Metrics are currently being aggregated across {attempts.length} active academic transcripts.</p>
+                       </Card>
+                    </div>
+                 </div>
+              )}
+
+              {/* Security Center */}
+              {activeTab === 'security' && (
+                 <div className="space-y-8">
+                    <h3 className="text-xl font-black">Integrity Intelligence</h3>
+                    <div className="bg-white rounded-[40px] border border-primary/5 overflow-hidden shadow-2xl">
+                       <table className="w-full text-left">
+                          <thead className="bg-slate-50 border-b border-primary/5"><tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-8">Candidate Profile</th><th className="p-8 text-center">Integrity</th><th className="p-8">Identity</th><th className="p-8">Evidence</th></tr></thead>
+                          <tbody className="divide-y divide-primary/5">
+                             {attempts.filter(a => (a.violationLogs?.length || 0) > 0 || a.isIdentityVerified === false).map(a => (
+                                <tr key={a.id} className="hover:bg-slate-50/50 transition-colors">
+                                   <td className="p-8 font-black uppercase text-xs">{candidates.find(c => c.examNumber === a.userId)?.fullName || a.userId}</td>
+                                   <td className="p-8 text-center font-black text-lg" className={cn(a.trustScore < 70 ? "text-rose-500" : "text-emerald-500")}>{Math.round(a.trustScore || 0)}%</td>
+                                   <td className="p-8"><Badge className={cn("text-[9px] font-black", a.isIdentityVerified ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600")}>{a.isIdentityVerified ? "VERIFIED" : "MISMATCH"}</Badge></td>
+                                   <td className="p-8 text-right"><Button variant="ghost" onClick={() => setViewingSnaps(a.id)} className="h-10 w-10 text-primary/30 hover:text-primary"><Camera className="w-5 h-5" /></Button></td>
+                                </tr>
+                             ))}
+                          </tbody>
+                       </table>
+                    </div>
+                 </div>
+              )}
+
+              {/* Audit Trail */}
+              {activeTab === 'audit' && (
+                 <div className="space-y-8">
+                    <h3 className="text-xl font-black">System Audit Trail</h3>
+                    <div className="bg-white rounded-[40px] border border-primary/5 overflow-hidden shadow-2xl">
+                       <table className="w-full text-left">
+                          <thead className="bg-slate-50 border-b border-primary/5"><tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-8">Timestamp</th><th className="p-8">Category</th><th className="p-8">Incident Details</th><th className="p-8">Actor</th></tr></thead>
+                          <tbody className="divide-y divide-primary/5">
+                             {logs.map(l => (
+                                <tr key={l.id} className="hover:bg-slate-50/50 transition-colors">
+                                   <td className="p-8 text-[11px] font-bold text-slate-400">{new Date(l.timestamp).toLocaleString()}</td>
+                                   <td className="p-8"><Badge className={cn("text-[9px] font-black uppercase", l.type === 'security' ? "bg-red-50 text-rose-500" : "bg-blue-50 text-sky-500")}>{l.type}</Badge></td>
+                                   <td className="p-8 font-bold text-[12px] uppercase">{l.message}</td>
+                                   <td className="p-8 font-black text-primary/20 text-[10px] uppercase">{l.userId || 'System'}</td>
+                                </tr>
+                             ))}
+                          </tbody>
+                       </table>
+                    </div>
+                 </div>
+              )}
+
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
 
       {/* MODALS */}
       <AnimatePresence>
         {showAddExam && (
-          <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-lg bg-white rounded-[48px] shadow-2xl overflow-hidden border border-primary/5"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><div className="space-y-1"><h3 className="text-xl font-black text-primary uppercase">New Exam Module</h3><p className="text-[10px] font-bold text-primary/30 tracking-widest uppercase">Define Curricular Assessment</p></div><Button variant="ghost" onClick={() => setShowAddExam(false)} className="h-12 w-12 rounded-2xl text-primary/20 hover:text-primary"><X className="w-6 h-6" /></Button></div><form onSubmit={handleCreateExam} className="p-10 space-y-8"><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Subject Category</Label><select value={newExam.subject} onChange={e => setNewExam({...newExam, subject: e.target.value})} required className="w-full h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-xs outline-none"><option value="">Select Primary Subject</option>{offeredSubjects.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}</select></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Assessment Title</Label><Input placeholder="e.g. Advanced Placement 2026" value={newExam.title} onChange={e => setNewExam({...newExam, title: e.target.value})} required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner" /></div><div className="grid grid-cols-2 gap-6"><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Session Minutes</Label><Input type="number" value={newExam.durationMinutes} onChange={e => setNewExam({...newExam, durationMinutes: parseInt(e.target.value)})} required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner" /></div><div className="space-y-2 flex flex-col justify-end"><Button type="submit" className="h-14 w-full bg-primary text-white font-black rounded-2xl tracking-widest uppercase shadow-xl">Initialize Module</Button></div></div></form></motion.div></div>
+          <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-lg bg-white rounded-[48px] shadow-2xl border border-primary/5 overflow-hidden"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><h3 className="text-xl font-black uppercase">Initialize Module</h3><Button variant="ghost" onClick={() => setShowAddExam(false)} className="rounded-xl"><X className="w-6 h-6" /></Button></div><form onSubmit={handleCreateExam} className="p-10 space-y-8"><div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-40 ml-2">Subject Category</Label><select value={newExam.subject} onChange={e => setNewExam({...newExam, subject: e.target.value})} className="w-full h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-xs outline-none uppercase">{offeredSubjects.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}</select></div><div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-40 ml-2">Title</Label><Input placeholder="Assessment Title" value={newExam.title} onChange={e => setNewExam({...newExam, title: e.target.value})} required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold" /></div><div className="grid grid-cols-2 gap-6"><div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-40 ml-2">Duration (Min)</Label><Input type="number" value={newExam.durationMinutes} onChange={e => setNewExam({...newExam, durationMinutes: parseInt(e.target.value)})} required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold" /></div><Button type="submit" className="h-14 bg-primary text-white font-black uppercase mt-auto rounded-2xl">Confirm Initiation</Button></div></form></motion.div></div>
         )}
 
         {showAddQuestion && (
-          <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-2xl bg-white rounded-[48px] shadow-2xl overflow-hidden border border-primary/5"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><div className="space-y-1"><h3 className="text-xl font-black text-primary uppercase">Set Question</h3><p className="text-[10px] font-bold text-primary/30 tracking-widest uppercase">Assessment Item Entry</p></div><Button variant="ghost" onClick={() => setShowAddQuestion(false)} className="h-12 w-12 rounded-2xl text-primary/20 hover:text-primary"><X className="w-6 h-6" /></Button></div><form onSubmit={handleAddQuestion} className="p-10 space-y-6"><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Question Text</Label><textarea value={newQuestion.text} onChange={e => setNewQuestion({...newQuestion, text: e.target.value})} required className="w-full h-32 px-6 py-4 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner resize-none focus:ring-2 focus:ring-primary/10 outline-none" /></div><div className="grid grid-cols-2 gap-4">{[0,1,2,3].map(i => (<div key={i} className="space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Option {String.fromCharCode(65+i)}</Label><Input value={newQuestion.options[i]} onChange={e => { const opts = [...newQuestion.options]; opts[i] = e.target.value; setNewQuestion({...newQuestion, options: opts}); }} required className="h-12 px-6 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner" /></div>))}</div><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Correct Answer</Label><select value={newQuestion.correctOptionIndex} onChange={e => setNewQuestion({...newQuestion, correctOptionIndex: parseInt(e.target.value)})} className="w-full h-12 px-6 rounded-xl bg-slate-50 border-none font-bold text-xs outline-none"><option value={0}>Option A</option><option value={1}>Option B</option><option value={2}>Option C</option><option value={3}>Option D</option></select></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Topic / Tag</Label><Input value={newQuestion.topic} onChange={e => setNewQuestion({...newQuestion, topic: e.target.value})} className="h-12 px-6 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner" /></div></div><Button type="submit" className="w-full h-16 bg-slate-900 text-white font-black rounded-2xl tracking-widest uppercase shadow-xl mt-4">Commit to Bank</Button></form></motion.div></div>
+          <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-2xl bg-white rounded-[48px] shadow-2xl border border-primary/5 overflow-hidden"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><h3 className="text-xl font-black uppercase">Item Entry</h3><Button variant="ghost" onClick={() => setShowAddQuestion(false)} className="rounded-xl"><X className="w-6 h-6" /></Button></div><form onSubmit={handleAddQuestion} className="p-10 space-y-6"><div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-40 ml-2">Question Context</Label><textarea value={newQuestion.text} onChange={e => setNewQuestion({...newQuestion, text: e.target.value})} required className="w-full h-32 px-6 py-4 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner resize-none outline-none focus:ring-2 focus:ring-primary/10" /></div><div className="grid grid-cols-2 gap-4">{[0,1,2,3].map(i => (<div key={i} className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-40 ml-2">Option {String.fromCharCode(65+i)}</Label><Input value={newQuestion.options[i]} onChange={e => { const opts = [...newQuestion.options]; opts[i] = e.target.value; setNewQuestion({...newQuestion, options: opts}); }} required className="h-12 px-6 rounded-xl bg-slate-50 border-none font-bold text-xs" /></div>))}</div><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-40 ml-2">Correct Answer</Label><select value={newQuestion.correctOptionIndex} onChange={e => setNewQuestion({...newQuestion, correctOptionIndex: parseInt(e.target.value)})} className="w-full h-12 px-6 rounded-xl bg-slate-50 border-none font-bold text-xs outline-none"><option value={0}>Option A</option><option value={1}>Option B</option><option value={2}>Option C</option><option value={3}>Option D</option></select></div><div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-40 ml-2">Topic</Label><Input value={newQuestion.topic} onChange={e => setNewQuestion({...newQuestion, topic: e.target.value})} className="h-12 px-6 rounded-xl bg-slate-50 border-none font-bold text-xs" /></div></div><Button type="submit" className="w-full h-16 bg-slate-900 text-white font-black rounded-2xl uppercase mt-4">Commit to Database</Button></form></motion.div></div>
         )}
 
         {showAddSubject && (
-           <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-sm bg-white rounded-[48px] shadow-2xl overflow-hidden border border-primary/5"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><div><h3 className="text-xl font-black text-primary uppercase">Add Subject</h3></div><Button variant="ghost" onClick={() => setShowAddSubject(false)} className="h-10 w-10 text-primary/20"><X className="w-5 h-5" /></Button></div><form onSubmit={handleCreateOfferedSubject} className="p-10 space-y-8"><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Curricular Name</Label><Input placeholder="e.g. Mathematics" value={newOfferedSubject} onChange={e => setNewOfferedSubject(e.target.value)} required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner" /></div><Button type="submit" className="w-full h-16 bg-primary text-white font-black rounded-2xl tracking-widest uppercase shadow-xl">Confirm Entry</Button></form></motion.div></div>
-        )}
-
-        {/* Existing Add Candidate/Staff modals... (I will keep them but clean them up if needed) */}
-        {showAddCandidate && (
-          <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-xl bg-white rounded-[48px] shadow-2xl overflow-hidden border border-primary/5"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><div className="space-y-1"><h3 className="text-xl font-black text-primary uppercase">Candidate Enrollment</h3><p className="text-[10px] font-bold text-primary/30 tracking-widest uppercase">Institution Identification</p></div><Button variant="ghost" onClick={() => setShowAddCandidate(false)} className="h-12 w-12 rounded-2xl text-primary/20 hover:text-primary"><X className="w-6 h-6" /></Button></div><ScrollArea className="max-h-[70vh]"><form onSubmit={handleCreateCandidate} className="p-10 space-y-8"><div className="grid grid-cols-2 gap-6"><div className="col-span-2 space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Full Legal Name</Label><Input value={newCandidate.fullName} onChange={e => setNewCandidate({...newCandidate, fullName: e.target.value})} placeholder="Surname Firstname" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Access Email</Label><Input type="email" value={newCandidate.email} onChange={e => setNewCandidate({...newCandidate, email: e.target.value})} placeholder="email@vivi.com" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Credentials</Label><Input type="password" value={newCandidate.password} onChange={e => setNewCandidate({...newCandidate, password: e.target.value})} placeholder="Password" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner" /></div></div><Button type="submit" className="w-full h-16 bg-primary text-white font-black rounded-2xl tracking-widest uppercase shadow-2xl mt-4">Confirm Enrollment</Button></form></ScrollArea></motion.div></div>
+           <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-sm bg-white rounded-[48px] shadow-2xl border border-primary/5 overflow-hidden"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><h3 className="text-xl font-black uppercase">Add Subject</h3><Button variant="ghost" onClick={() => setShowAddSubject(false)} className="rounded-xl"><X className="w-5 h-5" /></Button></div><form onSubmit={handleCreateOfferedSubject} className="p-10 space-y-8"><div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-40 ml-2">Name</Label><Input placeholder="e.g. Mathematics" value={newOfferedSubject} onChange={e => setNewOfferedSubject(e.target.value)} required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold" /></div><Button type="submit" className="w-full h-16 bg-primary text-white font-black rounded-2xl uppercase">Confirm Entry</Button></form></motion.div></div>
         )}
 
         {showAddStaff && (
-          <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-lg bg-white rounded-[48px] shadow-2xl overflow-hidden border border-primary/5"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><div className="space-y-1"><h3 className="text-xl font-black text-primary uppercase">Staff Provisioning</h3><p className="text-[10px] font-bold text-primary/30 tracking-widest uppercase">Administrative Access</p></div><Button variant="ghost" onClick={() => setShowAddStaff(false)} className="h-12 w-12 rounded-2xl text-primary/20 hover:text-primary"><X className="w-6 h-6" /></Button></div><form onSubmit={handleCreateStaff} className="p-10 space-y-8"><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Identity Name</Label><Input value={newStaff.displayName} onChange={e => setNewStaff({...newStaff, displayName: e.target.value})} placeholder="Full Name" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Auth Email</Label><Input type="email" value={newStaff.email} onChange={e => setNewStaff({...newStaff, email: e.target.value})} placeholder="staff@vivi.com" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner" /></div><div className="space-y-2"><Label className="text-[9px] font-black text-primary/40 ml-2 uppercase">Role</Label><select value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: e.target.value as any})} className="w-full h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-xs outline-none"><option value="admin">Administrator</option><option value="reg_admin">Registry Officer</option></select></div><Button type="submit" className="w-full h-16 bg-primary text-white font-black rounded-2xl tracking-widest uppercase shadow-2xl mt-4">Finalize Provisioning</Button></form></motion.div></div>
+           <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-lg bg-white rounded-[48px] shadow-2xl border border-primary/5 overflow-hidden"><div className="p-10 border-b border-primary/5 flex justify-between items-center"><h3 className="text-xl font-black uppercase">Provision Staff</h3><Button variant="ghost" onClick={() => setShowAddStaff(false)} className="rounded-xl"><X className="w-6 h-6" /></Button></div><form onSubmit={handleCreateStaff} className="p-10 space-y-8"><div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-40 ml-2">Full Name</Label><Input value={newStaff.displayName} onChange={e => setNewStaff({...newStaff, displayName: e.target.value})} placeholder="Display Name" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold" /></div><div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-40 ml-2">Auth Email</Label><Input type="email" value={newStaff.email} onChange={e => setNewStaff({...newStaff, email: e.target.value})} placeholder="staff@vivi.com" required className="h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold" /></div><div className="grid grid-cols-2 gap-6"><div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-40 ml-2">Role</Label><select value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: e.target.value as any})} className="w-full h-14 px-6 rounded-2xl bg-slate-50 border-none font-bold text-xs outline-none"><option value="admin">Administrator</option><option value="reg_admin">Registry Officer</option></select></div><Button type="submit" className="w-full h-16 bg-primary text-white font-black rounded-2xl uppercase mt-auto">Finalize Auth</Button></div></form></motion.div></div>
         )}
 
-        {/* Evidence Viewer */}
+        {/* Biometric Evidence Review */}
         {viewingSnaps && (
-          <div className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-4xl bg-white rounded-[48px] shadow-2xl overflow-hidden border border-white/20"><div className="p-8 bg-primary text-white flex justify-between items-center"><div><h3 className="text-sm font-black tracking-widest uppercase">Security Evidence Review</h3><p className="text-[9px] font-bold text-white/40 tracking-widest uppercase">{viewingSnaps}</p></div><Button variant="ghost" onClick={() => setViewingSnaps(null)} className="text-white/20 h-10 w-10"><CircleX className="w-5 h-5" /></Button></div><div className="p-10 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-10"><div className="space-y-6"><h4 className="text-[11px] font-black text-primary/30 tracking-[0.3em] uppercase">Visual Evidence</h4><div className="grid grid-cols-4 gap-4">{(attempts.find(s => s.id === viewingSnaps) as any)?.proctoringSnaps?.map((snap: string, i: number) => (<div key={i} className="aspect-square bg-slate-100 rounded-3xl overflow-hidden border-2 border-primary/5 hover:border-primary/40 transition-all relative group shadow-md"><img src={snap} className="w-full h-full object-cover grayscale contrast-125" /><div className="absolute inset-0 bg-primary/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><Button variant="ghost" size="icon" className="text-white" onClick={() => window.open(snap)}><Eye className="w-4 h-4" /></Button></div></div>)) || <div className="col-span-4 py-20 text-center opacity-10 font-black text-xs border-2 border-dashed border-primary/5 rounded-[40px] uppercase">No biometric evidence</div>}</div></div><div className="space-y-6"><h4 className="text-[11px] font-black text-primary/30 tracking-[0.3em] uppercase">Anomaly Logs</h4><ScrollArea className="h-[300px] pr-4 bg-slate-50 p-6 rounded-[32px] border border-primary/5 shadow-inner"><div className="space-y-4">{(attempts.find(s => s.id === viewingSnaps) as any)?.violationLogs?.map((v: any, i: number) => (<div key={i} className="p-5 bg-white rounded-2xl border border-primary/5 shadow-sm relative overflow-hidden group"><div className={cn("absolute left-0 top-0 w-1 h-full", v.severity === 'critical' ? "bg-rose-500" : "bg-amber-500")} /><p className="text-[9px] font-black text-primary/30 tracking-widest">{new Date(v.timestamp).toLocaleTimeString()}</p><p className="text-[11px] font-bold text-primary mt-1 leading-relaxed uppercase">{v.reason}</p></div>)) || <p className="text-[11px] font-black opacity-10 italic text-center py-20 tracking-widest uppercase">Integrity Record Clear</p>}</div></ScrollArea></div></div></motion.div></div>
+          <div className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6"><motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-4xl bg-white rounded-[48px] shadow-2xl overflow-hidden"><div className="p-8 bg-primary text-white flex justify-between items-center"><div><h3 className="text-sm font-black tracking-widest uppercase">Security Review</h3><p className="text-[9px] font-bold text-white/40 uppercase">{viewingSnaps}</p></div><Button variant="ghost" onClick={() => setViewingSnaps(null)} className="text-white/20 h-10 w-10"><CircleX className="w-5 h-5" /></Button></div><div className="p-10 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-10"><div className="space-y-6"><h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Biometric Evidence</h4><div className="grid grid-cols-4 gap-4">{(attempts.find(s => s.id === viewingSnaps) as any)?.proctoringSnaps?.map((snap: string, i: number) => (<div key={i} className="aspect-square bg-slate-100 rounded-3xl overflow-hidden border-2 border-primary/5 relative group"><img src={snap} className="w-full h-full object-cover grayscale contrast-125" /><div className="absolute inset-0 bg-primary/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><Button variant="ghost" size="icon" className="text-white" onClick={() => window.open(snap)}><Eye className="w-4 h-4" /></Button></div></div>)) || <div className="col-span-4 py-20 text-center opacity-10 font-black uppercase text-xs border-2 border-dashed border-primary/5 rounded-[40px]">No visual data</div>}</div></div><div className="space-y-6"><h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Incident History</h4><ScrollArea className="h-[300px] pr-4 bg-slate-50 p-6 rounded-[32px] border border-primary/5"><div className="space-y-4">{(attempts.find(s => s.id === viewingSnaps) as any)?.violationLogs?.map((v: any, i: number) => (<div key={i} className="p-5 bg-white rounded-2xl border border-primary/5 shadow-sm relative overflow-hidden group"><div className={cn("absolute left-0 top-0 w-1 h-full", v.severity === 'critical' ? "bg-rose-500" : "bg-amber-500")} /><p className="text-[9px] font-black opacity-30">{new Date(v.timestamp).toLocaleTimeString()}</p><p className="text-[11px] font-bold text-slate-700 leading-relaxed uppercase">{v.reason}</p></div>)) || <p className="text-[11px] font-black opacity-10 italic text-center py-20 uppercase tracking-widest">Record Integrity High</p>}</div></ScrollArea></div></div></motion.div></div>
         )}
       </AnimatePresence>
     </div>
