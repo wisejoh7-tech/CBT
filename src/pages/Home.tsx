@@ -79,7 +79,7 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <header className="relative pt-32 pb-24 px-8 bg-slate-50/50 overflow-hidden min-h-[70vh] flex items-center">
+      <header className="relative pt-24 pb-16 px-8 bg-slate-50/50 overflow-hidden min-h-[60vh] flex items-center">
         <div className="absolute inset-0 z-0 pointer-events-none">
           <div className="cbt-background opacity-[0.15]" />
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white/60 to-transparent" />
@@ -91,8 +91,8 @@ export default function Home() {
             <span className="text-[9px] font-black tracking-[0.3em] text-primary uppercase">Standard Examination Portal</span>
           </motion.div>
 
-          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-2xl md:text-4xl font-black text-primary tracking-tighter leading-[0.7] mb-8 ">
-            The Gold Standard <br/> <br/> <span className="text-primary/30">In CBT Excellence</span>
+          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-4xl md:text-5xl font-black text-primary tracking-tighter leading-[1] mb-8 ">
+            The Gold Standard <br/> <span className="text-primary/30 uppercase">In CBT Excellence</span>
           </motion.h1>
 
           <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-sm md:text-base text-primary/60 font-medium mb-12 max-w-2xl mx-auto leading-relaxed">
@@ -100,10 +100,10 @@ export default function Home() {
           </motion.p>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-col sm:flex-row justify-center gap-6">
-            <Button onClick={() => navigate('/candidate-register')} className="h-16 px-12 bg-primary text-white rounded-2xl font-black text-sm tracking-widest  shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all flex gap-2 items-center">
+            <Button onClick={() => navigate('/candidate-register')} className="h-14 px-10 bg-primary text-white rounded-2xl font-black text-sm tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all flex gap-2 items-center">
               Register Now <ArrowRight className="w-5 h-5" />
             </Button>
-            <Button onClick={() => navigate('/candidate-login')} variant="outline" className="h-16 px-12 border-2 border-primary/10 text-primary font-black text-sm tracking-widest bg-white hover:bg-slate-50 transition-all">
+            <Button onClick={() => navigate('/candidate-login')} variant="outline" className="h-14 px-10 border-2 border-primary/10 text-primary font-black text-sm tracking-widest bg-white hover:bg-slate-50 transition-all">
               Candidate Login
             </Button>
           </motion.div>
@@ -111,7 +111,7 @@ export default function Home() {
       </header>
 
       {/* Stats */}
-      <section className="py-20 border-y-2 border-primary/5 bg-white">
+      <section className="py-12 border-y-2 border-primary/5 bg-white">
         <div className="container mx-auto px-8 max-w-6xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
             {[
@@ -120,8 +120,8 @@ export default function Home() {
               { label: 'States Reached', value: '36/36', icon: Globe },
               { label: 'Uptime Reliability', value: '99.9%', icon: Zap },
             ].map((stat, idx) => (
-              <div key={idx} className="text-center group space-y-4">
-                <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center mx-auto group-hover:bg-primary group-hover:text-white transition-all duration-500">
+              <div key={idx} className="text-center group space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center mx-auto group-hover:bg-primary group-hover:text-white transition-all duration-500">
                   <stat.icon className="w-6 h-6" />
                 </div>
                 <div>
@@ -135,41 +135,41 @@ export default function Home() {
       </section>
 
       {/* Core Features */}
-      <main className="py-32 px-8 bg-slate-50/30">
+      <main className="py-20 px-8 bg-slate-50/30">
         <div className="container mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-2 gap-20 items-center">
-            <div className="space-y-10 text-center md:text-left">
-              <div className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <div className="space-y-8 text-center md:text-left">
+              <div className="space-y-3">
                 <h2 className="text-3xl font-black uppercase tracking-tighter text-primary leading-none">Intelligent <br/>Proctoring Systems</h2>
                 <p className="text-base text-primary/60 leading-relaxed font-medium">
                   Our platform integrates advanced AI behavioral monitoring and biometric verification to ensure absolute integrity during every examination session.
                 </p>
               </div>
-              <div className="space-y-4 inline-block text-left">
+              <div className="space-y-3 inline-block text-left">
                 {['Live Biometric Verification', 'Real-time Threat Detection', 'Automated Session Recovery'].map(item => (
                   <div key={item} className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-primary/80">
                     <div className="w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                      <CheckCircle className="w-4 h-4 text-emerald-500" />
                     </div>
                     {item}
                   </div>
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Card className="p-8 bg-white rounded-[32px] border-2 border-primary/5 shadow-xl hover:shadow-2xl transition-all">
                 <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
-                   <Monitor className="w-8 h-8 text-blue-600" />
+                   <Monitor className="w-7 h-7 text-blue-600" />
                 </div>
                 <h4 className="font-black text-xs uppercase mb-3 tracking-widest">Digital Interface</h4>
-                <p className="text-[10px] font-bold text-primary/40 leading-relaxed ">High-fidelity VIVI CBT simulation terminal designed for peak performance.</p>
+                <p className="text-[10px] font-bold text-primary/40 leading-relaxed uppercase">High-fidelity VIVI CBT simulation terminal designed for peak performance.</p>
               </Card>
               <Card className="p-8 bg-primary rounded-[32px] text-white shadow-2xl shadow-primary/20 hover:scale-105 transition-all">
                 <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
                    <BookOpen className="w-7 h-7 text-white" />
                 </div>
-                <h4 className="font-black text-xs uppercase mb-3 tracking-widest">Global Curriculum</h4>
-                <p className="text-[10px] font-bold text-white/40 leading-relaxed ">Comprehensive management for all UTME elective subjects and combinations.</p>
+                <h4 className="font-black text-sm uppercase mb-3 tracking-widest">Global Curriculum</h4>
+                <p className="text-[10px] font-bold text-white/40 leading-relaxed uppercase">Comprehensive management for all UTME elective subjects and combinations.</p>
               </Card>
             </div>
           </div>
@@ -177,9 +177,9 @@ export default function Home() {
       </main>
 
       {/* Steps Section */}
-      <section className="py-32 bg-white px-8">
+      <section className="py-20 bg-white px-8">
         <div className="container mx-auto max-w-5xl text-center">
-          <h2 className="text-xl font-black uppercase tracking-[0.3em] text-primary/20 mb-20">The Journey</h2>
+          <h2 className="text-xl font-black uppercase tracking-[0.3em] text-primary/20 mb-12">The Journey</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
             {[
               { step: '01', label: 'Registration', desc: 'Secure Enrollment' },
@@ -203,7 +203,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-20 border-t-2 border-primary/5 text-center bg-slate-50 px-8">
+      <footer className="py-16 border-t-2 border-primary/5 text-center bg-slate-50 px-8">
         <div className="flex items-center justify-center gap-3 mb-10">
           <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center text-white font-black text-lg shadow-lg shadow-primary/20">V</div>
           <span className="font-black text-lg tracking-tighter text-primary">VIVI CBT SYSTEMS</span>

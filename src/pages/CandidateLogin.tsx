@@ -83,11 +83,11 @@ export default function CandidateLogin() {
         </div>
 
         <div className="hidden md:flex items-center gap-8">
-          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-1">
+          <button onClick={() => navigate('/')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-1">
             <ArrowLeft className="w-4 h-4" /> HOME
           </button>
-          <button onClick={() => navigate('/candidate-register')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">REGISTER</button>
-          <button onClick={() => navigate('/results')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CHECK RESULT</button>
+          <button onClick={() => navigate('/candidate-register')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">REGISTER</button>
+          <button onClick={() => navigate('/results')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CHECK RESULT</button>
         </div>
 
         {/* Mobile Menu Toggle */}

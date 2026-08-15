@@ -9,7 +9,6 @@ import {
   GraduationCap,
   Printer,
   Award,
-  Monitor,
   User,
   FileText,
   MapPin,
@@ -18,7 +17,6 @@ import {
   Edit3,
   Save,
   X,
-  School,
   Home as HomeIcon,
   BookOpen
 } from 'lucide-react';
@@ -52,7 +50,7 @@ export default function CandidateDashboard() {
         setAttempts(data.attempts || []);
         setEditEditForm(data.candidate);
       } else {
-        toast.error("Candidate record not found or session expired.");
+        toast.error("Session expired.");
         navigate('/candidate-login');
       }
       setLoading(false);
@@ -60,7 +58,7 @@ export default function CandidateDashboard() {
       console.error(e);
       setLoading(false);
     }
-  }, [getHeaders]);
+  }, [getHeaders, navigate]);
 
   useEffect(() => {
     fetchData();
@@ -79,7 +77,7 @@ export default function CandidateDashboard() {
         body: JSON.stringify(editForm)
       });
       if (res.ok) {
-        toast.success("Profile updated successfully!");
+        toast.success("Profile Updated");
         setIsEditing(false);
         fetchData();
       } else {
@@ -101,309 +99,238 @@ export default function CandidateDashboard() {
     }
   };
 
-  if (loading) return <div className="p-20 text-center font-black animate-pulse">Loading...</div>;
+  if (loading) return <div className="p-20 text-center font-black animate-pulse text-primary tracking-widest">LOADING PORTAL...</div>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 uppercase relative">
-      <div className="cbt-background opacity-[0.05]" />
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans relative antialiased tracking-tight">
+      <div className="cbt-background opacity-[0.03] pointer-events-none" />
 
-      <header className="h-16 bg-white border-b-2 border-primary/10 px-8 flex justify-between items-center sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white"><GraduationCap className="w-5 h-5" /></div>
-            <h1 className="font-black tracking-tighter text-primary">CANDIDATE PORTAL</h1>
-          </div>
-          <div className="h-8 w-[1px] bg-primary/10 hidden md:block" />
-          <div className="hidden md:flex items-center gap-2 text-primary/40">
-            <Monitor className="w-4 h-4" />
-            <span className="text-[8px] font-black uppercase tracking-[0.2em]">Profile Management</span>
-          </div>
+      {/* Header */}
+      <header className="h-16 bg-white border-b border-primary/5 px-6 flex justify-between items-center sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white"><GraduationCap className="w-4.5 h-4.5" /></div>
+          <h1 className="font-black text-sm tracking-tighter text-primary uppercase">Candidate Portal</h1>
         </div>
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/')} className="text-[10px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-1 uppercase">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/')} className="text-[11px] font-bold text-primary/40 hover:text-primary transition-colors flex items-center gap-1.5 uppercase">
             <HomeIcon className="w-3.5 h-3.5" /> Home
           </button>
-          <div className="h-4 w-[1px] bg-primary/10 mx-2" />
-          <Button variant="ghost" size="icon" onClick={() => { logOut?.(); navigate('/'); }} className="text-primary/40 hover:text-rose-500 hover:bg-rose-50"><LogOut className="w-4 h-4" /></Button>
+          <div className="h-4 w-[1px] bg-primary/10" />
+          <Button variant="ghost" size="icon" onClick={() => { logOut?.(); navigate('/'); }} className="text-primary/40 hover:text-rose-500 hover:bg-rose-50 h-8 w-8 rounded-lg"><LogOut className="w-4 h-4" /></Button>
         </div>
       </header>
 
-      <main className="flex-1 max-w-4xl mx-auto w-full p-4 space-y-6 relative z-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-          {/* Action Call for Examination */}
-          <Card className="p-6 bg-primary text-white rounded-[32px] shadow-xl shadow-primary/20 flex flex-col md:flex-row justify-between items-center gap-6 border-none">
-             <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20">
-                   <BookOpen className="w-8 h-8 text-white" />
+      <main className="flex-1 max-w-5xl mx-auto w-full p-6 space-y-6 relative z-10">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+
+          {/* Main Action Card */}
+          <Card className="p-8 bg-primary text-white rounded-[32px] shadow-2xl shadow-primary/20 flex flex-col md:flex-row justify-between items-center gap-8 border-none overflow-hidden relative group">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-white/10 transition-colors" />
+             <div className="flex items-center gap-5 relative z-10">
+                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 backdrop-blur-sm">
+                   <BookOpen className="w-7 h-7 text-white" />
                 </div>
-                <div>
-                   <h3 className="text-xl font-black tracking-tight leading-none mb-1 uppercase">Ready for Examination?</h3>
-                   <p className="text-[10px] font-bold text-white/60 tracking-widest uppercase">Proceed to the secure exam terminal to begin session.</p>
+                <div className="space-y-1">
+                   <h3 className="text-xl font-black tracking-tight leading-none uppercase">Ready for Examination?</h3>
+                   <p className="text-[11px] font-medium text-white/60 tracking-wide uppercase">Proceed to the terminal to begin your scheduled session.</p>
                 </div>
              </div>
              <Button
                onClick={() => navigate('/instructions/unified')}
-               className="h-14 px-10 bg-white text-primary rounded-2xl font-black text-xs tracking-widest shadow-2xl shadow-black/10 active:scale-95 transition-all hover:bg-slate-50 border-none shrink-0"
+               className="h-14 px-10 bg-white text-primary rounded-2xl font-black text-[11px] tracking-widest shadow-xl active:scale-95 transition-all hover:bg-slate-50 border-none shrink-0"
              >
                ENTER EXAM TERMINAL
              </Button>
           </Card>
-          <Card className="rounded-[32px] border-2 border-primary/10 bg-white shadow-2xl overflow-hidden">
-            {/* Top Section: Candidate Profile / Edit Form */}
-            <div className="relative">
+
+          <div className="grid md:grid-cols-[1fr_380px] gap-6 items-start">
+            {/* Left: Profile Info */}
+            <Card className="rounded-[32px] border border-primary/5 bg-white shadow-xl overflow-hidden">
               <AnimatePresence mode="wait">
                 {!isEditing ? (
-                  <motion.div
-                    key="view"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="p-8 md:p-12"
-                  >
-                    <div className="flex flex-col md:flex-row gap-8 items-start">
-                      <div className="w-24 h-24 rounded-[28px] bg-primary/2 border-4 border-white shadow-xl flex items-center justify-center overflow-hidden bg-slate-100 relative shrink-0">
+                  <motion.div key="view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-10">
+                    <div className="flex flex-col sm:flex-row gap-8 items-start mb-10">
+                      <div className="w-24 h-24 rounded-3xl bg-slate-50 border border-primary/5 shadow-inner flex items-center justify-center overflow-hidden shrink-0 relative">
                         {dashboardData?.faceUrl ? (
                           <img src={dashboardData.faceUrl} className="w-full h-full object-cover" />
                         ) : (
-                          <User className="w-12 h-12 text-primary/10" />
+                          <User className="w-10 h-10 text-primary/10" />
                         )}
                       </div>
-
                       <div className="flex-1 space-y-4">
                         <div className="flex justify-between items-start">
                           <div>
                             <h2 className="text-3xl font-black tracking-tighter text-slate-900 leading-none mb-2">{dashboardData?.fullName}</h2>
-                            <div className="flex items-center gap-2">
-                              <Badge className="bg-primary text-white border-none px-3 py-1 font-black text-[10px]">EXAM NO: {dashboardData?.examNumber}</Badge>
-                              <Badge variant="outline" className="border-primary/20 text-primary/60 px-3 py-1 font-black text-[10px]">
-                                {dashboardData?.stateOfOrigin?.toUpperCase() || "STATE N/A"} / {dashboardData?.lga?.toUpperCase() || "LGA N/A"}
+                            <div className="flex flex-wrap gap-2">
+                              <Badge className="bg-primary text-white border-none px-3 py-1 font-black text-[10px] tracking-wider uppercase">NO: {dashboardData?.examNumber}</Badge>
+                              <Badge variant="outline" className="border-primary/10 text-primary/40 px-3 py-1 font-black text-[10px] tracking-wider uppercase">
+                                {dashboardData?.stateOfOrigin || "N/A"} • {dashboardData?.lga || "LGA"}
                               </Badge>
                             </div>
                           </div>
-                          <Button onClick={() => setIsEditing(true)} variant="outline" size="sm" className="rounded-xl border-primary/10 hover:bg-primary/5 flex gap-2 text-[10px] font-black h-10 px-4">
-                            <Edit3 className="w-3.5 h-3.5" /> EDIT PROFILE
-                          </Button>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
-                          {/* Personal Information Table */}
-                          <div className="space-y-3">
-                            <p className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em]">Identity Details</p>
-                            <div className="overflow-hidden rounded-xl border-2 border-primary/5 shadow-sm">
-                              <table className="w-full text-left text-[11px] font-black uppercase">
-                                <tbody className="divide-y-2 divide-primary/5 bg-white">
-                                  <tr className="hover:bg-primary/2 transition-colors">
-                                    <td className="px-4 py-3 text-[9px] text-primary/40 bg-slate-50/50 w-28">Exam Number</td>
-                                    <td className="px-4 py-3 text-primary font-black tracking-widest">{dashboardData?.examNumber || "N/A"}</td>
-                                  </tr>
-                                  <tr className="hover:bg-primary/2 transition-colors">
-                                    <td className="px-4 py-3 text-[9px] text-primary/40 bg-slate-50/50">Full Name</td>
-                                    <td className="px-4 py-3 text-slate-700 tracking-tight">{dashboardData?.fullName || "N/A"}</td>
-                                  </tr>
-                                  <tr className="hover:bg-primary/2 transition-colors">
-                                    <td className="px-4 py-3 text-[9px] text-primary/40 bg-slate-50/50">State of Origin</td>
-                                    <td className="px-4 py-3 text-slate-700 tracking-tight">{dashboardData?.stateOfOrigin || "N/A"}</td>
-                                  </tr>
-                                  <tr className="hover:bg-primary/2 transition-colors">
-                                    <td className="px-4 py-3 text-[9px] text-primary/40 bg-slate-50/50">L.G.A</td>
-                                    <td className="px-4 py-3 text-slate-700 tracking-tight">{dashboardData?.lga || "N/A"}</td>
-                                  </tr>
-                                  <tr className="hover:bg-primary/2 transition-colors">
-                                    <td className="px-4 py-3 text-[9px] text-primary/40 bg-slate-50/50">Institution</td>
-                                    <td className="px-4 py-3 text-slate-700 tracking-tight">{dashboardData?.schoolAttended || "N/A"}</td>
-                                  </tr>
-                                  <tr className="hover:bg-primary/2 transition-colors">
-                                    <td className="px-4 py-3 text-[9px] text-primary/40 bg-slate-50/50">Residential</td>
-                                    <td className="px-4 py-3 text-slate-700 tracking-tight normal-case font-bold">{dashboardData?.address || "N/A"}</td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-
-                          {/* Subject Combination Table */}
-                          <div className="space-y-3">
-                            <p className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em]">Subject Combination</p>
-                            <div className="overflow-hidden rounded-xl border-2 border-primary/5 shadow-sm">
-                              <table className="w-full text-left text-[11px] font-black uppercase">
-                                <thead className="bg-slate-50 text-primary/40 border-b-2 border-primary/5">
-                                  <tr>
-                                    <th className="px-4 py-2.5 w-12 text-center text-[9px]">No</th>
-                                    <th className="px-4 py-2.5 text-[9px]">Subject Name</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y-2 divide-primary/5 bg-white">
-                                  {dashboardData?.subjectCombination?.map((s: string, idx: number) => (
-                                    <tr key={s} className="hover:bg-primary/2 transition-colors">
-                                      <td className="px-4 py-3 text-center text-primary/30 bg-slate-50/50">{idx + 1}</td>
-                                      <td className="px-4 py-3 text-slate-700 tracking-tight">{s}</td>
-                                    </tr>
-                                  ))}
-                                  {(!dashboardData?.subjectCombination || dashboardData.subjectCombination.length === 0) && (
-                                    <tr>
-                                      <td colSpan={2} className="px-4 py-12 text-center text-primary/20 italic font-black">No Records</td>
-                                    </tr>
-                                  )}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
+                          <button onClick={() => setIsEditing(true)} className="p-2.5 text-primary/20 hover:text-primary hover:bg-primary/5 transition-all rounded-xl border border-transparent hover:border-primary/5">
+                            <Edit3 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     </div>
+
+                    <div className="grid gap-8">
+                       <div className="space-y-4">
+                          <p className="text-[10px] font-black text-primary/20 uppercase tracking-[0.25em]">Biographic Profile</p>
+                          <div className="grid grid-cols-2 gap-y-6 gap-x-8">
+                             {[
+                               { label: 'Institution', value: dashboardData?.schoolAttended },
+                               { label: 'Date of Birth', value: dashboardData?.dateOfBirth },
+                               { label: 'Phone', value: dashboardData?.phoneNumber },
+                               { label: 'Residential', value: dashboardData?.address },
+                             ].map((item) => (
+                               <div key={item.label} className="space-y-1">
+                                  <p className="text-[9px] font-black text-primary/40 uppercase tracking-widest">{item.label}</p>
+                                  <p className="text-[13px] font-bold text-slate-700 truncate">{item.value || 'N/A'}</p>
+                               </div>
+                             ))}
+                          </div>
+                       </div>
+
+                       <div className="space-y-4">
+                          <p className="text-[10px] font-black text-primary/20 uppercase tracking-[0.25em]">Curriculum Selection</p>
+                          <div className="flex flex-wrap gap-3">
+                             {dashboardData?.subjectCombination?.map((s: string) => (
+                               <div key={s} className="px-5 py-3 rounded-2xl bg-slate-50 border border-primary/5 font-black text-[11px] text-primary/60 uppercase tracking-wider shadow-sm">
+                                  {s}
+                               </div>
+                             ))}
+                          </div>
+                       </div>
+                    </div>
                   </motion.div>
                 ) : (
-                  <motion.div
-                    key="edit"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="p-8 md:p-12 bg-slate-50"
-                  >
+                  <motion.div key="edit" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="p-10 bg-slate-50/50">
                     <form onSubmit={handleUpdateProfile} className="space-y-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary"><User className="w-5 h-5" /></div>
-                          <h3 className="text-sm font-black tracking-[0.2em] text-primary uppercase">Identity Modification</h3>
-                        </div>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="rounded-xl h-10 w-10 p-0"><X className="w-5 h-5" /></Button>
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-sm font-black text-primary uppercase tracking-widest">Update Information</h3>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => setIsEditing(false)} className="rounded-full h-8 w-8"><X className="w-4 h-4" /></Button>
                       </div>
 
-                      <div className="grid md:grid-cols-3 gap-6">
+                      <div className="grid sm:grid-cols-2 gap-5">
                         <div className="space-y-1.5">
-                          <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest">Full Name</Label>
-                          <Input value={editForm.fullName || ''} onChange={e => setEditEditForm({...editForm, fullName: e.target.value})} className="h-12 rounded-xl font-bold text-xs bg-white border-2 border-primary/5 focus:border-primary" />
+                          <Label className="text-[9px] font-black text-primary/40 uppercase ml-1">Full Name</Label>
+                          <Input value={editForm.fullName || ''} onChange={e => setEditEditForm({...editForm, fullName: e.target.value})} className="h-11 rounded-xl font-bold text-sm bg-white border-primary/5" />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest">Phone Number</Label>
-                          <Input value={editForm.phoneNumber || ''} onChange={e => setEditEditForm({...editForm, phoneNumber: e.target.value})} className="h-12 rounded-xl font-bold text-xs bg-white border-2 border-primary/5 focus:border-primary" />
+                          <Label className="text-[9px] font-black text-primary/40 uppercase ml-1">Phone Number</Label>
+                          <Input value={editForm.phoneNumber || ''} onChange={e => setEditEditForm({...editForm, phoneNumber: e.target.value})} className="h-11 rounded-xl font-bold text-sm bg-white border-primary/5" />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest">Date of Birth</Label>
-                          <Input type="date" value={editForm.dateOfBirth || ''} onChange={e => setEditEditForm({...editForm, dateOfBirth: e.target.value})} className="h-12 rounded-xl font-bold text-xs bg-white border-2 border-primary/5 focus:border-primary" />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest">State of Origin</Label>
-                          <select value={editForm.stateOfOrigin || ''} onChange={e => setEditEditForm({ ...editForm, stateOfOrigin: e.target.value, lga: '' })} className="w-full h-12 px-3 rounded-xl bg-white border-2 border-primary/5 focus:border-primary font-bold text-sm outline-none focus:ring-0">
+                          <Label className="text-[9px] font-black text-primary/40 uppercase ml-1">State</Label>
+                          <select value={editForm.stateOfOrigin || ''} onChange={e => setEditEditForm({ ...editForm, stateOfOrigin: e.target.value, lga: '' })} className="w-full h-11 px-3 rounded-xl bg-white border border-primary/5 font-bold text-xs outline-none">
                             <option value="">SELECT STATE</option>
                             {NIGERIAN_STATES.map(state => <option key={state} value={state}>{state.toUpperCase()}</option>)}
                           </select>
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest">LGA of Origin</Label>
-                          <select value={editForm.lga || ''} onChange={e => setEditEditForm({ ...editForm, lga: e.target.value })} className="w-full h-12 px-3 rounded-xl bg-white border-2 border-primary/5 focus:border-primary font-bold text-sm outline-none focus:ring-0" disabled={!editForm.stateOfOrigin}>
+                          <Label className="text-[9px] font-black text-primary/40 uppercase ml-1">L.G.A</Label>
+                          <select value={editForm.lga || ''} onChange={e => setEditEditForm({ ...editForm, lga: e.target.value })} className="w-full h-11 px-3 rounded-xl bg-white border border-primary/5 font-bold text-xs outline-none" disabled={!editForm.stateOfOrigin}>
                             <option value="">SELECT LGA</option>
                             {editForm.stateOfOrigin && STATE_LGAS[editForm.stateOfOrigin]?.map(lga => <option key={lga} value={lga}>{lga.toUpperCase()}</option>)}
                           </select>
                         </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest">School Attended</Label>
-                          <Input value={editForm.schoolAttended || ''} onChange={e => setEditEditForm({...editForm, schoolAttended: e.target.value})} className="h-12 rounded-xl font-bold text-xs bg-white border-2 border-primary/5 focus:border-primary" placeholder="Secondary School Name" />
-                        </div>
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest">Residential Address</Label>
-                        <Input value={editForm.address || ''} onChange={e => setEditEditForm({...editForm, address: e.target.value})} className="h-12 rounded-xl font-bold text-xs bg-white border-2 border-primary/5 focus:border-primary" placeholder="Your current home address" />
+                        <Label className="text-[9px] font-black text-primary/40 uppercase ml-1">Residential Address</Label>
+                        <Input value={editForm.address || ''} onChange={e => setEditEditForm({...editForm, address: e.target.value})} className="h-11 rounded-xl font-bold text-sm bg-white border-primary/5" />
                       </div>
 
-                      <div className="flex gap-2">
-                        <Button type="submit" disabled={loading} className="flex-1 h-14 bg-primary text-white rounded-xl font-black tracking-widest text-[11px] flex gap-2 shadow-xl shadow-primary/20">
-                          <Save className="w-4 h-4" /> {loading ? "SAVING..." : "COMMIT CHANGES"}
+                      <div className="flex gap-3 pt-4">
+                        <Button type="submit" disabled={loading} className="flex-1 h-12 bg-primary text-white rounded-xl font-black text-[11px] tracking-widest shadow-lg shadow-primary/20 uppercase">
+                          {loading ? "SAVING..." : "Save Changes"}
                         </Button>
-                        <Button type="button" variant="outline" onClick={() => setIsEditing(false)} className="h-14 rounded-xl font-black tracking-widest text-[11px] px-8">CANCEL</Button>
+                        <Button type="button" variant="outline" onClick={() => setIsEditing(false)} className="h-12 px-8 rounded-xl font-black text-[11px] uppercase border-primary/10">Cancel</Button>
                       </div>
                     </form>
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </Card>
 
-            <div className="h-[2px] bg-primary/5 w-full" />
+            {/* Right: Records & Schedule */}
+            <div className="space-y-6">
+              {/* Schedule Card */}
+              <Card className="p-8 rounded-[32px] border border-primary/5 bg-white shadow-xl">
+                 <div className="flex items-center gap-3 mb-8">
+                   <CalendarIcon className="w-5 h-5 text-primary/40" />
+                   <h3 className="font-black text-xs uppercase tracking-widest">Exam Schedule</h3>
+                 </div>
 
-            {/* Bottom Section: Exam Data Grid */}
-            <div className="grid md:grid-cols-2 divide-y-2 md:divide-y-0 md:divide-x-2 divide-primary/5 bg-slate-50/20">
-              {/* Scheduling Column */}
-              <div className="p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <CalendarIcon className="w-5 h-5 text-primary" />
-                  <h3 className="font-black tracking-tight text-xs uppercase">Exam Schedule</h3>
+                 <div className="space-y-5">
+                    <div className="space-y-1 bg-slate-50 p-4 rounded-2xl border border-primary/5">
+                       <p className="text-[9px] font-black text-primary/20 uppercase tracking-widest flex items-center gap-2"><MapPin className="w-3 h-3" /> Venue</p>
+                       <p className="font-black text-[13px] text-primary/80 truncate uppercase">{dashboardData?.examVenue || "TO BE ASSIGNED"}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="space-y-1 bg-slate-50 p-4 rounded-2xl border border-primary/5">
+                          <p className="text-[9px] font-black text-primary/20 uppercase tracking-widest flex items-center gap-2"><CalendarIcon className="w-3 h-3" /> Date</p>
+                          <p className="font-black text-[13px] text-primary/80">{dashboardData?.examDate || "TBA"}</p>
+                       </div>
+                       <div className="space-y-1 bg-slate-50 p-4 rounded-2xl border border-primary/5">
+                          <p className="text-[9px] font-black text-primary/20 uppercase tracking-widest flex items-center gap-2"><Clock className="w-3 h-3" /> Time</p>
+                          <p className="font-black text-[13px] text-primary/80">{dashboardData?.examTime || "TBA"}</p>
+                       </div>
+                    </div>
+                 </div>
+
+                 <Button
+                   onClick={() => handlePrint('schedule')}
+                   className="mt-10 h-14 w-full bg-slate-900 text-white rounded-2xl font-black text-[11px] tracking-widest uppercase flex gap-3 hover:bg-black shadow-lg"
+                 >
+                   <Printer className="w-4 h-4" /> Print Exam Slip
+                 </Button>
+              </Card>
+
+              {/* Result Record */}
+              <Card className="p-8 rounded-[32px] border border-primary/5 bg-slate-900 text-white shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full translate-x-1/2 -translate-y-1/2 blur-2xl" />
+                <div className="flex items-center gap-3 mb-8 relative z-10">
+                  <Award className="w-5 h-5 text-emerald-400" />
+                  <h3 className="font-black text-xs uppercase tracking-widest">Academic Records</h3>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="p-4 bg-white rounded-2xl border border-primary/5 flex items-center gap-4 shadow-sm">
-                    <MapPin className="w-5 h-5 text-primary/20" />
-                    <div>
-                      <p className="text-[9px] font-black text-primary/30 uppercase">Venue</p>
-                      <p className="font-black text-[12px]">{dashboardData?.examVenue || "NOT YET ASSIGNED"}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-4 bg-white rounded-2xl border border-primary/5 flex items-center gap-4 shadow-sm">
-                      <CalendarIcon className="w-5 h-5 text-primary/20" />
-                      <div>
-                        <p className="text-[9px] font-black text-primary/30 uppercase">Date</p>
-                        <p className="font-black text-[12px]">{dashboardData?.examDate || "TBA"}</p>
-                      </div>
-                    </div>
-                    <div className="p-4 bg-white rounded-2xl border border-primary/5 flex items-center gap-4 shadow-sm">
-                      <Clock className="w-5 h-5 text-primary/20" />
-                      <div>
-                        <p className="text-[9px] font-black text-primary/30 uppercase">Time</p>
-                        <p className="font-black text-[12px]">{dashboardData?.examTime || "TBA"}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={() => handlePrint('schedule')}
-                  className="mt-6 h-14 w-full bg-slate-900 text-white rounded-2xl font-black tracking-widest text-[11px] flex gap-3 hover:bg-black transition-all shadow-lg"
-                >
-                  <Printer className="w-4 h-4" /> PRINT EXAM SLIP
-                </Button>
-              </div>
-
-              {/* Records Column */}
-              <div className="p-8 bg-slate-100/30">
-                <div className="flex items-center gap-3 mb-6">
-                  <Award className="w-5 h-5 text-emerald-500" />
-                  <h3 className="font-black tracking-tight text-xs uppercase">Academic Records</h3>
-                </div>
-
-                <div className="space-y-3">
+                <div className="space-y-3 relative z-10">
                   {attempts.length === 0 ? (
-                    <div className="h-[124px] flex flex-col items-center justify-center text-center p-6 bg-white rounded-2xl border-2 border-dashed border-primary/10">
-                      <FileText className="w-8 h-8 text-primary/10 mb-2" />
-                      <p className="text-[9px] font-black text-primary/30 uppercase tracking-[0.1em]">No records found</p>
+                    <div className="h-32 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-white/10 rounded-2xl">
+                      <FileText className="w-6 h-6 text-white/10 mb-2" />
+                      <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">No results yet</p>
                     </div>
                   ) : (
                     attempts.map(attempt => (
-                      <div key={attempt.id} className="p-4 bg-white border border-primary/5 rounded-2xl flex justify-between items-center shadow-sm">
+                      <div key={attempt.id} className="p-5 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center shadow-inner hover:bg-white/10 transition-all">
                         <div>
-                          <p className="text-[9px] font-black text-primary/30 uppercase">Session Result</p>
-                          <p className="font-black text-lg">{attempt.isReleased ? `${attempt.score} / ${attempt.totalPossible}` : "PENDING"}</p>
+                          <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Session Score</p>
+                          <p className="font-black text-xl">{attempt.isReleased ? `${attempt.score} / ${attempt.totalPossible}` : "PENDING"}</p>
                         </div>
                         {attempt.isReleased ? (
-                          <Button size="icon" variant="ghost" onClick={() => handlePrint('result', attempt.id)} className="rounded-xl hover:bg-emerald-50 hover:text-emerald-600">
-                            <Printer className="w-4 h-4" />
-                          </Button>
+                          <button onClick={() => handlePrint('result', attempt.id)} className="p-2.5 bg-emerald-500 rounded-xl hover:scale-110 transition-transform">
+                            <Printer className="w-4 h-4 text-white" />
+                          </button>
                         ) : (
-                          <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[8px] rounded-lg">PROCESSING</Badge>
+                          <Badge className="bg-amber-500/20 text-amber-400 border-none font-black text-[8px] uppercase px-2 py-1">Processing</Badge>
                         )}
                       </div>
                     ))
                   )}
                 </div>
-
-                <Button variant="outline" disabled={attempts.length === 0} className="mt-6 h-14 w-full border-2 border-primary/10 bg-white rounded-2xl font-black tracking-widest text-[11px] flex gap-3 text-primary/60">
-                  <FileText className="w-4 h-4" /> PREVIOUS RESULTS
-                </Button>
-              </div>
+              </Card>
             </div>
-          </Card>
+          </div>
         </motion.div>
       </main>
+
+      <footer className="py-12 text-center bg-white border-t border-primary/5">
+        <p className="text-[10px] font-bold text-primary/10 tracking-widest uppercase">&copy; {new Date().getFullYear()} VIVI CBT SYSTEMS • Secure Registration Portal</p>
+      </footer>
     </div>
   );
 }
