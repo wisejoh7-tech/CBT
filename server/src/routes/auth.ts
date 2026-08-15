@@ -39,14 +39,14 @@ router.post("/candidate/send-token", async (req, res) => {
             <p style="color: #64748b; line-height: 1.6;">Hello,</p>
             <p style="color: #64748b; line-height: 1.6;">Use the secure verification token below to complete your candidate registration. This token is valid for <b>10 minutes</b>.</p>
 
-            <div style="background-color: #f8fafc; border: 2px dashed #0EA5E9; padding: 20px; border-radius: 12px; margin: 30px 0; text-align: center;">
-              <span style="font-size: 42px; font-weight: 900; letter-spacing: 8px; color: #0EA5E9;">${token}</span>
+            <div style="background-color: #f8fafc; border: 2px dashed #0EA5E9; padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center;">
+              <span style="font-size: 32px; font-weight: 900; letter-spacing: 4px; color: #0EA5E9;">${token}</span>
             </div>
 
             <p style="color: #94a3b8; font-size: 12px;">If you did not request this token, please ignore this email or contact support if you have concerns.</p>
           </div>
           <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-            <p style="color: #94a3b8; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">&copy; 2026 VIVI CBT SYSTEMS • SECURE EXAMINATION TERMINAL</p>
+            <p style="color: #94a3b8; font-size: 10px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">&copy; 2026 VIVI CBT SYSTEMS • EXAMINATION</p>
           </div>
         </div>
       `,
@@ -534,8 +534,8 @@ router.post("/forgot-password", async (req, res) => {
             <p style="color: #64748b; line-height: 1.6;">Dear <b>${name}</b>,</p>
             <p style="color: #64748b; line-height: 1.6;">We received a request to reset your password. Use the verification token below to proceed:</p>
 
-            <div style="background-color: #fff1f2; border: 2px dashed #f43f5e; padding: 20px; border-radius: 12px; margin: 30px 0; text-align: center;">
-              <span style="font-size: 42px; font-weight: 900; letter-spacing: 8px; color: #f43f5e;">${token}</span>
+            <div style="background-color: #fff1f2; border: 2px dashed #f43f5e; padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center;">
+              <span style="font-size: 32px; font-weight: 900; letter-spacing: 4px; color: #f43f5e;">${token}</span>
             </div>
 
             <p style="color: #64748b; line-height: 1.6;">This token is valid for <b>30 minutes</b>. If you did not request this, please secure your account immediately.</p>

@@ -22,7 +22,14 @@ export const AppDataSource = new DataSource({
   url: config.dbUrl,
   synchronize: config.NODE_ENV !== "production",
   logging: config.NODE_ENV !== "production",
-  ssl: config.dbUrl?.includes("render.com") ? { rejectUnauthorized: false } : false,
+  ssl: config.dbUrl?.includes("render.com") || config.dbUrl?.includes("supabase.co")
+    ? { rejectUnauthorized: false }
+    : false,
+  extra: {
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000, // Increased from 2000 to 10000
+  },
   entities: [User, Candidate, Exam, Question, Attempt, Seat, Log, Subject],
   migrations: [
     config.NODE_ENV === "production"

@@ -284,14 +284,14 @@ export default function CandidateDashboard() {
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest">State of Origin</Label>
-                          <select value={editForm.stateOfOrigin || ''} onChange={e => setEditEditForm({ ...editForm, stateOfOrigin: e.target.value, lga: '' })} className="w-full h-12 px-3 rounded-xl bg-white border-2 border-primary/5 focus:border-primary font-bold text-[10px] outline-none focus:ring-0">
+                          <select value={editForm.stateOfOrigin || ''} onChange={e => setEditEditForm({ ...editForm, stateOfOrigin: e.target.value, lga: '' })} className="w-full h-12 px-3 rounded-xl bg-white border-2 border-primary/5 focus:border-primary font-bold text-sm outline-none focus:ring-0">
                             <option value="">SELECT STATE</option>
                             {NIGERIAN_STATES.map(state => <option key={state} value={state}>{state.toUpperCase()}</option>)}
                           </select>
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest">LGA of Origin</Label>
-                          <select value={editForm.lga || ''} onChange={e => setEditEditForm({ ...editForm, lga: e.target.value })} className="w-full h-12 px-3 rounded-xl bg-white border-2 border-primary/5 focus:border-primary font-bold text-[10px] outline-none focus:ring-0" disabled={!editForm.stateOfOrigin}>
+                          <select value={editForm.lga || ''} onChange={e => setEditEditForm({ ...editForm, lga: e.target.value })} className="w-full h-12 px-3 rounded-xl bg-white border-2 border-primary/5 focus:border-primary font-bold text-sm outline-none focus:ring-0" disabled={!editForm.stateOfOrigin}>
                             <option value="">SELECT LGA</option>
                             {editForm.stateOfOrigin && STATE_LGAS[editForm.stateOfOrigin]?.map(lga => <option key={lga} value={lga}>{lga.toUpperCase()}</option>)}
                           </select>

@@ -5,7 +5,7 @@ import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
 import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
-import { Mail, User, BookOpen, Key, Calendar, ArrowRight, CheckCircle, Monitor, Phone, MapPin, Camera, Trash2, ArrowLeft } from 'lucide-react';
+import { Mail, User, BookOpen, Key, Calendar, ArrowRight, CheckCircle, Monitor, Phone, MapPin, Camera, Trash2, ArrowLeft, Menu, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiUrl } from '@/src/lib/api-config';
 import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
@@ -14,6 +14,7 @@ export default function CandidateRegister() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     token: '',
@@ -171,12 +172,53 @@ export default function CandidateRegister() {
           </div>
         </div>
         <div className="hidden md:flex items-center gap-8">
-          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase flex items-center gap-1">
+          <button onClick={() => navigate('/')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase flex items-center gap-1">
             <ArrowLeft className="w-4 h-4" /> Home
           </button>
-          <button onClick={() => navigate('/candidate-login')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase">Login</button>
-          <button onClick={() => navigate('/results')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase">Check Result</button>
+          <button onClick={() => navigate('/candidate-login')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase">Login</button>
+          <button onClick={() => navigate('/results')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase">Check Result</button>
         </div>
+
+        {/* Mobile Menu Toggle */}
+        <button
+          className="md:hidden p-2 text-primary"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="absolute top-full left-0 w-full bg-white border-b-2 border-primary/10 md:hidden overflow-hidden z-[90] shadow-xl"
+            >
+              <div className="flex flex-col p-6 gap-4">
+                <button
+                  onClick={() => { navigate('/'); setIsMenuOpen(false); }}
+                  className="text-left text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase py-2 flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Home
+                </button>
+                <button
+                  onClick={() => { navigate('/candidate-login'); setIsMenuOpen(false); }}
+                  className="text-left text-[11px] font-black tracking-widest text-primary/40 hover:text-primary uppercase py-2"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => { navigate('/results'); setIsMenuOpen(false); }}
+                  className="text-left text-[11px] font-black tracking-widest text-primary/40 hover:text-primary uppercase py-2"
+                >
+                  Check Result
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative z-10">
@@ -192,12 +234,12 @@ export default function CandidateRegister() {
                 {step === 1 && (
                   <motion.form key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleSendToken} className="space-y-6">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Email Address</Label>
+                      <Label className="text-[10px] font-black text-primary/40 tracking-widest ">Email Address</Label>
                       <div className="relative group">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                         <Input
                           type="email"
-                          placeholder="ENTER EMAIL ADDRESS"
+                          placeholder="Enter Email Address"
                           value={formData.email}
                           onChange={e => setFormData({...formData, email: e.target.value})}
                           className="h-11 pl-12 rounded-1.5xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold transition-all"
@@ -205,67 +247,65 @@ export default function CandidateRegister() {
                         />
                       </div>
                     </div>
-                    <Button type="submit" disabled={loading} className="w-full h-12 bg-primary text-white rounded-1.5xl font-black tracking-widest text-[14px] flex gap-2">
-                      {loading ? "SENDING..." : "SEND VERIFICATION TOKEN"} <ArrowRight className="w-4 h-4" />
+                    <Button type="submit" disabled={loading} className="w-full h-12 bg-primary text-white rounded-1.5xl font-black tracking-widest text-[11px] flex gap-2">
+                      {loading ? "Sending..." : "Send Verification Token"} <ArrowRight className="w-4 h-4" />
                     </Button>
                   </motion.form>
                 )}
 
                 {step === 2 && (
-                  <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+                  <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                     <div className="text-center">
-                       <div className="w-16 h-16 bg-primary/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-primary/10">
-                          <Camera className="w-8 h-8 text-primary" />
+                       <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center mx-auto mb-2 border border-primary/10">
+                          <Camera className="w-6 h-6 text-primary" />
                        </div>
-                       <h3 className="text-sm font-black text-primary tracking-widest uppercase">Biometric Verification</h3>
-                       <p className="text-[10px] font-bold text-primary/30 mt-1 uppercase">Live face capture is mandatory for account security</p>
+                       <h3 className="text-xs font-black text-primary tracking-widest uppercase">Verification</h3>
                     </div>
 
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest uppercase">Verification Token</Label>
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-black text-primary/40 tracking-widest text-center block">Verification Token</Label>
                         <div className="relative group">
                           <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                           <Input
-                            placeholder="ENTER 6-DIGIT TOKEN"
+                            placeholder="Enter 6-digit token"
                             value={formData.token}
                             onChange={e => setFormData({...formData, token: e.target.value})}
-                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold tracking-[0.5em] text-center"
+                            className="h-11 pl-10 rounded-xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold tracking-[0.2em] text-center text-sm"
                             required
                           />
                         </div>
                       </div>
 
-                      <div className="flex justify-center py-4">
+                      <div className="flex justify-center py-2">
                           {formData.faceUrl ? (
                              <div className="relative group">
-                                <img src={formData.faceUrl} className="w-48 h-48 rounded-[40px] object-cover border-4 border-primary shadow-2xl transition-all" />
-                                <div className="absolute inset-0 bg-primary/20 rounded-[40px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                   <button type="button" onClick={() => setFormData({...formData, faceUrl: ''})} className="bg-rose-500 text-white p-3 rounded-full shadow-lg hover:scale-110 transition-transform"><Trash2 className="w-5 h-5" /></button>
+                                <img src={formData.faceUrl} className="w-32 h-32 rounded-[24px] object-cover border-4 border-primary shadow-xl transition-all" />
+                                <div className="absolute inset-0 bg-primary/20 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                   <button type="button" onClick={() => setFormData({...formData, faceUrl: ''})} className="bg-rose-500 text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform"><Trash2 className="w-4 h-4" /></button>
                                 </div>
                              </div>
                           ) : isCapturing ? (
-                             <div className="space-y-4 text-center w-full">
-                                <div className="relative overflow-hidden rounded-[40px] border-4 border-primary/20 bg-black">
+                             <div className="space-y-3 text-center w-full max-w-[200px]">
+                                <div className="relative overflow-hidden rounded-[24px] border-4 border-primary/20 bg-black">
                                    <video ref={videoRef} autoPlay className="w-full aspect-square object-cover" />
-                                   <div className="absolute inset-0 border-[20px] border-black/10 pointer-events-none" />
                                    <div className="absolute top-0 left-0 w-full h-1 bg-primary/40 animate-[scan_2s_linear_infinite]" />
                                 </div>
-                                <Button type="button" onClick={capturePhoto} className="h-16 w-full bg-primary text-white font-black rounded-2xl tracking-widest text-[11px] shadow-xl">SECURELY CAPTURE BIOMETRIC</Button>
+                                <Button type="button" onClick={capturePhoto} className="h-10 w-full bg-primary text-white font-black rounded-xl tracking-widest text-[9px] shadow-lg">CAPTURE PHOTO</Button>
                              </div>
                           ) : (
-                             <button type="button" onClick={startCapture} className="w-full h-56 rounded-[48px] border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-4 hover:border-primary hover:bg-primary/[0.02] transition-all group bg-slate-50/50">
-                                <div className="w-16 h-16 rounded-3xl bg-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                   <Camera className="w-8 h-8 text-primary/40 group-hover:text-primary" />
+                             <button type="button" onClick={startCapture} className="w-40 h-40 rounded-[32px] border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-3 hover:border-primary hover:bg-primary/[0.02] transition-all group bg-slate-50/50">
+                                <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                   <Camera className="w-6 h-6 text-primary/40 group-hover:text-primary" />
                                 </div>
-                                <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em]">Start Camera for Biometrics</span>
+                                <span className="text-[9px] font-black text-primary/30 uppercase tracking-[0.2em]">Start Camera</span>
                              </button>
                           )}
                       </div>
                     </div>
 
                     {formData.faceUrl && (
-                      <Button onClick={() => setStep(3)} className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black tracking-widest text-[11px] uppercase">Continue to Identity Form</Button>
+                      <Button onClick={() => setStep(3)} className="w-full h-12 bg-slate-900 text-white rounded-xl font-black tracking-widest text-[10px] uppercase shadow-lg">Continue</Button>
                     )}
                     <button type="button" onClick={() => setStep(1)} className="w-full text-[10px] font-black text-primary/20 hover:text-primary transition-colors uppercase">Wait, go back</button>
                   </motion.div>
@@ -308,7 +348,7 @@ export default function CandidateRegister() {
                           <select
                             value={formData.stateOfOrigin}
                             onChange={e => setFormData({ ...formData, stateOfOrigin: e.target.value, lga: '' })}
-                            className="w-full h-14 px-4 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-[10px] transition-all outline-none focus:ring-0"
+                            className="w-full h-14 px-4 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-sm transition-all outline-none focus:ring-0"
                             required
                           >
                             <option value="">SELECT STATE</option>
@@ -323,7 +363,7 @@ export default function CandidateRegister() {
                           <select
                             value={formData.lga}
                             onChange={e => setFormData({ ...formData, lga: e.target.value })}
-                            className="w-full h-14 px-4 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-[10px] transition-all outline-none focus:ring-0"
+                            className="w-full h-14 px-4 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-sm transition-all outline-none focus:ring-0"
                             required
                             disabled={!formData.stateOfOrigin}
                           >

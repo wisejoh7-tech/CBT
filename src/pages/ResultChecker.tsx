@@ -3,17 +3,19 @@ import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
-import { Search, GraduationCap, Lock, AlertCircle, User, Shield, Monitor, ArrowLeft } from 'lucide-react';
+import { Search, GraduationCap, Lock, AlertCircle, User, Shield, Monitor, ArrowLeft, Menu, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiUrl } from '@/src/lib/api-config';
 import { useAuth } from '@/src/context/AuthContext';
 import { Separator } from '@/lib/ui/separator';
+import { AnimatePresence } from 'motion/react';
 
 export default function ResultChecker() {
   const { user, profile } = useAuth();
   const [targetExamNumber, setTargetExamNumber] = useState('');
   const [pin, setPin] = useState('');
   const [checkingResult, setCheckingResult] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'reg_admin';
@@ -75,6 +77,47 @@ export default function ResultChecker() {
           <button onClick={() => navigate('/candidate-login')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CANDIDATE LOGIN</button>
           <button onClick={() => navigate('/candidate-register')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">REGISTER</button>
         </div>
+
+        {/* Mobile Menu Toggle */}
+        <button
+          className="md:hidden p-2 text-primary"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="absolute top-full left-0 w-full bg-white border-b-2 border-primary/10 md:hidden overflow-hidden z-[90] shadow-xl"
+            >
+              <div className="flex flex-col p-6 gap-4">
+                <button
+                  onClick={() => { navigate('/'); setIsMenuOpen(false); }}
+                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors uppercase py-2 flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" /> HOME
+                </button>
+                <button
+                  onClick={() => { navigate('/candidate-login'); setIsMenuOpen(false); }}
+                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary uppercase py-2"
+                >
+                  CANDIDATE LOGIN
+                </button>
+                <button
+                  onClick={() => { navigate('/candidate-register'); setIsMenuOpen(false); }}
+                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary uppercase py-2"
+                >
+                  REGISTER
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 relative">

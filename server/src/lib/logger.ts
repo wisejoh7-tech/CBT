@@ -1,6 +1,7 @@
 import winston from "winston";
 import { AppDataSource } from "../data-source";
 import { Log, LogType, LogSeverity } from "../entities/Log";
+import { automationEngine } from "./automation-engine";
 
 const { combine, timestamp, printf, colorize, errors } = winston.format;
 
@@ -50,7 +51,12 @@ export async function createLog(data: {
       userId: data.userId,
       metadata: data.metadata
     });
-    await logRepo.save(log);
+    const savedLog = await logRepo.save(log);
+
+    // Trigger Automation Engine
+    automationEngine.processLog(savedLog).catch(err => {
+      logger.error("Failed to process log in Automation Engine", err);
+    });
   } catch (err) {
     logger.error("Failed to save log to database", err);
   }

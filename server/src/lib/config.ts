@@ -4,6 +4,21 @@ if (process.env.NODE_ENV !== "production") {
   dotenv.config();
 }
 
+const requiredEnv = [
+  'DATABASE_URL',
+  'REDIS_URL',
+  'JWT_SECRET',
+  'GEMINI_API_KEY'
+];
+
+if (process.env.NODE_ENV === 'production') {
+  const missing = requiredEnv.filter(k => !process.env[k]);
+  if (missing.length > 0) {
+    console.error(`FATAL ERROR: Missing production environment variables: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+}
+
 export const config = {
   apiUrl: process.env.VITE_API_URL,
   socketUrl: process.env.VITE_SOCKET_URL,

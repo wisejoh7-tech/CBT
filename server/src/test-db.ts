@@ -23,7 +23,7 @@ async function testConnections() {
     url: process.env.REDIS_URL || "redis://localhost:6379",
   });
 
-  redisClient.on("error", (err) =>
+  redisClient.on("error", (err: any) =>
     console.error("Redis Error Event:", err.message)
   );
 

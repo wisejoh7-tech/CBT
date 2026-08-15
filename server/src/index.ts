@@ -15,6 +15,9 @@ import centerRoutes from "./routes/center";
 import candidateRoutes from "./routes/candidate";
 import subjectRoutes from "./routes/subject";
 
+import { socGateway } from "./middleware/soc-gateway";
+import { ipBlocker } from "./middleware/ip-blocker";
+import { automationEngine } from "./lib/automation-engine";
 import { AppDataSource } from "./data-source";
 import { logger } from "./lib/logger";
 import { config } from "./lib/config";
@@ -43,12 +46,15 @@ const io = new Server(httpServer, {
   },
 });
 app.set("io", io);
+automationEngine.setSocketIO(io);
 
 // Middleware
 app.use(cors({
   origin: config.NODE_ENV === "production" ? "https://cbt.vivi.com.ng" : "*",
 }));
 app.use(express.json());
+app.use(ipBlocker);
+app.use(socGateway);
 
 // Routes
 app.use("/auth", authRoutes);
@@ -59,15 +65,32 @@ app.use("/candidate", candidateRoutes);
 app.use("/subjects", subjectRoutes);
 
 async function startServer() {
-  try {
-    await AppDataSource.initialize();
-    logger.info("Connected to Postgres");
+  const maxRetries = 5;
+  let retries = 0;
 
+  while (retries < maxRetries) {
+    try {
+      await AppDataSource.initialize();
+      logger.info("Connected to Postgres");
+      break;
+    } catch (error: any) {
+      retries++;
+      logger.error(`Failed to connect to Postgres (Attempt ${retries}/${maxRetries}):`, error.message);
+      if (retries >= maxRetries) {
+        process.exit(1);
+      }
+      // Wait 5 seconds before retrying
+      await new Promise(res => setTimeout(res, 5000));
+    }
+  }
+
+  try {
     // Seed Default Admin
     const userRepo = AppDataSource.getRepository(User);
     const adminCount = await userRepo.count();
     if (adminCount === 0) {
-      const hashedPassword = await bcrypt.hash("admin123", 10);
+      const defaultPassword = process.env.INITIAL_ADMIN_PASSWORD || "admin123";
+      const hashedPassword = await bcrypt.hash(defaultPassword, 10);
       const defaultAdmin = userRepo.create({
         email: "admin@vivicbt.com",
         password: hashedPassword,
@@ -75,11 +98,27 @@ async function startServer() {
         role: "super_admin",
       });
       await userRepo.save(defaultAdmin);
-      logger.info("Default Admin created: admin@vivicbt.com / admin123");
+
+      if (config.NODE_ENV === "production" && defaultPassword === "admin123") {
+        logger.warn("⚠️ SECURITY RISK: Default admin created with insecure password 'admin123'. Change this immediately!");
+      } else {
+        logger.info(`Default Admin created: admin@vivicbt.com / ${defaultPassword}`);
+      }
     }
 
-    await redisClient.connect();
-    logger.info("Connected to Redis");
+    let redisRetries = 0;
+    while (redisRetries < maxRetries) {
+      try {
+        await redisClient.connect();
+        logger.info("Connected to Redis");
+        break;
+      } catch (err: any) {
+        redisRetries++;
+        logger.error(`Failed to connect to Redis (Attempt ${redisRetries}/${maxRetries}):`, err.message);
+        if (redisRetries >= maxRetries) break; // Don't exit process, just log failure
+        await new Promise(res => setTimeout(res, 5000));
+      }
+    }
 
     app.get("/", (req, res) => {
       res.send("CBT Backend is running");

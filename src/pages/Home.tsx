@@ -4,15 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/lib/ui/button';
 import { Card } from '@/lib/ui/card';
 import { Input } from '@/lib/ui/input';
-import { GraduationCap, Shield, BookOpen, School, CheckCircle, ArrowRight, User, Lock, Monitor, Zap, ShieldCheck, PieChart, Smartphone, Search, FileCheck, Globe, Clock, MessageSquare } from 'lucide-react';
+import { GraduationCap, Shield, BookOpen, School, CheckCircle, ArrowRight, User, Lock, Monitor, Zap, ShieldCheck, PieChart, Smartphone, Search, FileCheck, Globe, Clock, MessageSquare, Menu, X } from 'lucide-react';
 import { Separator } from '@/lib/ui/separator';
 import { useAuth } from '@/src/context/AuthContext';
+import { AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 
 export default function Home() {
   const navigate = useNavigate();
   const { user, profile, loading } = useAuth();
   const [showExamInput, setShowExamInput] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'reg_admin';
 
@@ -77,6 +79,71 @@ export default function Home() {
             </>
           )}
         </div>
+
+        {/* Mobile Menu Toggle */}
+        <button
+          className="md:hidden p-2 text-primary"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="absolute top-full left-0 w-full bg-white border-b-2 border-primary/10 md:hidden overflow-hidden z-[90] shadow-xl"
+            >
+              <div className="flex flex-col p-6 gap-4">
+                <button
+                  onClick={() => { navigate('/'); setIsMenuOpen(false); }}
+                  className="text-left text-[14px] font-black tracking-widest text-primary uppercase py-2"
+                >
+                  Home
+                </button>
+                <button
+                  onClick={() => { navigate('/candidate-login'); setIsMenuOpen(false); }}
+                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary uppercase py-2"
+                >
+                  Candidate Login
+                </button>
+                <button
+                  onClick={() => { navigate('/candidate-register'); setIsMenuOpen(false); }}
+                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary uppercase py-2"
+                >
+                  Register
+                </button>
+                <button
+                  onClick={() => { navigate('/results'); setIsMenuOpen(false); }}
+                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary uppercase py-2"
+                >
+                  Check Results
+                </button>
+                {user && !isAdmin && (
+                  <button
+                    onClick={() => { navigate('/dashboard'); setIsMenuOpen(false); }}
+                    className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary flex items-center gap-2 uppercase py-2"
+                  >
+                    <User className="w-3.5 h-3.5" />
+                    Exam Terminal
+                  </button>
+                )}
+                {user && isAdmin && (
+                  <button
+                    onClick={() => { navigate('/admin'); setIsMenuOpen(false); }}
+                    className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary flex items-center gap-2 uppercase py-2"
+                  >
+                    <Shield className="w-3.5 h-3.5" />
+                    Admin Dashboard
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       {/* Hero Section */}
