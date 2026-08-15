@@ -42,7 +42,7 @@ app.use("/auth/", limiter);
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: config.NODE_ENV === "production" ? "https://cbt.vivi.com.ng" : "*",
+    origin: "*", // More permissive for setup
   },
 });
 app.set("io", io);
@@ -50,7 +50,7 @@ automationEngine.setSocketIO(io);
 
 // Middleware
 app.use(cors({
-  origin: config.NODE_ENV === "production" ? "https://cbt.vivi.com.ng" : "*",
+  origin: "*", // More permissive for setup
 }));
 app.use(express.json());
 app.use(ipBlocker);
