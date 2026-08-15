@@ -64,6 +64,8 @@ app.use("/center", centerRoutes);
 app.use("/candidate", candidateRoutes);
 app.use("/subjects", subjectRoutes);
 
+async function startServer() {
+  try {
     const server = httpServer.listen(config.PORT, "0.0.0.0", () => {
       logger.info(`Server is running on port ${config.PORT}`);
     });
@@ -83,7 +85,6 @@ app.use("/subjects", subjectRoutes);
         logger.error(`Failed to connect to Postgres (Attempt ${retries}/${maxRetries}):`, error.message);
         if (retries >= maxRetries) {
           logger.error("FATAL: Could not connect to Postgres after maximum retries.");
-          // We don't exit(1) immediately to allow the port to stay open and show logs
         } else {
           await new Promise(res => setTimeout(res, 5000));
         }
@@ -135,12 +136,21 @@ app.use("/subjects", subjectRoutes);
       res.status(200).json({ status: "ok", postgres: postgresConnected });
     });
 
+    io.on("connection", (socket) => {
+      logger.debug(`A user connected: ${socket.id}`);
+      socket.on("disconnect", () => {
+        logger.debug("User disconnected");
+      });
+    });
+
     const shutdown = async () => {
       logger.info("Shutdown signal received. Closing connections...");
       server.close(async () => {
         logger.info("HTTP server closed.");
-        await AppDataSource.destroy();
-        logger.info("Postgres connection closed.");
+        if (postgresConnected) {
+          await AppDataSource.destroy();
+          logger.info("Postgres connection closed.");
+        }
         await redisClient.disconnect();
         logger.info("Redis connection closed.");
         process.exit(0);
