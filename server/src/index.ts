@@ -64,45 +64,52 @@ app.use("/center", centerRoutes);
 app.use("/candidate", candidateRoutes);
 app.use("/subjects", subjectRoutes);
 
-async function startServer() {
-  const maxRetries = 5;
-  let retries = 0;
+    const server = httpServer.listen(config.PORT, "0.0.0.0", () => {
+      logger.info(`Server is running on port ${config.PORT}`);
+    });
 
-  while (retries < maxRetries) {
-    try {
-      await AppDataSource.initialize();
-      logger.info("Connected to Postgres");
-      break;
-    } catch (error: any) {
-      retries++;
-      logger.error(`Failed to connect to Postgres (Attempt ${retries}/${maxRetries}):`, error.message);
-      if (retries >= maxRetries) {
-        process.exit(1);
+    const maxRetries = 5;
+    let retries = 0;
+    let postgresConnected = false;
+
+    while (retries < maxRetries) {
+      try {
+        await AppDataSource.initialize();
+        logger.info("Connected to Postgres");
+        postgresConnected = true;
+        break;
+      } catch (error: any) {
+        retries++;
+        logger.error(`Failed to connect to Postgres (Attempt ${retries}/${maxRetries}):`, error.message);
+        if (retries >= maxRetries) {
+          logger.error("FATAL: Could not connect to Postgres after maximum retries.");
+          // We don't exit(1) immediately to allow the port to stay open and show logs
+        } else {
+          await new Promise(res => setTimeout(res, 5000));
+        }
       }
-      // Wait 5 seconds before retrying
-      await new Promise(res => setTimeout(res, 5000));
     }
-  }
 
-  try {
-    // Seed Default Admin
-    const userRepo = AppDataSource.getRepository(User);
-    const adminCount = await userRepo.count();
-    if (adminCount === 0) {
-      const defaultPassword = process.env.INITIAL_ADMIN_PASSWORD || "admin123";
-      const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-      const defaultAdmin = userRepo.create({
-        email: "admin@vivicbt.com",
-        password: hashedPassword,
-        displayName: "System Master",
-        role: "super_admin",
-      });
-      await userRepo.save(defaultAdmin);
+    if (postgresConnected) {
+      // Seed Default Admin
+      const userRepo = AppDataSource.getRepository(User);
+      const adminCount = await userRepo.count();
+      if (adminCount === 0) {
+        const defaultPassword = process.env.INITIAL_ADMIN_PASSWORD || "admin123";
+        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+        const defaultAdmin = userRepo.create({
+          email: "admin@vivicbt.com",
+          password: hashedPassword,
+          displayName: "System Master",
+          role: "super_admin",
+        });
+        await userRepo.save(defaultAdmin);
 
-      if (config.NODE_ENV === "production" && defaultPassword === "admin123") {
-        logger.warn("⚠️ SECURITY RISK: Default admin created with insecure password 'admin123'. Change this immediately!");
-      } else {
-        logger.info(`Default Admin created: admin@vivicbt.com / ${defaultPassword}`);
+        if (config.NODE_ENV === "production" && defaultPassword === "admin123") {
+          logger.warn("⚠️ SECURITY RISK: Default admin created with insecure password 'admin123'. Change this immediately!");
+        } else {
+          logger.info(`Default Admin created: admin@vivicbt.com / ${defaultPassword}`);
+        }
       }
     }
 
@@ -115,7 +122,7 @@ async function startServer() {
       } catch (err: any) {
         redisRetries++;
         logger.error(`Failed to connect to Redis (Attempt ${redisRetries}/${maxRetries}):`, err.message);
-        if (redisRetries >= maxRetries) break; // Don't exit process, just log failure
+        if (redisRetries >= maxRetries) break;
         await new Promise(res => setTimeout(res, 5000));
       }
     }
@@ -124,15 +131,8 @@ async function startServer() {
       res.send("CBT Backend is running");
     });
 
-    io.on("connection", (socket) => {
-      logger.debug(`A user connected: ${socket.id}`);
-      socket.on("disconnect", () => {
-        logger.debug("User disconnected");
-      });
-    });
-
-    const server = httpServer.listen(config.PORT, () => {
-      logger.info(`Server is running on port ${config.PORT}`);
+    app.get("/health", (req, res) => {
+      res.status(200).json({ status: "ok", postgres: postgresConnected });
     });
 
     const shutdown = async () => {
