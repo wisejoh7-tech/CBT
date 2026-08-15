@@ -22,7 +22,7 @@ export const AppDataSource = new DataSource({
   url: config.dbUrl,
   synchronize: config.NODE_ENV !== "production",
   logging: config.NODE_ENV !== "production",
-  ssl: config.dbUrl?.includes("render.com") || config.dbUrl?.includes("supabase.co")
+  ssl: config.dbUrl?.includes("render.com") || config.dbUrl?.includes("supabase.co") || config.dbUrl?.includes("neon.tech")
     ? { rejectUnauthorized: false }
     : false,
   extra: {
