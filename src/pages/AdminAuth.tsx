@@ -39,7 +39,7 @@ export default function AdminAuth() {
     try {
       if (isLogin) {
         await signInWithEmail(email, password);
-        toast.success("Master Authorization Verified.");
+        toast.success("Admin Authorization Verified.");
       } else {
         if (!name) { toast.error("Identity required."); return; }
         await signUpWithEmail(email, password, name, 'super_admin');
@@ -52,12 +52,12 @@ export default function AdminAuth() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-slate-900 selection:bg-primary/20 uppercase text-slate-100">
+    <div className="relative min-h-screen flex flex-col bg-slate-900 selection:bg-primary/20  text-slate-100">
       <nav className="sticky top-0 w-full bg-slate-400/80 backdrop-blur-md border-b-2 border-white/5 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>
-            <span className="font-black text-xl tracking-tighter text-white">VIVI ADMIN</span>
+            <span className="font-black text-xl tracking-tighter text-white">Viv</span>
           </div>
           <div className="h-8 w-[1px] bg-white/10 hidden md:block" />
           <div className="hidden md:flex items-center gap-2 text-white/40">
@@ -91,7 +91,7 @@ export default function AdminAuth() {
               <ShieldCheck className="w-12 h-12 text-primary" />
             </div>
             <h1 className="text-3xl font-black tracking-tighter text-white leading-none mb-2">Admin Page</h1>
-            <p className="text-[10px] font-black text-primary/40 tracking-[0.4em]">SYSTEM ADMINISTRATOR </p>
+            <p className="text-[10px] font-black text-primary/40 tracking-[0.4em]">System ADminstration </p>
           </div>
 
           <Card className="rounded-[40px] border-2 border-white/2 bg-slate-400 shadow-1xl overflow-hidden">
@@ -108,7 +108,7 @@ export default function AdminAuth() {
                       <Label className="text-[10px] font-white text-slate-300 tracking-widest">Enter Username</Label>
                       <div className="relative group">
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-200 group-focus-within:text-primary transition-colors" />
-                        <Input placeholder="FULL NAME" value={name} onChange={e => setName(e.target.value)} className="h-14 pl-12 rounded-2xl bg-slate-200 border-white/5 focus:border-primary font-bold text-white transition-all" />
+                        <Input placeholder="Full Name" value={name} onChange={e => setName(e.target.value)} className="h-14 pl-12 rounded-2xl bg-slate-200 border-white/5 focus:border-primary font-bold text-white transition-all" />
                       </div>
                     </motion.div>
                   )}
@@ -122,10 +122,10 @@ export default function AdminAuth() {
                       name="email"
                       type="email"
                       autoComplete="email"
-                      placeholder="ADMIN@VIVICBT.COM"
+                      placeholder="Enter Email "
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      className="h-14 pl-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all"
+                      className="h-14 pl-12 rounded-1xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all"
                       required
                     />
                   </div>
@@ -150,7 +150,7 @@ export default function AdminAuth() {
                 </div>
 
                 <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white hover:bg-primary/90 rounded-[24px] font-black tracking-widest text-[11px] shadow-2xl shadow-primary/20 border-none transition-all active:scale-95">
-                  {loading ? "PROCESSING..." : (isLogin ? "VERIFY ACCESS" : "INITIALIZE MASTER")}
+                  {loading ? "Load...." : (isLogin ? "Verify Login" : "Login Admin")}
                 </Button>
                 {isLogin && (
                   <button
@@ -158,7 +158,7 @@ export default function AdminAuth() {
                     onClick={() => navigate('/forgot-password')}
                     className="w-full text-[10px] font-black text-slate-500 hover:text-white transition-colors tracking-widest mt-2"
                   >
-                    FORGOT PASSWORD?
+                    Forgotten Password?
                   </button>
                 )}
               </form>
@@ -166,7 +166,7 @@ export default function AdminAuth() {
               {isLogin && (
                 <div className="mt-8 pt-8 border-t-2 border-white/5 space-y-4">
                    <div className="flex flex-col items-center gap-3">
-                      <p className="text-[8px] font-black text-primary/40 tracking-[0.4em]">ADMINISTRATIVE OVERRIDE</p>
+                      <p className="text-[8px] font-black text-primary/40 tracking-[0.4em]">Administrative Override</p>
                       <Button
                         variant="outline"
                         onClick={async () => {
@@ -183,10 +183,10 @@ export default function AdminAuth() {
                         }}
                         className="w-full h-14 rounded-2xl border-2 border-dashed border-white/10 text-slate-400 font-black text-[10px] hover:border-primary hover:text-white transition-all gap-2 bg-transparent"
                       >
-                        <Terminal className="w-4 h-4" /> INITIALIZE EMERGENCY ACCESS
+                        <Terminal className="w-4 h-4" />  EMERGENCY ACCESS
                       </Button>
-                      <p className="text-[7px] text-slate-500 font-bold text-center px-4 leading-tight uppercase">
-                        This button bypasses email validation for system recovery. Use only if credentials fail.
+                      <p className="text-[7px] text-slate-400 font-bold text-center px-4 leading-tight uppercase">
+                        Use only if credentials fail.
                       </p>
                    </div>
                 </div>
