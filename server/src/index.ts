@@ -32,6 +32,17 @@ import { redisClient } from "./lib/services";
 const app = express();
 app.use(helmet());
 
+// 0. Emergency Health Check (Bypass all middleware)
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "alive",
+    port: config.PORT,
+    db: AppDataSource.isInitialized
+  });
+});
+
+app.get("/", (req, res) => res.send("VIVI CBT API - ONLINE"));
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -75,26 +86,25 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 async function startServer() {
-  // 1. Start listening immediately so Render/deployment platforms see the port as open
-  const server = httpServer.listen(config.PORT, "0.0.0.0", () => {
-    logger.info(`Server is running on port ${config.PORT}`);
+  const PORT = config.PORT || 5000;
+
+  // 1. Start listening immediately
+  const server = httpServer.listen(PORT, "0.0.0.0", () => {
+    logger.info(`🚀 Server is live on port ${PORT}`);
+    console.log(`RENDER_PORT_SCAN_MATCH: ${PORT}`); // Explicit log for Render
   });
 
-  app.get("/", (req, res) => {
-    res.send("CBT Backend is running");
-  });
-
-  app.get("/health", (req, res) => {
-    res.status(200).json({
-      status: "ok",
-      postgres: AppDataSource.isInitialized,
-      redis: redisClient.isOpen
-    });
+  server.on('error', (error: any) => {
+    logger.error("Server listen error:", error);
+    if (error.code === 'EADDRINUSE') {
+      logger.error(`Port ${PORT} is already in use.`);
+    }
   });
 
   try {
     const maxRetries = 5;
     let retries = 0;
+// ... (rest of the function stays same)
 
     // 2. Connect to Postgres in the background
     while (retries < maxRetries) {

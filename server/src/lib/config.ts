@@ -4,6 +4,8 @@ if (process.env.NODE_ENV !== "production") {
   dotenv.config();
 }
 
+console.log("Config: Initializing with PORT", process.env.PORT || 5000);
+
 const requiredEnv = [
   'DATABASE_URL',
   'REDIS_URL',
