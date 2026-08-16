@@ -75,77 +75,70 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 async function startServer() {
+  // 1. Start listening immediately so Render/deployment platforms see the port as open
+  const server = httpServer.listen(config.PORT, "0.0.0.0", () => {
+    logger.info(`Server is running on port ${config.PORT}`);
+  });
+
+  app.get("/", (req, res) => {
+    res.send("CBT Backend is running");
+  });
+
+  app.get("/health", (req, res) => {
+    res.status(200).json({
+      status: "ok",
+      postgres: AppDataSource.isInitialized,
+      redis: redisClient.isOpen
+    });
+  });
+
   try {
     const maxRetries = 5;
     let retries = 0;
-    let postgresConnected = false;
 
+    // 2. Connect to Postgres in the background
     while (retries < maxRetries) {
       try {
         await AppDataSource.initialize();
         logger.info("Connected to Postgres");
-        postgresConnected = true;
+
+        // Seed logic (only after DB is ready)
+        const userRepo = AppDataSource.getRepository(User);
+        const adminCount = await userRepo.count();
+        if (adminCount === 0) {
+          const defaultPassword = process.env.INITIAL_ADMIN_PASSWORD || "admin123";
+          const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+          const defaultAdmin = userRepo.create({
+            email: "admin@vivicbt.com",
+            password: hashedPassword,
+            displayName: "System Master",
+            role: "super_admin",
+          });
+          await userRepo.save(defaultAdmin);
+          logger.info("Default Admin created.");
+        }
+
+        // Seed Subjects
+        try {
+          const subjectRepo = AppDataSource.getRepository(Subject);
+          const defaults = ["English Language", "Mathematics", "Physics", "Chemistry", "Biology", "Economics", "Government"];
+          for (const name of defaults) {
+            const existing = await subjectRepo.findOneBy({ name });
+            if (!existing) await subjectRepo.save(subjectRepo.create({ name, isActive: true }));
+          }
+          logger.info("Curriculum synchronization complete.");
+        } catch (sErr) { logger.error("Subject seed error"); }
+
         break;
       } catch (error: any) {
         retries++;
         logger.error(`Failed to connect to Postgres (Attempt ${retries}/${maxRetries}): ${error.message}`);
-        if (error.message?.includes("allowlist") || error.message?.includes("hba")) {
-          logger.warn("TIP: Add your local IP address to the Render Postgres allowlist in the dashboard.");
-        }
-        if (retries >= maxRetries) {
-          logger.error("WARNING: Could not connect to Postgres after maximum retries. API will start but database features will fail.");
-          // Don't exit, allow server to start so frontend doesn't get ERR_CONNECTION_REFUSED
-        } else {
-          await new Promise(res => setTimeout(res, 5000));
-        }
+        if (retries >= maxRetries) break;
+        await new Promise(res => setTimeout(res, 5000));
       }
     }
 
-    if (postgresConnected) {
-      // Seed Default Admin
-      const userRepo = AppDataSource.getRepository(User);
-      const adminCount = await userRepo.count();
-      if (adminCount === 0) {
-        const defaultPassword = process.env.INITIAL_ADMIN_PASSWORD || "admin123";
-        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-        const defaultAdmin = userRepo.create({
-          email: "admin@vivicbt.com",
-          password: hashedPassword,
-          displayName: "System Master",
-          role: "super_admin",
-        });
-        await userRepo.save(defaultAdmin);
-
-        if (config.NODE_ENV === "production" && defaultPassword === "admin123") {
-          logger.warn("⚠️ SECURITY RISK: Default admin created with insecure password 'admin123'. Change this immediately!");
-        } else {
-          logger.info(`Default Admin created: admin@vivicbt.com / ${defaultPassword}`);
-        }
-      }
-
-      // Seed Default Subjects
-      try {
-        const subjectRepo = AppDataSource.getRepository(Subject);
-        const defaults = [
-          "English Language", "Mathematics", "Physics", "Chemistry",
-          "Biology", "Economics", "Government", "Literature in English",
-          "CRS", "IRS", "Geography", "Agricultural Science",
-          "Commerce", "Financial Accounting", "History", "Civic Education",
-          "Further Mathematics", "Computer Studies", "French", "Music"
-        ];
-
-        for (const name of defaults) {
-          const existing = await subjectRepo.findOneBy({ name });
-          if (!existing) {
-            await subjectRepo.save(subjectRepo.create({ name, isActive: true }));
-          }
-        }
-        logger.info("Curriculum synchronization complete.");
-      } catch (seedError: any) {
-        logger.error("Failed to seed subjects:", seedError.message);
-      }
-    }
-
+    // 3. Connect to Redis in the background
     let redisRetries = 0;
     while (redisRetries < maxRetries) {
       try {
@@ -160,18 +153,6 @@ async function startServer() {
       }
     }
 
-    const server = httpServer.listen(config.PORT, "0.0.0.0", () => {
-      logger.info(`Server is running on port ${config.PORT}`);
-    });
-
-    app.get("/", (req, res) => {
-      res.send("CBT Backend is running");
-    });
-
-    app.get("/health", (req, res) => {
-      res.status(200).json({ status: "ok", postgres: postgresConnected });
-    });
-
     io.on("connection", (socket) => {
       logger.debug(`A user connected: ${socket.id}`);
       socket.on("disconnect", () => {
@@ -183,12 +164,14 @@ async function startServer() {
       logger.info("Shutdown signal received. Closing connections...");
       server.close(async () => {
         logger.info("HTTP server closed.");
-        if (postgresConnected) {
+        if (AppDataSource.isInitialized) {
           await AppDataSource.destroy();
           logger.info("Postgres connection closed.");
         }
-        await redisClient.disconnect();
-        logger.info("Redis connection closed.");
+        if (redisClient.isOpen) {
+          await redisClient.disconnect();
+          logger.info("Redis connection closed.");
+        }
         process.exit(0);
       });
     };
@@ -197,8 +180,7 @@ async function startServer() {
     process.on("SIGTERM", shutdown);
 
   } catch (error) {
-    logger.error("Failed to start server", error);
-    process.exit(1);
+    logger.error("Failed to initialize backend services", error);
   }
 }
 

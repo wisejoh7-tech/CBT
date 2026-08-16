@@ -37,5 +37,5 @@ export const config = {
     phoneNumber: process.env.TWILIO_PHONE_NUMBER,
   },
   NODE_ENV: process.env.NODE_ENV || "development",
-  PORT: Number(process.env.PORT) || 3000,
+  PORT: Number(process.env.PORT) || 5000,
 } as const;
