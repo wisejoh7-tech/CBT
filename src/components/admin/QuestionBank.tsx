@@ -27,14 +27,14 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({
 
   return (
     <div className="space-y-6 text-sm font-medium max-w-6xl mx-auto">
-      <div className="flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm border border-primary/5">
+      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-primary/5">
         <div className="flex items-center gap-6">
           <button onClick={() => setActiveTab('modules')} className="h-12 w-12 flex items-center justify-center rounded-2xl hover:bg-slate-50 shadow-sm border border-primary/5 transition-all text-slate-400 hover:text-primary">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
-            <h3 className="text-2xl font-black tracking-tighter uppercase text-slate-800">{currentExam?.title}</h3>
-            <p className="text-[10px] font-black text-slate-400 tracking-[0.3em] uppercase">{questions.length} Question bank</p>
+            <h3 className="text-2xl font-black tracking-tighter  text-slate-800">{currentExam?.title}</h3>
+            <p className="text-[14px] font-black ">{questions.length} Question bank</p>
           </div>
         </div>
         <Button onClick={() => setShowAddQuestion(true)} className="h-12 px-6 rounded-2xl bg-slate-900 text-white font-black tracking-widest uppercase text-[11px] shadow-xl hover:bg-black transition-all">
@@ -49,7 +49,7 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({
 
             <div className="space-y-8">
               <div className="flex gap-4">
-                 <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary shrink-0"><FileText className="w-5 h-5" /></div>
+                 <div className="w-10 h-10 rounded-1xl bg-primary/5 flex items-center justify-center text-primary shrink-0"><FileText className="w-5 h-5" /></div>
                  <p className="font-bold text-lg leading-relaxed text-slate-800 pr-16">{q.text}</p>
               </div>
 
@@ -90,11 +90,11 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({
         ))}
 
         {questions.length === 0 && (
-          <div className="py-40 text-center bg-white rounded-[48px] border-4 border-dashed border-slate-100 flex flex-col items-center gap-6">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+          <div className="py-40 text-center bg-white rounded-[20px] border-4 border-dashed border-slate-100 flex flex-col items-center gap-6">
+            <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
                <PlusCircle className="w-10 h-10" />
             </div>
-            <p className="text-xl font-black text-slate-300 tracking-[0.5em] uppercase">No Assessment Data</p>
+            <p className="text-xl font-black text-slate-200  ">No Assessment Data</p>
           </div>
         )}
       </div>

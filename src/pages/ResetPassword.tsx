@@ -98,7 +98,7 @@ export default function ResetPassword() {
                       placeholder="ENTER 6-DIGIT TOKEN"
                       value={token}
                       onChange={e => setToken(e.target.value)}
-                      className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold tracking-[0.5em] text-center"
+                      className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold  text-center"
                       required
                     />
                   </div>

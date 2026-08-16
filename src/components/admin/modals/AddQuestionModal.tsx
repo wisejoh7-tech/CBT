@@ -36,25 +36,25 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
             <textarea
               value={newQuestion.text}
               onChange={e => setNewQuestion({...newQuestion, text: e.target.value})}
-              placeholder="Enter the examination question here..."
+              placeholder=""
               required
-              className="w-full h-24 px-6 py-4 rounded-2xl bg-slate-50 border-none font-bold text-xs shadow-inner outline-none focus:ring-2 focus:ring-primary/10 resize-none"
+              className="w-full h-24 px-6 py-4 rounded-2xl bg-slate-50 border-2 border-primary/20 font-bold text-xs shadow-inner outline-none focus:border-primary focus:ring-0 resize-none transition-all"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             {[0, 1, 2, 3].map(i => (
               <div key={i} className="space-y-1.5">
-                <Label className="text-[10px] font-black text-primary/30 tracking-widest uppercase">Options {String.fromCharCode(65 + i)}</Label>
+                <Label className="text-[10px] font-black text-primary/30 tracking-widest ">Option {String.fromCharCode(65 + i)}</Label>
                 <Input
-                  placeholder={`Type option ${String.fromCharCode(65 + i)}`}
+                  placeholder={`option ${String.fromCharCode(65 + i)}`}
                   value={newQuestion.options[i]}
                   onChange={e => {
-                    const opts = [...newQuestion.options];
+                    const opts = [...newQuestion.option];
                     opts[i] = e.target.value;
                     setNewQuestion({...newQuestion, options: opts});
                   }}
                   required
-                  className="h-10 px-5 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner"
+                  className="h-10 px-5 rounded-xl bg-slate-50 font-bold text-xs shadow-inner"
                 />
               </div>
             ))}
@@ -65,7 +65,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
               <select
                 value={newQuestion.correctOptionIndex}
                 onChange={e => setNewQuestion({...newQuestion, correctOptionIndex: parseInt(e.target.value)})}
-                className="w-full h-10 px-5 rounded-xl bg-slate-50 border-none font-bold text-xs outline-none shadow-inner"
+                className="w-full h-10 px-5 rounded-xl bg-slate-50 border-2 border-primary/20 font-bold text-xs outline-none shadow-inner focus:border-primary transition-all"
               >
                 <option value={0}>Answer: a</option>
                 <option value={1}>Answer: b</option>
@@ -79,7 +79,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
                 placeholder="e.g. Algebra"
                 value={newQuestion.topic}
                 onChange={e => setNewQuestion({...newQuestion, topic: e.target.value})}
-                className="h-10 px-5 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner"
+                className="h-10 px-5 rounded-xl bg-slate-50 font-bold text-xs shadow-inner"
               />
             </div>
           </div>

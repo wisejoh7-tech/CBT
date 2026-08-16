@@ -38,7 +38,7 @@ export const AddSubjectModal: React.FC<AddSubjectModalProps> = ({
               value={newOfferedSubject}
               onChange={e => setNewOfferedSubject(e.target.value)}
               required
-              className="h-12 px-6 rounded-2xl bg-slate-50 border-none font-bold text-center shadow-inner text-xs"
+              className="h-12 px-6 rounded-2xl bg-slate-50 font-bold text-center shadow-inner text-xs"
             />
           </div>
           <div className="flex gap-4 pt-4">

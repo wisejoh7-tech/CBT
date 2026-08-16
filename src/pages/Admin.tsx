@@ -207,14 +207,33 @@ export default function Admin() {
 
   const handleCreateExam = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch(getApiUrl('/exams'), { method: 'POST', headers: getHeaders(), body: JSON.stringify({ ...newExam, createdBy: profile?.displayName }) });
+    const res = await fetch(getApiUrl('/exams'), {
+      method: 'POST',
+      headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...newExam, createdBy: profile?.uid })
+    });
     if (res.ok) { toast.success("Module created"); setShowAddExam(false); fetchData(); }
+  };
+
+  const handleDeleteExam = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this assessment? All associated questions will be removed.")) return;
+    const res = await fetch(getApiUrl(`/exams/${id}`), { method: 'DELETE', headers: getHeaders() });
+    if (res.ok) {
+      toast.success("Assessment deleted");
+      fetchData();
+    } else {
+      toast.error("Failed to delete assessment");
+    }
   };
 
   const handleAddQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedExamId) return;
-    const res = await fetch(getApiUrl(`/exams/${selectedExamId}/questions`), { method: 'POST', headers: getHeaders(), body: JSON.stringify(newQuestion) });
+    const res = await fetch(getApiUrl(`/exams/${selectedExamId}/questions`), {
+      method: 'POST',
+      headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(newQuestion)
+    });
     if (res.ok) { toast.success("Question added"); setShowAddQuestion(false); fetchQuestions(selectedExamId); fetchData(); }
   };
 
@@ -223,10 +242,41 @@ export default function Admin() {
     fetchData();
   };
 
+  const handleDeleteSubject = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this subject? This might affect existing exams.")) return;
+    const res = await fetch(getApiUrl(`/subjects/${id}`), { method: 'DELETE', headers: getHeaders() });
+    if (res.ok) {
+      toast.success("Subject deleted");
+      fetchData();
+    } else {
+      toast.error("Failed to delete subject");
+    }
+  };
+
   const handleCreateOfferedSubject = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch(getApiUrl('/subjects'), { method: 'POST', headers: getHeaders(), body: JSON.stringify({ name: newOfferedSubject }) });
-    if (res.ok) { toast.success("Subject added"); setShowAddSubject(false); fetchData(); }
+    if (!newOfferedSubject.trim()) return;
+
+    try {
+      const res = await fetch(getApiUrl('/subjects'), {
+        method: 'POST',
+        headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newOfferedSubject.trim() })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success("Subject added");
+        setShowAddSubject(false);
+        setNewOfferedSubject('');
+        fetchData();
+      } else {
+        toast.error(data.message || "Failed to add subject");
+      }
+    } catch (err) {
+      toast.error("Network error while adding subject");
+    }
   };
 
   const toggleCandidateSubject = (s: string) => {
@@ -599,6 +649,7 @@ export default function Admin() {
                     offeredSubjects={offeredSubjects}
                     setShowAddSubject={setShowAddSubject}
                     toggleSubjectStatus={toggleSubjectStatus}
+                    handleDeleteSubject={handleDeleteSubject}
                   />
                 )}
 
@@ -608,6 +659,7 @@ export default function Admin() {
                     setShowAddExam={setShowAddExam}
                     setActiveTab={setActiveTab}
                     setSelectedExamId={setSelectedExamId}
+                    handleDeleteExam={handleDeleteExam}
                   />
                 )}
 

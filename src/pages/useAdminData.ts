@@ -21,7 +21,6 @@ export function useAdminData() {
   const [loading, setLoading] = useState(true);
 
   const getHeaders = useCallback(() => ({
-    'Content-Type': 'application/json',
     'Authorization': `Bearer ${localStorage.getItem('token')}`
   }), []);
 
@@ -36,36 +35,31 @@ export function useAdminData() {
       ['/subjects', setOfferedSubjects]
     ];
 
-    endpoints.forEach(async ([url, setter]: any) => {
+    await Promise.all(endpoints.map(async ([url, setter]: any) => {
       try {
         const res = await fetch(getApiUrl(url), { headers: getHeaders() });
         if (res.ok) {
           const data = await res.json();
           setter(data);
+        } else {
+          console.warn(`Failed to fetch ${url}: ${res.status}`);
         }
       } catch (err) {
-        console.warn(`Soft failure fetching ${url}:`, err);
-      } finally {
-        if (url === '/analytics/summary' || url === '/exams') {
-          setLoading(false);
-        }
+        console.error(`Error fetching ${url}:`, err);
       }
-    });
+    }));
+
+    setLoading(false);
 
     const isSuperOrAdmin = profile?.role === 'super_admin' || profile?.role === 'admin';
     if (isSuperOrAdmin) {
-      (async () => {
-        try {
-          const res = await fetch(getApiUrl('/auth/staff'), { headers: getHeaders() });
-          if (res.ok) setStaff(await res.json());
-        } catch (err) {
-          console.warn("Failed to fetch staff:", err);
-        }
-      })();
+      try {
+        const res = await fetch(getApiUrl('/auth/staff'), { headers: getHeaders() });
+        if (res.ok) setStaff(await res.json());
+      } catch (err) {
+        console.warn("Failed to fetch staff:", err);
+      }
     }
-
-    // Safety fallback: ensure spinner goes away after 2 seconds
-    setTimeout(() => setLoading(false), 2000);
   }, [getHeaders, profile]);
 
   const fetchQuestions = useCallback(async (examId: string) => {

@@ -31,28 +31,28 @@ export const AddExamModal: React.FC<AddExamModalProps> = ({
         exit={{ opacity: 0, scale: 0.95 }}
         className="w-full max-w-md bg-white rounded-[40px] shadow-2xl p-8 space-y-6 border border-primary/5 relative z-10"
       >
-        <h3 className="text-xl font-black text-primary mb-6 text-center tracking-tighter uppercase">New Subject</h3>
+        <h3 className="text-xl font-black text-primary mb-6 text-center tracking-tighter uppercase">New Assessment</h3>
         <form onSubmit={handleCreateExam} className="space-y-4 font-medium">
           <div className="space-y-1.5">
             <Label className="text-[11px] font-black text-primary/40 tracking-widest uppercase">Curriculum Subject</Label>
             <select
               value={newExam.subject}
               onChange={e => setNewExam({...newExam, subject: e.target.value})}
-              className="w-full h-12 px-6 rounded-2xl bg-slate-50 border-none font-bold text-xs outline-none shadow-inner"
+              className="w-full h-12 px-6 rounded-2xl bg-slate-50 border-2 border-primary/20 font-bold text-xs outline-none shadow-inner"
               required
             >
               <option value="">Select Subject</option>
-              {offeredSubjects.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+              {offeredSubjects.filter(s => s.isActive).map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
             </select>
           </div>
           <div className="space-y-1.5">
             <Label className="text-[11px] font-black text-primary/40 tracking-widest uppercase">Subject Title</Label>
             <Input
-              placeholder="e.g. 2026 JAMB Unified Mock"
+              placeholder=""
               value={newExam.title}
               onChange={e => setNewExam({...newExam, title: e.target.value})}
               required
-              className="h-12 px-6 rounded-2xl bg-slate-50 border-none font-bold shadow-inner text-xs"
+              className="h-12 px-6 rounded-2xl bg-slate-50 font-bold shadow-inner text-xs"
             />
           </div>
           <div className="space-y-1.5">
@@ -63,11 +63,11 @@ export const AddExamModal: React.FC<AddExamModalProps> = ({
               value={newExam.durationMinutes}
               onChange={e => setNewExam({...newExam, durationMinutes: parseInt(e.target.value)})}
               required
-              className="h-12 px-6 rounded-2xl bg-slate-50 border-none font-bold shadow-inner text-xs"
+              className="h-12 px-6 rounded-2xl bg-slate-50 font-bold shadow-inner text-xs"
             />
           </div>
           <div className="flex gap-4 pt-4">
-            <Button type="submit" className="flex-1 h-14 bg-primary text-white font-black rounded-2xl shadow-xl hover:scale-[1.02] transition-all tracking-widest text-xs uppercase">Initialize</Button>
+            <Button type="submit" className="flex-1 h-14 bg-primary text-white font-black rounded-2xl shadow-xl hover:scale-[1.02] transition-all tracking-widest text-xs uppercase">Submit</Button>
             <Button type="button" onClick={onClose} variant="outline" className="h-14 px-8 rounded-2xl font-black text-xs border-primary/10 uppercase">Cancel</Button>
           </div>
         </form>

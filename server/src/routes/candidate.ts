@@ -28,6 +28,12 @@ router.put("/:examNumber", authenticateJWT, authorizeRoles("admin", "super_admin
 
     if (!candidate) return res.status(404).json({ message: "Candidate not found" });
 
+    // If email is being changed, check for uniqueness
+    if (req.body.email && req.body.email !== candidate.email) {
+      const existingEmail = await candidateRepo.findOneBy({ email: req.body.email });
+      if (existingEmail) return res.status(400).json({ message: "Email already registered to another candidate" });
+    }
+
     candidateRepo.merge(candidate, req.body);
     await candidateRepo.save(candidate);
 

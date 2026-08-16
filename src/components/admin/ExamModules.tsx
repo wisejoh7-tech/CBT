@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/lib/ui/button';
 import { Badge } from '@/lib/ui/badge';
-import { Activity, PlusCircle, Settings2 } from 'lucide-react';
+import { Activity, PlusCircle, Settings2, Trash2 } from 'lucide-react';
 import { Exam } from '@/src/types';
 
 interface ExamModulesProps {
@@ -9,6 +9,7 @@ interface ExamModulesProps {
   setShowAddExam: (val: boolean) => void;
   setActiveTab: (val: string) => void;
   setSelectedExamId: (id: string) => void;
+  handleDeleteExam: (id: string) => void;
 }
 
 export const ExamModules: React.FC<ExamModulesProps> = ({
@@ -16,6 +17,7 @@ export const ExamModules: React.FC<ExamModulesProps> = ({
   setShowAddExam,
   setActiveTab,
   setSelectedExamId,
+  handleDeleteExam,
 }) => {
   return (
     <div className="space-y-4 text-sm font-medium max-w-4xl mx-auto">
@@ -26,11 +28,11 @@ export const ExamModules: React.FC<ExamModulesProps> = ({
            </div>
            <div>
               <h3 className="text-xl font-black tracking-tighter ">Assessment Modules</h3>
-              <p className="text-[14px] font-black ">Managing {exams.length} exam containers</p>
+              <p className="text-[13px] font-black ">Managing {exams.length} exam containers</p>
            </div>
         </div>
         <Button onClick={() => setShowAddExam(true)} className="h-10 px-5 rounded-xl bg-primary text-white font-black tracking-widest uppercase text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
-          <PlusCircle className="w-3.5 h-3.5 mr-2" /> New Subject
+          <PlusCircle className="w-3.5 h-3.5 mr-2" /> New Assessment
         </Button>
       </div>
 
@@ -61,9 +63,17 @@ export const ExamModules: React.FC<ExamModulesProps> = ({
                       <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Duration</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
                     <Button variant="outline" size="sm" onClick={() => { setActiveTab('questions'); setSelectedExamId(e.id); }} className="h-8 px-4 rounded-lg border-2 border-primary/10 text-primary font-black text-[9px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
                       <Settings2 className="w-3.5 h-3.5 mr-1.5" /> Manage
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteExam(e.id)}
+                      className="h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </td>
                 </tr>

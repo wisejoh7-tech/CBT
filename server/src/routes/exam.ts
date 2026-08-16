@@ -27,16 +27,26 @@ router.get("/", authenticateJWT, async (req, res) => {
 
 router.post("/", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req: any, res) => {
   const examRepo = AppDataSource.getRepository(Exam);
+
+  // Ensure createdBy is a valid UUID by strictly using the authenticated user's ID
+  const creatorId = req.user?.id || req.body.createdBy;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(creatorId);
+
   const data = {
     ...req.body,
     totalQuestions: req.body.totalQuestions || 0,
-    createdBy: req.body.createdBy || req.user?.id || "00000000-0000-0000-0000-000000000000",
+    createdBy: isUuid ? creatorId : "00000000-0000-0000-0000-000000000000",
     isActive: req.body.isActive ?? true,
   };
 
-  const exam = examRepo.create(data);
-  await examRepo.save(exam);
-  res.status(201).json(exam);
+  try {
+    const exam = examRepo.create(data);
+    await examRepo.save(exam);
+    res.status(201).json(exam);
+  } catch (error: any) {
+    logger.error("Failed to create exam:", error.message);
+    res.status(400).json({ message: "Failed to create assessment", error: error.message });
+  }
 });
 
 router.put("/:id", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {

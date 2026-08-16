@@ -8,6 +8,7 @@ import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
 import * as mailer from "./mailer";          // matches mailer.ts in src
 import { User } from "./entities/User";
+import { Subject } from "./entities/Subject";
 import authRoutes from "./routes/auth";
 import examRoutes from "./routes/exam";
 import analyticsRoutes from "./routes/analytics";
@@ -64,6 +65,15 @@ app.use("/center", centerRoutes);
 app.use("/candidates", candidateRoutes);
 app.use("/subjects", subjectRoutes);
 
+// Global Error Handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  logger.error(`Unhandled Error: ${err.message}`);
+  res.status(err.status || 500).json({
+    message: "Internal Server Error",
+    error: err.message
+  });
+});
+
 async function startServer() {
   try {
     const maxRetries = 5;
@@ -111,6 +121,28 @@ async function startServer() {
         } else {
           logger.info(`Default Admin created: admin@vivicbt.com / ${defaultPassword}`);
         }
+      }
+
+      // Seed Default Subjects
+      try {
+        const subjectRepo = AppDataSource.getRepository(Subject);
+        const defaults = [
+          "English Language", "Mathematics", "Physics", "Chemistry",
+          "Biology", "Economics", "Government", "Literature in English",
+          "CRS", "IRS", "Geography", "Agricultural Science",
+          "Commerce", "Financial Accounting", "History", "Civic Education",
+          "Further Mathematics", "Computer Studies", "French", "Music"
+        ];
+
+        for (const name of defaults) {
+          const existing = await subjectRepo.findOneBy({ name });
+          if (!existing) {
+            await subjectRepo.save(subjectRepo.create({ name, isActive: true }));
+          }
+        }
+        logger.info("Curriculum synchronization complete.");
+      } catch (seedError: any) {
+        logger.error("Failed to seed subjects:", seedError.message);
       }
     }
 

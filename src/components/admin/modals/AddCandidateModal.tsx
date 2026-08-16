@@ -71,7 +71,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[9px] font-black text-primary/40 tracking-widest uppercase">Email</Label>
-                    <Input type="email" placeholder="student@mail.com" value={newCandidate.email} onChange={e => setNewCandidate({...newCandidate, email: e.target.value})} required className="h-11 px-4 rounded-xl bg-white border-none font-bold shadow-inner text-xs" />
+                    <Input type="email" placeholder="student@mail.com" value={newCandidate.email} onChange={e => setNewCandidate({...newCandidate, email: e.target.value})} required className="h-11 px-4 rounded-xl bg-white font-bold shadow-inner text-xs" />
                   </div>
                 </div>
 
@@ -79,7 +79,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                   <div className="space-y-1.5">
                     <Label className="text-[9px] font-black text-primary/40 tracking-widest uppercase">Password</Label>
                     <div className="relative">
-                      <Input type={showPassword ? 'text' : 'password'} placeholder="Min 8" value={newCandidate.password} onChange={e => setNewCandidate({...newCandidate, password: e.target.value})} required className="h-11 px-4 pr-10 rounded-xl bg-white border-none font-bold shadow-inner w-full text-xs" />
+                      <Input type={showPassword ? 'text' : 'password'} placeholder="Min 8" value={newCandidate.password} onChange={e => setNewCandidate({...newCandidate, password: e.target.value})} required className="h-11 px-4 pr-10 rounded-xl bg-white font-bold shadow-inner w-full text-xs" />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/20 hover:text-primary transition-colors">
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -88,7 +88,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                   <div className="space-y-1.5">
                     <Label className="text-[9px] font-black text-primary/40 tracking-widest uppercase">Confirm</Label>
                     <div className="relative">
-                      <Input type={showConfirmPassword ? 'text' : 'password'} placeholder="Repeat" value={newCandidate.confirmPassword} onChange={e => setNewCandidate({...newCandidate, confirmPassword: e.target.value})} required className="h-11 px-4 pr-10 rounded-xl bg-white border-none font-bold shadow-inner w-full text-xs" />
+                      <Input type={showConfirmPassword ? 'text' : 'password'} placeholder="Repeat" value={newCandidate.confirmPassword} onChange={e => setNewCandidate({...newCandidate, confirmPassword: e.target.value})} required className="h-11 px-4 pr-10 rounded-xl bg-white font-bold shadow-inner w-full text-xs" />
                       <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/20 hover:text-primary transition-colors">
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -140,7 +140,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
 
                 <div className="space-y-1.5">
                   <Label className="text-[9px] font-black text-primary/40 tracking-widest uppercase">Residential Address</Label>
-                  <Input placeholder="Home Address" value={newCandidate.address} onChange={e => setNewCandidate({...newCandidate, address: e.target.value})} required className="h-11 px-4 rounded-xl bg-white border-none font-bold shadow-inner text-xs" />
+                  <Input placeholder="Home Address" value={newCandidate.address} onChange={e => setNewCandidate({...newCandidate, address: e.target.value})} required className="h-11 px-4 rounded-xl bg-white font-bold shadow-inner text-xs" />
                 </div>
               </div>
 

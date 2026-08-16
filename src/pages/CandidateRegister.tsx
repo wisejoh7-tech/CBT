@@ -160,7 +160,7 @@ export default function CandidateRegister() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col relative text-sm">
-      <div className="cbt-background opacity-[0.05]" />
+      <div className="cbt-background opacity-[0.05] pointer-events-none" />
 
       <nav className="sticky top-0 w-full bg-white border-b border-primary/5 px-6 py-4 flex justify-between items-center z-[100] shadow-sm">
         <div className="flex items-center gap-3">
@@ -195,7 +195,7 @@ export default function CandidateRegister() {
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/10" />
                         <Input
                           type="email"
-                          placeholder="candidate@example.com"
+                          placeholder=""
                           value={formData.email}
                           onChange={e => updateField('email', e.target.value)}
                           className="h-12 sm:h-14 pl-12 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 focus:border-primary font-bold text-sm sm:text-base"
@@ -303,14 +303,14 @@ export default function CandidateRegister() {
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                            <div className="space-y-1.5 sm:space-y-2">
-                              <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Create Access Key</Label>
+                              <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Create Password</Label>
                               <div className="relative">
                                  <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={formData.password} onChange={e => updateField('password', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm" required />
                                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/20 hover:text-primary transition-colors">{showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
                               </div>
                            </div>
                            <div className="space-y-1.5 sm:space-y-2">
-                              <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Confirm Key</Label>
+                              <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">ConfirmPassword</Label>
                               <div className="relative">
                                  <Input type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••••" value={formData.confirmPassword} onChange={e => updateField('confirmPassword', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm" required />
                                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/20 hover:text-primary transition-colors">{showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
@@ -345,6 +345,12 @@ export default function CandidateRegister() {
                             <button key={s.id} type="button" onClick={() => toggleSubject(s.name)} className={cn("h-12 sm:h-14 rounded-xl sm:rounded-2xl border-2 font-black text-[10px] sm:text-xs transition-all shadow-md uppercase truncate px-2", formData.subjectCombination.includes(s.name) ? "bg-primary text-white border-primary shadow-primary/20 scale-105" : "bg-slate-50 border-primary/5 text-primary/40 hover:border-primary/20")}>{s.name}</button>
                           ))}
                         </div>
+                        {offeredSubjects.filter(s => s.isActive).length === 0 && (
+                          <div className="p-8 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-primary/10">
+                            <BookOpen className="w-8 h-8 text-primary/20 mx-auto mb-3" />
+                            <p className="text-[10px] font-black text-primary/30 uppercase tracking-widest leading-relaxed">Curriculum is being updated.<br/>Please contact Admin.</p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">

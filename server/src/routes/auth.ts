@@ -64,13 +64,17 @@ router.post("/candidate/register", async (req, res) => {
   const { email, token, fullName, subjectCombination, dateOfBirth, password, phoneNumber, stateOfOrigin, lga, country, city, schoolAttended, address } = req.body;
 
   try {
+    const candidateRepository = AppDataSource.getRepository(Candidate);
+
+    // Check if email already exists
+    const existingEmail = await candidateRepository.findOneBy({ email });
+    if (existingEmail) return res.status(400).json({ message: "Email already registered" });
+
     const savedToken = await redisClient.get(`reg_token:${email}`);
     const isOverride = token === 'ADMIN_OVERRIDE';
     if (!isOverride && (!savedToken || savedToken !== token)) {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
-
-    const candidateRepository = AppDataSource.getRepository(Candidate);
 
     // Check if phone number already exists if provided
     if (phoneNumber) {
@@ -221,7 +225,7 @@ router.post("/register", async (req, res) => {
 
     const existingUser = await userRepository.findOneBy({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "Email already registered for a staff account" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);

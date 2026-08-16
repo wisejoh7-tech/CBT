@@ -1,19 +1,21 @@
 import React from 'react';
 import { Button } from '@/lib/ui/button';
 import { Badge } from '@/lib/ui/badge';
-import { PlusCircle, BookMarked } from 'lucide-react';
+import { PlusCircle, BookMarked, Trash2 } from 'lucide-react';
 import { cn } from '@/src/lib/utils/utils';
 
 interface CurriculumManagerProps {
   offeredSubjects: any[];
   setShowAddSubject: (val: boolean) => void;
   toggleSubjectStatus: (id: string) => void;
+  handleDeleteSubject: (id: string) => void;
 }
 
 export const CurriculumManager: React.FC<CurriculumManagerProps> = ({
   offeredSubjects,
   setShowAddSubject,
   toggleSubjectStatus,
+  handleDeleteSubject,
 }) => {
   return (
     <div className="space-y-4 text-sm font-medium max-w-3xl mx-auto">
@@ -39,6 +41,7 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({
               <tr className="text-[14px] font-black  ">
                 <th className="px-6 py-4">Identification</th>
                 <th className="px-6 py-4 text-center">Status</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-primary/5 font-bold uppercase">
@@ -65,12 +68,22 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({
                       {s.isActive ? "Live" : "Inactive"}
                     </Badge>
                   </td>
+                  <td className="px-6 py-4 text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteSubject(s.id)}
+                      className="h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </td>
                 </tr>
               ))}
               {offeredSubjects.length === 0 && (
                 <tr>
-                  <td colSpan={2} className="p-16 text-center text-slate-200">
-                    <p className="text-lg font-black tracking-widest uppercase">Database empty</p>
+                  <td colSpan={3} className="p-16 text-center">
+                    <p className="text-lg font-black">Database empty</p>
                   </td>
                 </tr>
               )}
