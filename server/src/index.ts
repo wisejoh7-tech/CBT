@@ -4,9 +4,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
-import * as mailer from "./mailer";          // matches mailer.ts in src
 import { User } from "./entities/User";
 import { Subject } from "./entities/Subject";
 import authRoutes from "./routes/auth";
@@ -16,59 +14,41 @@ import centerRoutes from "./routes/center";
 import candidateRoutes from "./routes/candidate";
 import subjectRoutes from "./routes/subject";
 
-import { socGateway } from "./middleware/soc-gateway";
 import { ipBlocker } from "./middleware/ip-blocker";
 import { automationEngine } from "./lib/automation-engine";
 import { AppDataSource } from "./data-source";
-import { logger } from "./lib/logger";
 import { config } from "./lib/config";
-
-if (!config.JWT_SECRET) {
-  throw new Error("JWT_SECRET is missing");
-}
-
 import { redisClient } from "./lib/services";
 
 const app = express();
-app.use(helmet());
+const httpServer = createServer(app);
+const PORT = Number(process.env.PORT) || 5000;
 
-// 0. Emergency Health Check (Bypass all middleware)
+// --- 1. IMMEDIATE PORT BINDING (Render Requirement) ---
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 DEPLOYMENT STATUS: Port ${PORT} is now OPEN and listening.`);
+  console.log(`[BOOT] Environment: ${process.env.NODE_ENV || 'development'}`);
+});
+
+// --- 2. PRIORITY ROUTES (Bypass all middleware) ---
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "alive",
-    port: config.PORT,
-    db: AppDataSource.isInitialized
+    port: PORT,
+    database: AppDataSource.isInitialized ? "connected" : "connecting",
+    redis: redisClient.isOpen ? "connected" : "fallback_mode"
   });
 });
 
 app.get("/", (req, res) => res.send("VIVI CBT API - ONLINE"));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-});
-app.use("/auth/", limiter);
-
-// HTTP + Socket.io
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: "*", // More permissive for setup
-  },
-});
-app.set("io", io);
-automationEngine.setSocketIO(io);
-
-// Middleware
-app.use(cors({
-  origin: "*", // More permissive for setup
-}));
+// --- 3. MIDDLEWARE & SECURITY ---
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 app.use(ipBlocker);
-app.use(socGateway);
 
-// Routes
+// --- 4. APPLICATION ROUTES ---
 app.use("/auth", authRoutes);
 app.use("/exams", examRoutes);
 app.use("/analytics", analyticsRoutes);
@@ -76,122 +56,64 @@ app.use("/center", centerRoutes);
 app.use("/candidates", candidateRoutes);
 app.use("/subjects", subjectRoutes);
 
-// Global Error Handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  logger.error(`Unhandled Error: ${err.message}`);
-  res.status(err.status || 500).json({
-    message: "Internal Server Error",
-    error: err.message
-  });
-});
-
-async function startServer() {
-  const PORT = config.PORT || 5000;
-
-  // 1. Start listening immediately
-  const server = httpServer.listen(PORT, "0.0.0.0", () => {
-    logger.info(`🚀 Server is live on port ${PORT}`);
-    console.log(`RENDER_PORT_SCAN_MATCH: ${PORT}`); // Explicit log for Render
-  });
-
-  server.on('error', (error: any) => {
-    logger.error("Server listen error:", error);
-    if (error.code === 'EADDRINUSE') {
-      logger.error(`Port ${PORT} is already in use.`);
-    }
-  });
+// --- 5. BACKGROUND SERVICE INITIALIZATION ---
+async function initializeServices() {
+  console.log("[BOOT] Starting background service connections...");
 
   try {
-    const maxRetries = 5;
-    let retries = 0;
-// ... (rest of the function stays same)
-
-    // 2. Connect to Postgres in the background
-    while (retries < maxRetries) {
+    // Database Connection
+    let dbRetries = 0;
+    while (dbRetries < 5) {
       try {
         await AppDataSource.initialize();
-        logger.info("Connected to Postgres");
+        console.log("✅ Postgres Connected Successfully.");
 
-        // Seed logic (only after DB is ready)
+        // Seed Default Admin
         const userRepo = AppDataSource.getRepository(User);
-        const adminCount = await userRepo.count();
-        if (adminCount === 0) {
-          const defaultPassword = process.env.INITIAL_ADMIN_PASSWORD || "admin123";
-          const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-          const defaultAdmin = userRepo.create({
+        if (await userRepo.count() === 0) {
+          const hashedPassword = await bcrypt.hash(process.env.INITIAL_ADMIN_PASSWORD || "admin123", 10);
+          await userRepo.save(userRepo.create({
             email: "admin@vivicbt.com",
             password: hashedPassword,
             displayName: "System Master",
             role: "super_admin",
-          });
-          await userRepo.save(defaultAdmin);
-          logger.info("Default Admin created.");
+          }));
+          console.log("🌱 Default Admin Seeded.");
         }
-
-        // Seed Subjects
-        try {
-          const subjectRepo = AppDataSource.getRepository(Subject);
-          const defaults = ["English Language", "Mathematics", "Physics", "Chemistry", "Biology", "Economics", "Government"];
-          for (const name of defaults) {
-            const existing = await subjectRepo.findOneBy({ name });
-            if (!existing) await subjectRepo.save(subjectRepo.create({ name, isActive: true }));
-          }
-          logger.info("Curriculum synchronization complete.");
-        } catch (sErr) { logger.error("Subject seed error"); }
-
-        break;
-      } catch (error: any) {
-        retries++;
-        logger.error(`Failed to connect to Postgres (Attempt ${retries}/${maxRetries}): ${error.message}`);
-        if (retries >= maxRetries) break;
-        await new Promise(res => setTimeout(res, 5000));
-      }
-    }
-
-    // 3. Connect to Redis in the background
-    let redisRetries = 0;
-    while (redisRetries < maxRetries) {
-      try {
-        await redisClient.connect();
-        logger.info("Connected to Redis");
         break;
       } catch (err: any) {
-        redisRetries++;
-        logger.error(`Failed to connect to Redis (Attempt ${redisRetries}/${maxRetries}):`, err.message);
-        if (redisRetries >= maxRetries) break;
-        await new Promise(res => setTimeout(res, 5000));
+        dbRetries++;
+        console.error(`[DB RETRY ${dbRetries}] ${err.message}`);
+        await new Promise(r => setTimeout(res, 5000));
       }
     }
 
+    // Redis Connection
+    try {
+      await redisClient.connect();
+      console.log("✅ Redis Connected.");
+    } catch (e) {
+      console.warn("⚠️ Redis unavailable, using Memory Fallback.");
+    }
+
+    // Socket.io Setup
+    const io = new Server(httpServer, { cors: { origin: "*" } });
+    app.set("io", io);
+    automationEngine.setSocketIO(io);
+
     io.on("connection", (socket) => {
-      logger.debug(`A user connected: ${socket.id}`);
-      socket.on("disconnect", () => {
-        logger.debug("User disconnected");
-      });
+      socket.on("disconnect", () => {});
     });
 
-    const shutdown = async () => {
-      logger.info("Shutdown signal received. Closing connections...");
-      server.close(async () => {
-        logger.info("HTTP server closed.");
-        if (AppDataSource.isInitialized) {
-          await AppDataSource.destroy();
-          logger.info("Postgres connection closed.");
-        }
-        if (redisClient.isOpen) {
-          await redisClient.disconnect();
-          logger.info("Redis connection closed.");
-        }
-        process.exit(0);
-      });
-    };
-
-    process.on("SIGINT", shutdown);
-    process.on("SIGTERM", shutdown);
-
-  } catch (error) {
-    logger.error("Failed to initialize backend services", error);
+  } catch (criticalError) {
+    console.error("FATAL: Background initialization failed", criticalError);
   }
 }
 
-startServer();
+initializeServices();
+
+// Global Error Handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(`Runtime Error: ${err.message}`);
+  res.status(err.status || 500).json({ message: "Internal Server Error" });
+});
