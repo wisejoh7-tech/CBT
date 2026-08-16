@@ -18,21 +18,22 @@ router.get("/logs", authenticateJWT, authorizeRoles("admin", "super_admin"), asy
 
 router.delete("/logs", authenticateJWT, authorizeRoles("super_admin"), async (req, res) => {
   try {
-    await AppDataSource.getRepository(Log).clear();
+    await AppDataSource.getRepository(Log).delete({});
     res.json({ message: "All logs cleared successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Failed to clear logs" });
+  } catch (error: any) {
+    res.status(500).json({ message: "Failed to clear logs", error: error.message });
   }
 });
 
 router.delete("/logs/:id", authenticateJWT, authorizeRoles("super_admin"), async (req, res) => {
   try {
     const logRepo = AppDataSource.getRepository(Log);
-    // Use string type for ID comparison
-    const log = await logRepo.findOne({ where: { id: req.params.id as any } });
+    const result = await logRepo.delete(req.params.id);
 
-    if (!log) return res.status(404).json({ message: "Log not found" });
-    await logRepo.delete(req.params.id);
+    if (result.affected === 0) {
+      return res.status(404).json({ message: "Log not found" });
+    }
+
     res.json({ message: "Log entry deleted successfully" });
   } catch (error: any) {
     console.error("Audit delete error:", error);
