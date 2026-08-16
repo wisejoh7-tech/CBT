@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
 import { Label } from '@/lib/ui/label';
-import { GraduationCap, Shield, User, Monitor, Mail, Lock, Search, ArrowLeft, Menu, X } from 'lucide-react';
+import { GraduationCap, Shield, User, Monitor, Mail, Lock, Search, ArrowLeft, Menu, X, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Separator } from '@/lib/ui/separator';
 import { cn } from '@/src/lib/utils/utils';
@@ -19,6 +19,7 @@ export default function CandidateLogin() {
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'reg_admin';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [examNumber, setExamNumber] = useState(localStorage.getItem('pendingExamNumber') || '');
   const [loginMethod, setLoginMethod] = useState<'email' | 'examNumber'>('examNumber');
 
@@ -207,18 +208,25 @@ export default function CandidateLogin() {
 
                           <Input
                             name="password"
-                            type="password"
+                            type={showPassword ? 'text' : 'password'}
                             autoComplete="current-password"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             placeholder="Enter Password"
-                            className="h-10 pl-6 rounded-2xl bg-slate-20 border-1 border-primary/10 focus:border-primary font-bold text-primary transition-all"
+                            className="h-10 pl-6 pr-10 rounded-2xl bg-slate-20 border-1 border-primary/10 focus:border-primary font-bold text-primary transition-all"
                             required
                           />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/20 hover:text-primary transition-colors"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
                         </div>
                       </div>
                     </div>
-                    <Button type="submit" disabled={loading} className="w-full h-11 bg-primary text-white rounded-2 font-black tracking-widest text-[16px] ">
+                    <Button type="submit" disabled={loading} className="w-full h-11 bg-primary text-white rounded-2xl font-black tracking-widest text-[16px] ">
                       {loading ? "AUTHENTICATING..." : "LOGIN"}
                     </Button>
                     <button
@@ -237,7 +245,7 @@ export default function CandidateLogin() {
                   onClick={() => navigate('/results')}
                   className="w-full h-11 rounded-2xl border-1  border-primary/20 text-[11px] font-black text-primary/60 hover:bg-primary/5 hover:border-primary transition-all tracking-widest flex items-center justify-center gap-2"
                 >
-                  <Search className="w-4 h-" /> CHECK MY RESULT (EXAM NUMBER)
+                  <Search className="w-4 h-4" /> CHECK MY RESULT (EXAM NUMBER)
                 </button>
                 <Separator className="bg-primary/5" />
                 <button

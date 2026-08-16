@@ -2,11 +2,112 @@ import { Router } from "express";
 import { AppDataSource } from "../data-source";
 import { Candidate } from "../entities/Candidate";
 import { Attempt } from "../entities/Attempt";
-import { authenticateJWT } from "../middleware/auth";
+import { authenticateJWT, authorizeRoles } from "../middleware/auth";
 
 const router = Router();
 
-// Get Candidate's Own Dashboard Data (Schedule & Released Results)
+// --- ADMIN ROUTES ---
+
+// Get all candidates (Admin only)
+router.get("/", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_admin"), async (req, res) => {
+  try {
+    const candidates = await AppDataSource.getRepository(Candidate).find({
+      order: { createdAt: "DESC" }
+    });
+    res.json(candidates);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch candidates" });
+  }
+});
+
+// Update candidate (Admin only)
+router.put("/:examNumber", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_admin"), async (req, res) => {
+  try {
+    const candidateRepo = AppDataSource.getRepository(Candidate);
+    const candidate = await candidateRepo.findOneBy({ examNumber: req.params.examNumber });
+
+    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+
+    candidateRepo.merge(candidate, req.body);
+    await candidateRepo.save(candidate);
+
+    res.json(candidate);
+  } catch (error: any) {
+    res.status(500).json({ message: "Update failed", error: error.message });
+  }
+});
+
+// Delete candidate (Admin only)
+router.delete("/:examNumber", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+  try {
+    await AppDataSource.getRepository(Candidate).delete(req.params.examNumber);
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ message: "Deletion failed" });
+  }
+});
+
+// Bulk Assign Scheduling (Admin only)
+router.post("/bulk-assign", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_admin"), async (req, res) => {
+  const { examVenue, examDate, examTime, startSeatNumber, assignments } = req.body;
+
+  try {
+    const candidateRepo = AppDataSource.getRepository(Candidate);
+
+    if (assignments && Array.isArray(assignments)) {
+      // Individual assignments provided
+      for (const entry of assignments) {
+        const c = await candidateRepo.findOneBy({ id: entry.id });
+        if (c) {
+          if (entry.examNumber) c.examNumber = entry.examNumber;
+          if (entry.examVenue) c.examVenue = entry.examVenue;
+          if (entry.examDate) c.examDate = entry.examDate;
+          if (entry.examTime) c.examTime = entry.examTime;
+          if (entry.assignedSeatNumber) c.assignedSeatNumber = entry.assignedSeatNumber.toString();
+          await candidateRepo.save(c);
+        }
+      }
+      return res.json({ message: `Successfully updated ${assignments.length} candidate assignments` });
+    }
+
+    // Fallback to traditional bulk logic
+    const candidates = await candidateRepo.find({ order: { createdAt: "ASC" } });
+    let currentSeat = parseInt(startSeatNumber) || 1;
+
+    for (const c of candidates) {
+      if (examVenue) c.examVenue = examVenue;
+      if (examDate) c.examDate = examDate;
+      if (examTime) c.examTime = examTime;
+      c.assignedSeatNumber = currentSeat.toString();
+      currentSeat++;
+    }
+
+    await candidateRepo.save(candidates);
+    res.json({ message: `Successfully assigned ${candidates.length} candidates` });
+  } catch (error: any) {
+    res.status(500).json({ message: "Bulk assignment failed", error: error.message });
+  }
+});
+
+// Push Exam to All
+router.post("/push-exam", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+  const { examId } = req.body;
+  if (!examId) return res.status(400).json({ message: "Exam ID required" });
+
+  try {
+    const candidateRepo = AppDataSource.getRepository(Candidate);
+    await candidateRepo.createQueryBuilder()
+      .update(Candidate)
+      .set({ assignedExamId: examId })
+      .execute();
+
+    res.json({ message: "Exam module pushed to all candidates" });
+  } catch (error: any) {
+    res.status(500).json({ message: "Push failed", error: error.message });
+  }
+});
+
+// --- CANDIDATE ROUTES ---
 router.get("/dashboard", authenticateJWT, async (req: any, res) => {
   const examNumber = req.user.examNumber;
   if (!examNumber) return res.status(403).json({ message: "Only candidates can access this" });
@@ -50,6 +151,7 @@ router.get("/dashboard", authenticateJWT, async (req: any, res) => {
         examVenue: candidate?.examVenue,
         examDate: candidate?.examDate,
         examTime: candidate?.examTime,
+        assignedExamId: candidate?.assignedExamId,
         subjectCombination: candidate?.subjectCombination,
         faceUrl: candidate?.faceUrl
       },
@@ -65,7 +167,7 @@ router.put("/profile", authenticateJWT, async (req: any, res) => {
   const examNumber = req.user.examNumber;
   if (!examNumber) return res.status(403).json({ message: "Unauthorized" });
 
-  const { fullName, phoneNumber, stateOfOrigin, lga, schoolAttended, address, dateOfBirth } = req.body;
+  const { fullName, phoneNumber, stateOfOrigin, lga, country, city, schoolAttended, address, dateOfBirth } = req.body;
 
   try {
     const candidateRepo = AppDataSource.getRepository(Candidate);
@@ -77,6 +179,8 @@ router.put("/profile", authenticateJWT, async (req: any, res) => {
     if (phoneNumber) candidate.phoneNumber = phoneNumber;
     if (stateOfOrigin) candidate.stateOfOrigin = stateOfOrigin;
     if (lga) candidate.lga = lga;
+    if (country) candidate.country = country;
+    if (city) candidate.city = city;
     if (schoolAttended) candidate.schoolAttended = schoolAttended;
     if (address) candidate.address = address;
     if (dateOfBirth) candidate.dateOfBirth = dateOfBirth;

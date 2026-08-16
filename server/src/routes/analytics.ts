@@ -3,6 +3,7 @@ import { AppDataSource } from "../data-source";
 import { Attempt } from "../entities/Attempt";
 import { Exam } from "../entities/Exam";
 import { Log } from "../entities/Log";
+import { Candidate } from "../entities/Candidate";
 import { authenticateJWT, authorizeRoles } from "../middleware/auth";
 
 const router = Router();
@@ -13,6 +14,30 @@ router.get("/logs", authenticateJWT, authorizeRoles("admin", "super_admin"), asy
     take: 100
   });
   res.json(logs);
+});
+
+router.delete("/logs", authenticateJWT, authorizeRoles("super_admin"), async (req, res) => {
+  try {
+    await AppDataSource.getRepository(Log).clear();
+    res.json({ message: "All logs cleared successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to clear logs" });
+  }
+});
+
+router.delete("/logs/:id", authenticateJWT, authorizeRoles("super_admin"), async (req, res) => {
+  try {
+    const logRepo = AppDataSource.getRepository(Log);
+    // Use string type for ID comparison
+    const log = await logRepo.findOne({ where: { id: req.params.id as any } });
+
+    if (!log) return res.status(404).json({ message: "Log not found" });
+    await logRepo.delete(req.params.id);
+    res.json({ message: "Log entry deleted successfully" });
+  } catch (error: any) {
+    console.error("Audit delete error:", error);
+    res.status(500).json({ message: "Failed to delete log", error: error.message });
+  }
 });
 
 router.get("/export-results", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
@@ -91,6 +116,57 @@ router.post("/reset", authenticateJWT, authorizeRoles("super_admin"), async (req
     res.json({ message: "Performance metrics reset successfully (All attempt data cleared)." });
   } catch (error) {
     res.status(500).json({ message: "Failed to reset metrics" });
+  }
+});
+
+router.get("/detailed-performance", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+  try {
+    const attemptRepo = AppDataSource.getRepository(Attempt);
+    const candidateRepo = AppDataSource.getRepository(Candidate);
+
+    // Get all completed attempts with candidate info
+    const attempts = await attemptRepo.find({
+      where: { status: "completed" },
+      order: { completedAt: "DESC" }
+    });
+
+    const candidates = await candidateRepo.find();
+
+    // Performance by Candidate
+    const candidatePerformance = attempts.map(a => {
+      const candidate = candidates.find(c => c.examNumber === a.userId);
+      return {
+        examNumber: a.userId,
+        fullName: candidate?.fullName || "Unknown",
+        score: a.score,
+        totalPossible: a.totalPossible,
+        percentage: ((a.score / a.totalPossible) * 100).toFixed(2),
+        date: a.completedAt
+      };
+    });
+
+    // Performance by Topic (Aggregate)
+    const topicPerformance: Record<string, { correct: number, total: number }> = {};
+    attempts.forEach(a => {
+      if (a.results?.topics) {
+        Object.entries(a.results.topics).forEach(([topic, stats]: [string, any]) => {
+          if (!topicPerformance[topic]) topicPerformance[topic] = { correct: 0, total: 0 };
+          topicPerformance[topic].correct += stats.correct;
+          topicPerformance[topic].total += stats.total;
+        });
+      }
+    });
+
+    res.json({
+      candidates: candidatePerformance,
+      topics: Object.entries(topicPerformance).map(([name, stats]) => ({
+        name,
+        avgScore: ((stats.correct / stats.total) * 100).toFixed(2),
+        totalAttempts: stats.total
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch detailed analytics" });
   }
 });
 

@@ -14,7 +14,7 @@ export default function Home() {
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'reg_admin';
 
   return (
-    <div className="min-h-screen flex flex-col bg-white selection:bg-primary/10 font-sans relative antialiased tracking-tight">
+    <div className="min-h-screen flex flex-col bg-white selection:bg-primary/10 font-sans relative  antialiased tracking-tight">
       {/* Navigation */}
       <nav className="sticky top-0 w-full bg-white/90 backdrop-blur-md border-b border-primary/5 px-8 py-4 flex justify-between items-center z-[100]">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
@@ -22,17 +22,17 @@ export default function Home() {
           <span className="font-black text-xl tracking-tighter text-primary">VIVI CBT</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-8 ">
           {[
-            { label: 'Home', path: '/' },
-            { label: 'Candidate Login', path: '/candidate-login' },
-            { label: 'Register', path: '/candidate-register' },
-            { label: 'Results', path: '/results' }
+            { label: 'HOME', path: '/' },
+            { label: 'CANDIDATE LOGIN', path: '/candidate-login' },
+            { label: 'REGISTER', path: '/candidate-register' },
+            { label: 'RESULTS', path: '/results' }
           ].map((item) => (
             <button
               key={item.label}
               onClick={() => navigate(item.path)}
-              className="text-[11px] font-black tracking-widest text-primary/60 hover:text-primary transition-colors"
+              className="text-[14px] font-black tracking-widest text-primary/60 hover:text-primary transition-colors"
             >
               {item.label}
             </button>
@@ -40,7 +40,7 @@ export default function Home() {
           {user && (
             <Button
               onClick={() => navigate(isAdmin ? '/admin' : '/dashboard')}
-              className="h-10 px-6 bg-primary text-white rounded-xl font-black text-[10px] tracking-widest shadow-md hover:scale-105 transition-all"
+              className="h-10 px-6 bg-primary text-white rounded-xl font-black text-[14px] tracking-widest shadow-md hover:scale-105 transition-all"
             >
               Go to Portal
             </Button>
@@ -91,11 +91,11 @@ export default function Home() {
             <span className="text-[9px] font-black tracking-[0.3em] text-primary">Standard Examination Portal</span>
           </motion.div>
 
-          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-4xl md:text-5xl font-black text-primary tracking-tighter leading-[1] mb-8 ">
-            The Gold Standard <br/> <span className="text-primary/30">In CBT Excellence</span>
+          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-2xl md:text-3xl font-black text-blue/100 tracking-tighter leading-[1.8] mb-8 ">
+            The Gold  Standard <br/> <span className="text-blue/100">In CBT Excellence</span>
           </motion.h1>
 
-          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-sm md:text-base text-primary/60 font-medium mb-12 max-w-2xl mx-auto leading-relaxed">
+          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-sm md:text-base text-blue/100 font-large mb-12 max-w-2xl text-bold mx-auto leading-relaxed">
             Welcome to VIVI CBT Systems, where cutting-edge technology meets academic excellence. Experience a secure, fair, and seamless examination environment.
           </motion.p>
 

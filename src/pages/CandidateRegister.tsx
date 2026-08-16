@@ -5,7 +5,7 @@ import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
 import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
-import { Mail, User, BookOpen, Key, Calendar, ArrowRight, CheckCircle, Monitor, Phone, MapPin, Camera, Trash2, ArrowLeft, Menu, X } from 'lucide-react';
+import { Mail, User, BookOpen, Key, Calendar, ArrowRight, CheckCircle, Monitor, Phone, MapPin, Camera, Trash2, ArrowLeft, Menu, X, Eye, EyeOff, FileCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiUrl } from '@/src/lib/api-config';
 import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
@@ -16,16 +16,22 @@ export default function CandidateRegister() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [formData, setFormData] = useState({
     email: '',
     token: '',
     fullName: '',
     phoneNumber: '',
+    country: 'Nigeria',
     stateOfOrigin: '',
+    city: '',
     lga: '',
     schoolAttended: '',
     address: '',
     password: '',
+    confirmPassword: '',
     dateOfBirth: '',
     waecResultUrl: '',
     faceUrl: '',
@@ -49,7 +55,7 @@ export default function CandidateRegister() {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 400, height: 400, facingMode: "user" } });
       if (videoRef.current) videoRef.current.srcObject = stream;
     } catch (err) {
-      toast.error("Camera access denied. Biometric verification is mandatory.");
+      toast.error("Camera access denied.");
       setIsCapturing(false);
     }
   };
@@ -62,14 +68,15 @@ export default function CandidateRegister() {
     canvas.height = video.videoHeight;
     canvas.getContext('2d')?.drawImage(video, 0, 0);
     const data = canvas.toDataURL('image/jpeg', 0.9);
-    setFormData({ ...formData, faceUrl: data });
+    setFormData(prev => ({ ...prev, faceUrl: data }));
 
-    // Stop stream
-    const stream = video.srcObject as MediaStream;
-    stream.getTracks().forEach(track => track.stop());
+    if (video.srcObject) {
+      const stream = video.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+    }
     setIsCapturing(false);
-    toast.success("Biometric Data Captured Successfully.");
-    setStep(3); // Auto-advance to details
+    toast.success("Identity Captured.");
+    setTimeout(() => setStep(3), 500);
   };
 
   const handleSendToken = async (e: React.FormEvent) => {
@@ -83,7 +90,7 @@ export default function CandidateRegister() {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success("Verification token sent to your email.");
+        toast.success("Verification token sent.");
         setStep(2);
       } else {
         toast.error(data.message || "Failed to send token.");
@@ -97,28 +104,35 @@ export default function CandidateRegister() {
 
   const handleFinalRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      toast.error("Password must include uppercase, lowercase, number and symbol.");
+      return;
+    }
     if (!formData.faceUrl) {
-      toast.error("Biometric capture is required.");
+      toast.error("Biometric capture required.");
       setStep(2);
       return;
     }
     if (formData.subjectCombination.length < 4) {
-      toast.error("Please select exactly 4 subjects.");
+      toast.error("Select exactly 4 subjects.");
       return;
     }
     setLoading(true);
     try {
+      const payload = { ...formData };
       const res = await fetch(getApiUrl('/auth/candidate/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          fullName: formData.fullName.trim()
-        })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success(`Registration Successful! Exam Number: ${data.candidate.examNumber}`);
+        toast.success(`Registration Successful!`);
         navigate('/candidate-login');
       } else {
         toast.error(data.message || "Registration failed.");
@@ -140,335 +154,206 @@ export default function CandidateRegister() {
     });
   };
 
+  const updateField = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col relative">
+    <div className="min-h-screen bg-slate-50 flex flex-col relative text-sm">
       <div className="cbt-background opacity-[0.05]" />
 
-      <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b-2 border-primary/10 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>
+      <nav className="sticky top-0 w-full bg-white border-b border-primary/5 px-6 py-4 flex justify-between items-center z-[100] shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => navigate('/')}>
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">V</div>
             <span className="font-black text-xl tracking-tighter text-primary">VIVI CBT</span>
-          </div>
-          <div className="h-8 w-[1px] bg-primary/10 hidden md:block" />
-          <div className="hidden md:flex items-center gap-2 text-primary/40">
-            <div className="relative">
-              <Monitor className="w-6 h-6" />
-              <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-            </div>
-            <span className="text-[10px] font-black tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
         <div className="hidden md:flex items-center gap-8">
           <button onClick={() => navigate('/')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-1">
-            <ArrowLeft className="w-4 h-4" /> Home
+            <ArrowLeft className="w-4 h-4" /> HOME
           </button>
-          <button onClick={() => navigate('/candidate-login')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Login</button>
-          <button onClick={() => navigate('/results')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Check Result</button>
+          <button onClick={() => navigate('/candidate-login')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">LOGIN</button>
         </div>
-
-        {/* Mobile Menu Toggle */}
-        <button
-          className="md:hidden p-2 text-primary"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="absolute top-full left-0 w-full bg-white border-b-2 border-primary/10 md:hidden overflow-hidden z-[90] shadow-xl"
-            >
-              <div className="flex flex-col p-6 gap-4">
-                <button
-                  onClick={() => { navigate('/'); setIsMenuOpen(false); }}
-                  className="text-left text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors py-2 flex items-center gap-2"
-                >
-                  <ArrowLeft className="w-4 h-4" /> Home
-                </button>
-                <button
-                  onClick={() => { navigate('/candidate-login'); setIsMenuOpen(false); }}
-                  className="text-left text-[11px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => { navigate('/results'); setIsMenuOpen(false); }}
-                  className="text-left text-[11px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
-                >
-                  Check Result
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </nav>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative z-10">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-          <div className="text-center mb-6">
-            <h2 className="text-1xl text-white tracking-tighter text-primary leading-none mb-2">Registration Portal</h2>
-            <p className="text-[10px] text-primary/60 text-white tracking-[0.4em]">Step {step} of 3</p>
+      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12 relative z-10">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={cn("w-full transition-all duration-500", step === 3 ? "max-w-5xl" : "max-w-md")}>
+          <div className="text-center mb-6 sm:mb-10">
+            <h2 className="text-2xl sm:text-4xl text-primary font-black leading-none mb-3">Enrollment</h2>
+            <p className="text-[10px] sm:text-[11px] text-primary/40 font-black tracking-[0.4em] uppercase">Step {step} of 3</p>
           </div>
 
-          <Card className="rounded-[20px] border-2 border-primary/10 bg-white shadow-2xl overflow-hidden">
-            <CardContent className="p-10">
+          <Card className="rounded-[32px] sm:rounded-[40px] border border-primary/5 bg-white shadow-2xl overflow-hidden">
+            <CardContent className="p-6 sm:p-12">
               <AnimatePresence mode="wait">
                 {step === 1 && (
-                  <motion.form key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleSendToken} className="space-y-6">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-primary/40 tracking-widest ">Email Address</Label>
-                      <div className="relative group">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
+                  <motion.form key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleSendToken} className="space-y-6 sm:space-y-8">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] sm:text-[11px] font-black text-primary/40 tracking-widest ml-1 uppercase">Email Address</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/10" />
                         <Input
                           type="email"
-                          placeholder="Enter Email Address"
+                          placeholder="candidate@example.com"
                           value={formData.email}
-                          onChange={e => setFormData({...formData, email: e.target.value})}
-                          className="h-11 pl-12 rounded-1.5xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold transition-all"
+                          onChange={e => updateField('email', e.target.value)}
+                          className="h-12 sm:h-14 pl-12 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 focus:border-primary font-bold text-sm sm:text-base"
                           required
                         />
                       </div>
                     </div>
-                    <Button type="submit" disabled={loading} className="w-full h-12 bg-primary text-white rounded-1.5xl font-black tracking-widest text-[11px] flex gap-2">
-                      {loading ? "Sending..." : "Send Verification Token"} <ArrowRight className="w-4 h-4" />
+                    <Button type="submit" disabled={loading} className="w-full h-12 sm:h-14 bg-primary text-white rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-[12px] tracking-widest uppercase shadow-xl transition-all active:scale-95">
+                      {loading ? "SENDING CODE..." : "SEND VERIFICATION CODE"}
                     </Button>
                   </motion.form>
                 )}
 
                 {step === 2 && (
-                  <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-2 max-w-[280px] mx-auto">
-                    <div className="text-center">
-                       <h3 className="text-[11px] font-black text-primary tracking-widest">Verification</h3>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="space-y-1">
-                        <div className="relative group">
-                          <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-primary/10 group-focus-within:text-primary transition-colors" />
-                          <Input
-                            placeholder="Enter 6-digit code"
-                            value={formData.token}
-                            onChange={e => setFormData({...formData, token: e.target.value})}
-                            className="h-9 pl-9 rounded-lg bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold tracking-[0.2em] text-center text-xs"
-                            required
-                          />
-                        </div>
+                  <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 sm:space-y-10 max-w-[360px] mx-auto text-center">
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                         <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Verification Token</Label>
+                         <Input
+                           placeholder="000000"
+                           value={formData.token}
+                           onChange={e => updateField('token', e.target.value)}
+                           className="h-14 sm:h-16 rounded-xl sm:rounded-2xl bg-slate-50 border-2 border-primary/5 text-center text-2xl sm:text-3xl font-black tracking-[0.5em]"
+                           required
+                         />
                       </div>
 
-                      <div className="flex justify-center py-1">
-                          {formData.faceUrl ? (
-                             <div className="relative group">
-                                <img src={formData.faceUrl} className="w-24 h-24 rounded-2xl object-cover border-4 border-primary shadow-lg transition-all" />
-                                <div className="absolute inset-0 bg-primary/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                   <button type="button" onClick={() => setFormData({...formData, faceUrl: ''})} className="bg-rose-500 text-white p-1.5 rounded-full shadow-lg hover:scale-110 transition-transform"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <div className="space-y-4">
+                          <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Biometric Capture</Label>
+                          <div className="flex justify-center">
+                             {formData.faceUrl ? (
+                                <div className="relative group scale-100 sm:scale-110">
+                                   <img src={formData.faceUrl} className="w-28 h-28 sm:w-32 sm:h-32 rounded-[28px] sm:rounded-[32px] object-cover border-4 border-primary shadow-2xl" />
+                                   <button type="button" onClick={() => updateField('faceUrl', '')} className="absolute -top-3 -right-3 bg-rose-500 text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform"><Trash2 className="w-4 h-4" /></button>
                                 </div>
-                             </div>
-                          ) : isCapturing ? (
-                             <div className="space-y-2 text-center w-full max-w-[160px]">
-                                <div className="relative overflow-hidden rounded-2xl border-4 border-primary/20 bg-black">
-                                   <video ref={videoRef} autoPlay className="w-full aspect-square object-cover" />
-                                   <div className="absolute top-0 left-0 w-full h-0.5 bg-primary/40 animate-[scan_2s_linear_infinite]" />
+                             ) : isCapturing ? (
+                                <div className="space-y-4 w-full">
+                                   <div className="relative rounded-[28px] sm:rounded-[32px] border-4 border-primary/20 bg-black overflow-hidden aspect-video shadow-2xl">
+                                      <video ref={videoRef} autoPlay className="w-full h-full object-cover" />
+                                      <div className="absolute inset-0 border-2 border-white/10 rounded-[28px] sm:rounded-[32px] pointer-events-none" />
+                                   </div>
+                                   <Button type="button" onClick={capturePhoto} className="h-10 sm:h-12 px-8 sm:px-10 bg-primary text-white text-[10px] sm:text-[11px] font-black rounded-xl uppercase tracking-widest shadow-lg">CAPTURE IDENTITY</Button>
                                 </div>
-                                <Button type="button" onClick={capturePhoto} className="h-8 w-full bg-primary text-white font-black rounded-lg tracking-widest text-[8px] shadow-md">CAPTURE</Button>
-                             </div>
-                          ) : (
-                             <button type="button" onClick={startCapture} className="w-32 h-32 rounded-3xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/[0.02] transition-all group bg-slate-50/50">
-                                <div className="w-8 h-8 rounded-xl bg-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                   <Camera className="w-5 h-5 text-primary/40 group-hover:text-primary" />
-                                </div>
-                                <span className="text-[8px] font-black text-primary/30 tracking-[0.1em]">Start Camera</span>
-                             </button>
-                          )}
+                             ) : (
+                                <button type="button" onClick={startCapture} className="w-full aspect-video rounded-[28px] sm:rounded-[32px] border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-2 sm:gap-3 hover:bg-primary/5 transition-all group bg-slate-50/50 shadow-inner">
+                                   <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-primary/20 group-hover:text-primary transition-colors" />
+                                   <span className="text-[9px] sm:text-[10px] font-black text-primary/30 uppercase tracking-widest">Open Identity Camera</span>
+                                </button>
+                             )}
+                          </div>
                       </div>
                     </div>
 
                     {formData.faceUrl && (
-                      <Button onClick={() => setStep(3)} className="w-full h-10 bg-slate-900 text-white rounded-lg font-black tracking-widest text-[9px]">Continue</Button>
+                      <Button onClick={() => setStep(3)} className="w-full h-12 sm:h-14 bg-slate-900 text-white rounded-xl sm:rounded-2xl font-black uppercase text-[10px] sm:text-[11px] tracking-widest shadow-lg">CONTINUE TO DATA ENTRY</Button>
                     )}
-                    <button type="button" onClick={() => setStep(1)} className="w-full text-[8px] font-black text-primary/20 hover:text-primary transition-colors">Back</button>
+                    <button type="button" onClick={() => setStep(1)} className="text-[9px] sm:text-[10px] font-black text-primary/20 hover:text-primary uppercase tracking-widest transition-colors">Return to Step 1</button>
                   </motion.div>
                 )}
 
                 {step === 3 && (
-                  <motion.form key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleFinalRegister} className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Full Name</Label>
-                        <div className="relative group">
-                          <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
-                          <Input
-                            placeholder="Surname Firstname"
-                            value={formData.fullName}
-                            onChange={e => setFormData({...formData, fullName: e.target.value})}
-                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
-                            required
-                          />
+                  <motion.form key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleFinalRegister} className="space-y-8 sm:space-y-12">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6 sm:gap-y-8">
+                      <div className="space-y-5 sm:space-y-6">
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Full Legal Name</Label>
+                          <Input placeholder="Enter Full Name" value={formData.fullName} onChange={e => updateField('fullName', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm" required />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 sm:gap-6">
+                          <div className="space-y-1.5 sm:space-y-2">
+                            <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Mobile Phone</Label>
+                            <Input placeholder="+234..." value={formData.phoneNumber} onChange={e => updateField('phoneNumber', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm" required />
+                          </div>
+                          <div className="space-y-1.5 sm:space-y-2">
+                            <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Birth Date</Label>
+                            <Input type="date" value={formData.dateOfBirth} onChange={e => updateField('dateOfBirth', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-xs sm:text-sm shadow-sm" required />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 sm:gap-6">
+                           <div className="space-y-1.5 sm:space-y-2">
+                              <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Origin State</Label>
+                              <select value={formData.stateOfOrigin} onChange={e => { updateField('stateOfOrigin', e.target.value); updateField('lga', ''); }} className="w-full h-12 sm:h-14 px-4 sm:px-5 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm outline-none" required>
+                                 <option value="">Select State</option>
+                                 {NIGERIAN_STATES.map(state => <option key={state} value={state}>{state}</option>)}
+                              </select>
+                           </div>
+                           <div className="space-y-1.5 sm:space-y-2">
+                              <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Origin LGA</Label>
+                              <select value={formData.lga} onChange={e => updateField('lga', e.target.value)} className="w-full h-12 sm:h-14 px-4 sm:px-5 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm outline-none" required disabled={!formData.stateOfOrigin}>
+                                 <option value="">Select LGA</option>
+                                 {formData.stateOfOrigin && STATE_LGAS[formData.stateOfOrigin]?.map(lga => <option key={lga} value={lga}>{lga}</option>)}
+                              </select>
+                           </div>
+                        </div>
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Home Address</Label>
+                          <Input placeholder="Residential Address" value={formData.address} onChange={e => updateField('address', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm" required />
                         </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Phone Number</Label>
-                        <div className="relative group">
-                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
-                          <Input
-                            placeholder="+234 812 345 6789"
-                            value={formData.phoneNumber}
-                            onChange={e => setFormData({...formData, phoneNumber: e.target.value})}
-                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
-                            required
-                          />
+                      <div className="space-y-5 sm:space-y-6">
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Secondary Institution</Label>
+                          <Input placeholder="Last School Attended" value={formData.schoolAttended} onChange={e => updateField('schoolAttended', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm" required />
                         </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-black text-primary/40 tracking-widest">State of Origin</Label>
-                          <select
-                            value={formData.stateOfOrigin}
-                            onChange={e => setFormData({ ...formData, stateOfOrigin: e.target.value, lga: '' })}
-                            className="w-full h-14 px-4 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-sm transition-all outline-none focus:ring-0"
-                            required
-                          >
-                            <option value="">Select State</option>
-                            {NIGERIAN_STATES.map(state => (
-                              <option key={state} value={state}>{state}</option>
-                            ))}
-                          </select>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                           <div className="space-y-1.5 sm:space-y-2">
+                              <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Create Access Key</Label>
+                              <div className="relative">
+                                 <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={formData.password} onChange={e => updateField('password', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm" required />
+                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/20 hover:text-primary transition-colors">{showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
+                              </div>
+                           </div>
+                           <div className="space-y-1.5 sm:space-y-2">
+                              <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Confirm Key</Label>
+                              <div className="relative">
+                                 <Input type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••••" value={formData.confirmPassword} onChange={e => updateField('confirmPassword', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm" required />
+                                 <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/20 hover:text-primary transition-colors">{showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
+                              </div>
+                           </div>
                         </div>
-
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-black text-primary/40 tracking-widest">LGA of Origin</Label>
-                          <select
-                            value={formData.lga}
-                            onChange={e => setFormData({ ...formData, lga: e.target.value })}
-                            className="w-full h-14 px-4 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-sm transition-all outline-none focus:ring-0"
-                            required
-                            disabled={!formData.stateOfOrigin}
-                          >
-                            <option value="">Select LGA</option>
-                            {formData.stateOfOrigin && STATE_LGAS[formData.stateOfOrigin]?.map(lga => (
-                              <option key={lga} value={lga}>{lga}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Institution Attended</Label>
-                        <div className="relative group">
-                          <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
-                          <Input
-                            placeholder="Name of Secondary School"
-                            value={formData.schoolAttended}
-                            onChange={e => setFormData({...formData, schoolAttended: e.target.value})}
-                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Residential Address</Label>
-                        <div className="relative group">
-                          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
-                          <Input
-                            placeholder="Home Address"
-                            value={formData.address}
-                            onChange={e => setFormData({...formData, address: e.target.value})}
-                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Create Password</Label>
-                        <div className="relative group">
-                          <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
-                          <Input
-                            type="password"
-                            placeholder="••••••••"
-                            value={formData.password}
-                            onChange={e => setFormData({...formData, password: e.target.value})}
-                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Date of Birth</Label>
-                        <div className="relative group">
-                          <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
-                          <Input
-                            type="date"
-                            value={formData.dateOfBirth}
-                            onChange={e => setFormData({...formData, dateOfBirth: e.target.value})}
-                            className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Upload Identification (WAEC / NECO / NABTEB)</Label>
-                        <div className="relative group">
-                          <Input
-                            type="file"
-                            accept="image/*,application/pdf"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (ev) => {
-                                  setFormData({ ...formData, waecResultUrl: ev.target?.result as string });
-                                  toast.success("Document Attached Successfully.");
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                            className="h-14 pt-4 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold text-[10px]"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest flex justify-between">
-                          Select 4 Subjects <span>({formData.subjectCombination.length}/4)</span>
-                        </Label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {offeredSubjects.filter(s => s.isActive).map(s => (
-                            <button
-                              key={s.id}
-                              type="button"
-                              onClick={() => toggleSubject(s.name)}
-                              className={cn(
-                                "h-10 rounded-xl border-2 font-black text-[10px] transition-all",
-                                formData.subjectCombination.includes(s.name)
-                                  ? "bg-primary text-white border-primary"
-                                  : "bg-slate-50 border-primary/5 text-primary/40 hover:border-primary/20"
-                              )}
-                            >
-                              {s.name}
-                            </button>
-                          ))}
-                          {offeredSubjects.filter(s => s.isActive).length === 0 && (
-                            <p className="col-span-2 text-center text-[8px] font-black opacity-20 py-4">No subjects available yet</p>
-                          )}
+                        <div className="space-y-1.5 sm:space-y-2">
+                           <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">SSCE Academic Result</Label>
+                           <div className="relative h-12 sm:h-14 flex items-center bg-slate-50 border border-primary/5 rounded-xl sm:rounded-2xl px-5 sm:px-6 group focus-within:border-primary transition-all cursor-pointer overflow-hidden shadow-sm">
+                              <Input type="file" accept="image/*,application/pdf" onChange={async (e) => {
+                                 const file = e.target.files?.[0];
+                                 if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = (ev) => { updateField('waecResultUrl', ev.target?.result as string); toast.success("Document Attached ✓"); };
+                                    reader.readAsDataURL(file);
+                                 }
+                              }} className="absolute inset-0 opacity-0 cursor-pointer z-10" required={!formData.waecResultUrl} />
+                              <div className="flex items-center gap-3 text-primary/30 font-black text-[9px] sm:text-[11px] uppercase tracking-widest">
+                                 <FileCheck className="w-4 h-4 sm:w-5 sm:h-5" />
+                                 {formData.waecResultUrl ? "RESULT LOADED ✓" : "Upload SSCE (PDF/JPG)"}
+                              </div>
+                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px]">
-                      {loading ? "Processing..." : "Complete Registration"}
-                    </Button>
-                    <button type="button" onClick={() => setStep(2)} className="w-full text-[10px] font-black text-primary/20 hover:text-primary transition-colors">Redo Biometrics</button>
+                    <div className="space-y-8 sm:space-y-10 pt-6 border-t-2 border-primary/5">
+                      <div className="space-y-4 sm:space-y-5">
+                        <Label className="text-[10px] sm:text-[11px] font-black text-primary/40 uppercase tracking-widest px-1">Curriculum (Select 4 Subjects)</Label>
+                        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 gap-3 sm:gap-4">
+                          {offeredSubjects.filter(s => s.isActive).map(s => (
+                            <button key={s.id} type="button" onClick={() => toggleSubject(s.name)} className={cn("h-12 sm:h-14 rounded-xl sm:rounded-2xl border-2 font-black text-[10px] sm:text-xs transition-all shadow-md uppercase truncate px-2", formData.subjectCombination.includes(s.name) ? "bg-primary text-white border-primary shadow-primary/20 scale-105" : "bg-slate-50 border-primary/5 text-primary/40 hover:border-primary/20")}>{s.name}</button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                        <Button type="submit" disabled={loading} className="flex-1 h-14 sm:h-18 bg-primary text-white rounded-[20px] sm:rounded-[24px] font-black text-xs sm:text-sm tracking-[0.2em] sm:tracking-[0.3em] uppercase shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all">
+                          {loading ? "PROCESSING..." : "FINALIZE ENROLLMENT"}
+                        </Button>
+                        <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-14 sm:h-18 px-8 sm:px-12 rounded-[20px] sm:rounded-[24px] font-black text-[10px] sm:text-[11px] border-2 border-primary/10 text-primary/40 hover:bg-slate-50 transition-all uppercase tracking-widest">Back</Button>
+                      </div>
+                    </div>
                   </motion.form>
                 )}
               </AnimatePresence>
@@ -477,8 +362,8 @@ export default function CandidateRegister() {
         </motion.div>
       </div>
 
-      <footer className="py-12 z-10 w-full text-center border-t border-primary/5 bg-white">
-        <p className="text-[10px] font-bold text-primary/20 tracking-widest">&copy; {new Date().getFullYear()} VIVI CBT Systems. Secure Registration Terminal.</p>
+      <footer className="py-8 sm:py-10 text-center bg-white border-t border-primary/5">
+        <p className="text-[8px] sm:text-[10px] font-black text-primary/10 uppercase tracking-[0.3em] px-4">&copy; {new Date().getFullYear()} VIVI CBT • SECURE ENROLLMENT TERMINAL</p>
       </footer>
     </div>
   );

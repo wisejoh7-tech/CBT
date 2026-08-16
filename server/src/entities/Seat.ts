@@ -23,11 +23,11 @@ export class Seat {
   })
   status!: SeatStatus;
 
-  @Column({ type: "varchar", length: 50, nullable: true })
-  assignedCandidateExamNumber?: string;
+  @Column({ type: "uuid", nullable: true })
+  assignedCandidateId?: string;
 
   @ManyToOne(() => Candidate)
-  @JoinColumn({ name: "assignedCandidateExamNumber" })
+  @JoinColumn({ name: "assignedCandidateId", referencedColumnName: "id" })
   candidate?: Candidate;
 
   @Column({ type: "varchar", length: 100, nullable: true })

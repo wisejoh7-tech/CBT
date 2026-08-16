@@ -26,28 +26,46 @@ export function useAdminData() {
   }), []);
 
   const fetchData = useCallback(async () => {
-    try {
-      const endpoints = [
-        ['/analytics/summary', setAnalytics],
-        ['/exams', setExams],
-        ['/candidates', setCandidates],
-        ['/exams/attempts/all', setAttempts],
-        ['/center/seats', setSeats],
-        ['/analytics/logs', setLogs],
-        ['/subjects', setOfferedSubjects]
-      ];
+    const endpoints = [
+      ['/analytics/summary', setAnalytics],
+      ['/exams', setExams],
+      ['/candidates', setCandidates],
+      ['/exams/attempts/all', setAttempts],
+      ['/center/seats', setSeats],
+      ['/analytics/logs', setLogs],
+      ['/subjects', setOfferedSubjects]
+    ];
 
-      await Promise.allSettled(endpoints.map(async ([url, setter]: any) => {
+    endpoints.forEach(async ([url, setter]: any) => {
+      try {
         const res = await fetch(getApiUrl(url), { headers: getHeaders() });
-        if (res.ok) setter(await res.json());
-      }));
-
-      if (profile?.role === 'super_admin') {
-        const res = await fetch(getApiUrl('/auth/staff'), { headers: getHeaders() });
-        if (res.ok) setStaff(await res.json());
+        if (res.ok) {
+          const data = await res.json();
+          setter(data);
+        }
+      } catch (err) {
+        console.warn(`Soft failure fetching ${url}:`, err);
+      } finally {
+        if (url === '/analytics/summary' || url === '/exams') {
+          setLoading(false);
+        }
       }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    });
+
+    const isSuperOrAdmin = profile?.role === 'super_admin' || profile?.role === 'admin';
+    if (isSuperOrAdmin) {
+      (async () => {
+        try {
+          const res = await fetch(getApiUrl('/auth/staff'), { headers: getHeaders() });
+          if (res.ok) setStaff(await res.json());
+        } catch (err) {
+          console.warn("Failed to fetch staff:", err);
+        }
+      })();
+    }
+
+    // Safety fallback: ensure spinner goes away after 2 seconds
+    setTimeout(() => setLoading(false), 2000);
   }, [getHeaders, profile]);
 
   const fetchQuestions = useCallback(async (examId: string) => {

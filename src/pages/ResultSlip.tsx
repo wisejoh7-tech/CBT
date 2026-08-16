@@ -94,7 +94,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans relative">
-      <div className="cbt-background opacity-[0.03]" />
+      <div className="cbt-background opacity-[0.05] pointer-events-none" />
       <nav className="max-w-4xl mx-auto mb-10 bg-white/80 backdrop-blur-md border-2 border-primary/10 px-8 py-4 rounded-[24px] flex justify-between items-center shadow-sm relative z-10">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
@@ -107,7 +107,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
               <Monitor className="w-6 h-6" />
               <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
         <div className="flex items-center gap-6">

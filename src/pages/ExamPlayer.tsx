@@ -20,7 +20,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils/utils';
-import { GoogleGenAI } from "@google/genai";
+import { shuffleArray } from '@/src/lib/utils/shuffle';
 import { getApiUrl } from '@/src/lib/api-config';
 
 export default function ExamPlayer() {
@@ -198,49 +198,25 @@ export default function ExamPlayer() {
     setIsSubmitting(true);
 
     try {
-      let totalScore = 0;
-      let totalPossible = 0;
-      const results: any[] = [];
-
-      exams.forEach(exam => {
-        const qs = questionsByExam[exam.id] || [];
-        let examScore = 0;
-        qs.forEach(q => {
-          if (answers[q.id] === q.correctOptionIndex) {
-            examScore++;
-          }
-        });
-        totalScore += examScore;
-        totalPossible += qs.length;
-        results.push({
-          examId: exam.id,
-          subject: exam.subject,
-          score: examScore,
-          totalPossible: qs.length
-        });
-      });
-
-      await fetch(getApiUrl(`/exams/attempt/${currentAttemptId}`), {
-        method: 'PUT',
+      const res = await fetch(getApiUrl(`/exams/attempt/${currentAttemptId}/submit`), {
+        method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({
-          score: totalScore,
-          totalPossible,
-          status: 'completed',
-          answers
-        })
+        body: JSON.stringify({ answers })
       });
 
-      setSessionResults(results);
-      setIsCompleted(true);
-      toast.success("Examination submitted successfully!");
+      if (res.ok) {
+        setIsCompleted(true);
+        toast.success("Examination submitted successfully!");
+      } else {
+        throw new Error("Marking service failure");
+      }
     } catch (error) {
       console.error("Error submitting exam:", error);
       toast.error("An error occurred during submission.");
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, isCompleted, currentAttemptId, exams, questionsByExam, answers, getHeaders]);
+  }, [isSubmitting, isCompleted, currentAttemptId, answers, getHeaders]);
 
   // Load exams and questions
   useEffect(() => {
@@ -284,7 +260,9 @@ export default function ExamPlayer() {
           const qRes = await fetch(getApiUrl(`/exams/${exam.id}`), { headers: getHeaders() });
           if (qRes.ok) {
             const examData = await qRes.json();
-            qMap[exam.id] = examData.questions || [];
+            // Randomization: Shuffle questions for each student
+            const randomizedQuestions = shuffleArray(examData.questions || []);
+            qMap[exam.id] = randomizedQuestions;
           }
         }
         setQuestionsByExam(qMap);
@@ -413,8 +391,9 @@ export default function ExamPlayer() {
 
   if (!hasStarted && !isCompleted) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl w-full bg-white p-12 rounded-[48px] shadow-2xl border-2 border-primary/20 text-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-6 relative">
+        <div className="cbt-background opacity-[0.05] pointer-events-none" />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl w-full bg-white p-12 rounded-[48px] shadow-2xl border-2 border-primary/20 text-center relative z-10">
           <h2 className="text-1xl font-black mb-6 text-primary">EXAMINATION PROTOCOLS</h2>
           <div className="text-left space-y-4 mb-10 text-primary/70">
             <p className="font-bold flex items-center gap-2">1. Fullscreen is mandatory.</p>
@@ -432,8 +411,9 @@ export default function ExamPlayer() {
 
   if (isCompleted) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6 text-black selection:bg-slate-100">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-xl w-full bg-white p-12 rounded-[48px] shadow-2xl border border-primary/10 text-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-6 text-black selection:bg-slate-100 relative">
+        <div className="cbt-background opacity-[0.05] pointer-events-none" />
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-xl w-full bg-white p-12 rounded-[48px] shadow-2xl border border-primary/10 text-center relative z-10">
           <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-6" />
           <h2 className="text-3xl font-black mb-4 tracking-tighter">Session Terminated Successfully</h2>
           <p className="text-slate-500 font-bold text-sm mb-10 leading-relaxed">

@@ -1,8 +1,11 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
 
 @Entity()
 export class Candidate {
-  @PrimaryColumn({ type: "varchar", length: 50 })
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
+
+  @Column({ type: "varchar", length: 50, unique: true })
   examNumber!: string;
 
   @Column({ type: "varchar", length: 255 })
@@ -47,6 +50,9 @@ export class Candidate {
   @Column({ type: "varchar", length: 255, nullable: true })
   examVenue?: string;
 
+  @Column({ type: "varchar", length: 50, nullable: true })
+  assignedExamId?: string;
+
   @Column({ type: "date", nullable: true })
   examDate?: string;
 
@@ -58,6 +64,12 @@ export class Candidate {
 
   @Column({ type: "varchar", length: 100, nullable: true })
   lga?: string;
+
+  @Column({ type: "varchar", length: 100, nullable: true })
+  country?: string;
+
+  @Column({ type: "varchar", length: 100, nullable: true })
+  city?: string;
 
   @Column({ type: "varchar", length: 255, nullable: true })
   schoolAttended?: string;

@@ -70,8 +70,8 @@ export default function ForgotPassword() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-20 relative z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-black tracking-tighter text-primary leading-none mb-2">Account Recovery</h2>
-            <p className="text-[11px] font-black text-primary/40 tracking-[0.4em]">Password Reset Initiation</p>
+            <h2 className="text-2xl font-black tracking-tighter text-blue/100 leading-none mb-2">Account Recovery</h2>
+            <h2 className="text-[19px] font-black text-blue/100 ">Password Reset</h2>
           </div>
 
           <Card className="rounded-[32px] border-2 border-primary/10 bg-white shadow-2xl overflow-hidden">
@@ -81,26 +81,26 @@ export default function ForgotPassword() {
                    <button
                     type="button"
                     onClick={() => setType('candidate')}
-                    className={cn("flex-1 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all", type === 'candidate' ? "bg-white text-primary shadow-sm" : "text-primary/40 hover:text-primary")}
+                    className={cn("flex-1 py-3 rounded-xl text-[14px] font-black tracking-widest transition-all", type === 'candidate' ? "bg-white text-primary shadow-sm" : "text-primary/40 hover:text-primary")}
                    >
-                     CANDIDATE
+                     Candidate
                    </button>
                    <button
                     type="button"
                     onClick={() => setType('staff')}
-                    className={cn("flex-1 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all", type === 'staff' ? "bg-white text-primary shadow-sm" : "text-primary/40 hover:text-primary")}
+                    className={cn("flex-1 py-3 rounded-xl text-[14px] font-black tracking-widest transition-all", type === 'staff' ? "bg-white text-primary shadow-sm" : "text-primary/40 hover:text-primary")}
                    >
-                     STAFF
+                     Staff
                    </button>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black text-primary/40 tracking-widest">Registered Email Address</Label>
+                  <Label className="text-[12px] font-black text-primary/40 tracking-widest">Registered Email Address</Label>
                   <div className="relative group">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                     <Input
                       type="email"
-                      placeholder="ENTER YOUR EMAIL"
+                      placeholder="Enter Email Address"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       className="h-14 pl-12 rounded-2xl bg-slate-50 border-2 border-primary/5 focus:border-primary font-bold"
@@ -109,14 +109,14 @@ export default function ForgotPassword() {
                   </div>
                 </div>
 
-                <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px] flex gap-2">
-                  {loading ? "PROCESSING..." : "SEND RECOVERY TOKEN"} <ArrowRight className="w-4 h-4" />
+                <Button type="submit" disabled={loading} className="w-full h-14 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px] flex gap-2">
+                  {loading ? "PROCESSING..." : "Send Recovery Token "} <ArrowRight className="w-4 h-4" />
                 </Button>
 
                 <button
                   type="button"
                   onClick={() => navigate(-1)}
-                  className="w-full text-[10px] font-black text-primary/20 hover:text-primary transition-colors tracking-widest"
+                  className="w-full text-[12px] font-black text-primary/20 hover:text-primary transition-colors tracking-widest"
                 >
                   Return to Login
                 </button>

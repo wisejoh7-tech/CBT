@@ -23,12 +23,14 @@ export const PerformanceAnalytics: React.FC = () => {
 
   if (loading) return <div className="p-20 text-center animate-pulse font-black text-primary uppercase tracking-widest">Compiling Analytics...</div>;
 
-  if (!data || data.candidates?.length === 0) return (
+  if (!data || !data.candidates || data.candidates.length === 0) return (
     <div className="p-20 text-center opacity-20">
       <TrendingUp className="w-20 h-20 mx-auto mb-6" />
       <p className="text-2xl font-black uppercase tracking-[0.4em]">No performance data available</p>
     </div>
   );
+
+  const topics = Array.isArray(data.topics) ? data.topics : [];
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -40,7 +42,7 @@ export const PerformanceAnalytics: React.FC = () => {
            </div>
            <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.topics}>
+                <BarChart data={topics}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} />
                   <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} />
@@ -49,7 +51,7 @@ export const PerformanceAnalytics: React.FC = () => {
                     contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.1)', fontWeight: 900}}
                   />
                   <Bar dataKey="avgScore" radius={[10, 10, 0, 0]}>
-                    {data.topics.map((entry: any, index: number) => (
+                    {topics.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={parseFloat(entry.avgScore) > 50 ? '#0EA5E9' : '#f43f5e'} />
                     ))}
                   </Bar>

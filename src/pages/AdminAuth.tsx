@@ -15,6 +15,7 @@ export default function AdminAuth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { user, profile, signInWithEmail, signUpWithEmail, loading, devAdminLogin } = useAuth();
@@ -42,6 +43,10 @@ export default function AdminAuth() {
         toast.success("Admin Authorization Verified.");
       } else {
         if (!name) { toast.error("Identity required."); return; }
+        if (password !== confirmPassword) {
+          toast.error("Security keys do not match.");
+          return;
+        }
         await signUpWithEmail(email, password, name, 'super_admin');
         toast.success("System Master Provisioned.");
       }
@@ -53,7 +58,7 @@ export default function AdminAuth() {
 
   return (
     <div className="relative min-h-screen flex flex-col bg-slate-900 selection:bg-primary/20 text-slate-100">
-      <nav className="sticky top-0 w-full bg-slate-400/80 backdrop-blur-md border-b-2 border-white/5 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
+      <nav className="sticky top-0 w-full bg-slate-900/80 backdrop-blur-md border-b-2 border-white/5 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>
@@ -94,10 +99,10 @@ export default function AdminAuth() {
             <p className="text-[10px] font-black text-primary/40 tracking-[0.4em]">System Administration</p>
           </div>
 
-          <Card className="rounded-[40px] border-2 border-white/2 bg-slate-400 shadow-1xl overflow-hidden">
-            <div className="flex border-b-2 border-white/5 bg-slate-400/50">
-              <button onClick={() => setIsLogin(true)} className={cn("flex-1 py-5 font-black tracking-widest text-[10px] transition-all", isLogin ? "bg-slate-800 text-white" : "text-slate-500 hover:text-slate-300")}>AUTHORIZE</button>
-              <button onClick={() => setIsLogin(false)} className={cn("flex-1 py-5 font-black tracking-widest text-[10px] transition-all", !isLogin ? "bg-slate-800 text-white" : "text-slate-500 hover:text-slate-300")}>PROVISION</button>
+          <Card className="rounded-[40px] border-2 border-white/5 bg-slate-800 shadow-2xl overflow-hidden">
+            <div className="flex border-b-2 border-white/5 bg-slate-800/50">
+              <button onClick={() => setIsLogin(true)} className={cn("flex-1 py-5 font-black tracking-widest text-[10px] transition-all", isLogin ? "bg-slate-700 text-white" : "text-slate-500 hover:text-slate-300")}>AUTHORIZE</button>
+              <button onClick={() => setIsLogin(false)} className={cn("flex-1 py-5 font-black tracking-widest text-[10px] transition-all", !isLogin ? "bg-slate-700 text-white" : "text-slate-500 hover:text-slate-300")}>PROVISION</button>
             </div>
 
             <CardContent className="p-10">
@@ -105,34 +110,34 @@ export default function AdminAuth() {
                 <AnimatePresence mode="wait">
                   {!isLogin && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden">
-                      <Label className="text-[10px] font-white text-slate-300 tracking-widest">Enter Username</Label>
+                      <Label className="text-[10px] font-black text-slate-400 tracking-widest">Admin Identity</Label>
                       <div className="relative group">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-200 group-focus-within:text-primary transition-colors" />
-                        <Input placeholder="Full Name" value={name} onChange={e => setName(e.target.value)} className="h-14 pl-12 rounded-2xl bg-slate-200 border-white/5 focus:border-primary font-bold text-white transition-all" />
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-primary transition-colors" />
+                        <Input placeholder="Enter Full Name" value={name} onChange={e => setName(e.target.value)} className="h-14 pl-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all shadow-inner" />
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black text-slate-500 tracking-widest">Email Address</Label>
+                  <Label className="text-[10px] font-black text-slate-400 tracking-widest">Email Address</Label>
                   <div className="relative group">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-primary transition-colors" />
                     <Input
                       name="email"
                       type="email"
                       autoComplete="email"
-                      placeholder="Enter Email "
+                      placeholder="admin@vivicbt.com"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      className="h-14 pl-12 rounded-1xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all"
+                      className="h-14 pl-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all shadow-inner"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black text-slate-500 tracking-widest">Password</Label>
+                  <Label className="text-[10px] font-black text-slate-400 tracking-widest">Security Key</Label>
                   <div className="relative group">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-primary transition-colors" />
                     <Input
@@ -142,15 +147,32 @@ export default function AdminAuth() {
                       placeholder="••••••••"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      className="h-14 pl-12 pr-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all"
+                      className="h-14 pl-12 pr-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all shadow-inner"
                       required
                     />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-white transition-colors">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                   </div>
                 </div>
 
+                {!isLogin && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
+                    <Label className="text-[10px] font-black text-slate-400 tracking-widest">Confirm Key</Label>
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-primary transition-colors" />
+                      <Input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        className="h-14 pl-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all shadow-inner"
+                        required
+                      />
+                    </div>
+                  </motion.div>
+                )}
+
                 <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white hover:bg-primary/90 rounded-[24px] font-black tracking-widest text-[11px] shadow-2xl shadow-primary/20 border-none transition-all active:scale-95">
-                  {loading ? "Load...." : (isLogin ? "Verify Login" : "Login Admin")}
+                  {loading ? "Authenticating..." : (isLogin ? "Verify Access" : "Provision Master")}
                 </Button>
                 {isLogin && (
                   <button

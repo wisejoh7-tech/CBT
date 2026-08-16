@@ -61,15 +61,11 @@ app.use("/auth", authRoutes);
 app.use("/exams", examRoutes);
 app.use("/analytics", analyticsRoutes);
 app.use("/center", centerRoutes);
-app.use("/candidate", candidateRoutes);
+app.use("/candidates", candidateRoutes);
 app.use("/subjects", subjectRoutes);
 
 async function startServer() {
   try {
-    const server = httpServer.listen(config.PORT, "0.0.0.0", () => {
-      logger.info(`Server is running on port ${config.PORT}`);
-    });
-
     const maxRetries = 5;
     let retries = 0;
     let postgresConnected = false;
@@ -82,12 +78,13 @@ async function startServer() {
         break;
       } catch (error: any) {
         retries++;
-        logger.error(`Failed to connect to Postgres (Attempt ${retries}/${maxRetries}):`, error.message);
-        if (error.message?.includes("allowlist")) {
+        logger.error(`Failed to connect to Postgres (Attempt ${retries}/${maxRetries}): ${error.message}`);
+        if (error.message?.includes("allowlist") || error.message?.includes("hba")) {
           logger.warn("TIP: Add your local IP address to the Render Postgres allowlist in the dashboard.");
         }
         if (retries >= maxRetries) {
-          logger.error("FATAL: Could not connect to Postgres after maximum retries.");
+          logger.error("WARNING: Could not connect to Postgres after maximum retries. API will start but database features will fail.");
+          // Don't exit, allow server to start so frontend doesn't get ERR_CONNECTION_REFUSED
         } else {
           await new Promise(res => setTimeout(res, 5000));
         }
@@ -130,6 +127,10 @@ async function startServer() {
         await new Promise(res => setTimeout(res, 5000));
       }
     }
+
+    const server = httpServer.listen(config.PORT, "0.0.0.0", () => {
+      logger.info(`Server is running on port ${config.PORT}`);
+    });
 
     app.get("/", (req, res) => {
       res.send("CBT Backend is running");

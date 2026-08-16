@@ -5,7 +5,7 @@ export class Attempt {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ type: "uuid" })
+  @Column({ type: "varchar", length: 100 })
   userId!: string;
 
   @Column({ type: "uuid" })

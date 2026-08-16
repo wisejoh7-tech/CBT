@@ -3,6 +3,8 @@ import { motion } from 'motion/react';
 import { Input } from '@/lib/ui/input';
 import { Button } from '@/lib/ui/button';
 
+import { Label } from '@/lib/ui/label';
+
 interface AddQuestionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -18,57 +20,72 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
   setNewQuestion,
   handleAddQuestion,
 }) => {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-xl bg-white rounded-[32px] shadow-2xl p-8 border border-primary/5 overflow-hidden">
-        <h3 className="text-lg font-black uppercase text-primary mb-6 text-center">Set Assessment Item</h3>
-        <form onSubmit={handleAddQuestion} className="space-y-4">
-          <textarea
-            value={newQuestion.text}
-            onChange={e => setNewQuestion({...newQuestion, text: e.target.value})}
-            placeholder="Context / question text..."
-            required
-            className="w-full h-24 px-5 py-3 rounded-xl bg-slate-50 border-none font-bold text-sm shadow-inner outline-none focus:ring-2 focus:ring-primary/10 resize-none"
-          />
-          <div className="grid grid-cols-2 gap-3">
-            {[0, 1, 2, 3].map(i => (
-              <Input
-                key={i}
-                placeholder={`Option ${String.fromCharCode(65 + i)}`}
-                value={newQuestion.options[i]}
-                onChange={e => {
-                  const opts = [...newQuestion.options];
-                  opts[i] = e.target.value;
-                  setNewQuestion({...newQuestion, options: opts});
-                }}
-                required
-                className="h-10 px-4 rounded-lg bg-slate-50 border-none font-bold text-xs shadow-inner"
-              />
-            ))}
-          </div>
-          <div className="flex gap-3">
-            <select
-              value={newQuestion.correctOptionIndex}
-              onChange={e => setNewQuestion({...newQuestion, correctOptionIndex: parseInt(e.target.value)})}
-              className="flex-1 h-10 px-4 rounded-lg bg-slate-50 border-none font-bold text-xs outline-none shadow-inner"
-            >
-              <option value={0}>Answer: A</option>
-              <option value={1}>Answer: B</option>
-              <option value={2}>Answer: C</option>
-              <option value={3}>Answer: D</option>
-            </select>
-            <Input
-              placeholder="Topic Tag"
-              value={newQuestion.topic}
-              onChange={e => setNewQuestion({...newQuestion, topic: e.target.value})}
-              className="flex-1 h-10 px-4 rounded-lg bg-slate-50 border-none font-bold text-xs shadow-inner"
+    <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6 text-base overflow-hidden">
+      <div className="cbt-background opacity-[0.05] pointer-events-none" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="w-full max-w-2xl bg-white rounded-[40px] shadow-2xl p-8 border border-primary/5 overflow-hidden relative z-10"
+      >
+        <h3 className="text-xl font-black text-primary mb-6 text-center tracking-tighter uppercase">Set Subject</h3>
+        <form onSubmit={handleAddQuestion} className="space-y-4 font-medium">
+          <div className="space-y-1.5">
+            <Label className="text-[11px] font-black text-primary/40 tracking-widest uppercase">Questions</Label>
+            <textarea
+              value={newQuestion.text}
+              onChange={e => setNewQuestion({...newQuestion, text: e.target.value})}
+              placeholder="Enter the examination question here..."
+              required
+              className="w-full h-24 px-6 py-4 rounded-2xl bg-slate-50 border-none font-bold text-xs shadow-inner outline-none focus:ring-2 focus:ring-primary/10 resize-none"
             />
           </div>
-          <div className="flex gap-3 pt-2">
-            <Button type="submit" className="flex-1 h-12 bg-slate-900 text-white font-black rounded-xl uppercase shadow-lg">Commit Item</Button>
-            <Button type="button" onClick={onClose} variant="outline" className="h-12 px-6 rounded-xl font-black uppercase">Discard</Button>
+          <div className="grid grid-cols-2 gap-3">
+            {[0, 1, 2, 3].map(i => (
+              <div key={i} className="space-y-1.5">
+                <Label className="text-[10px] font-black text-primary/30 tracking-widest uppercase">Options {String.fromCharCode(65 + i)}</Label>
+                <Input
+                  placeholder={`Type option ${String.fromCharCode(65 + i)}`}
+                  value={newQuestion.options[i]}
+                  onChange={e => {
+                    const opts = [...newQuestion.options];
+                    opts[i] = e.target.value;
+                    setNewQuestion({...newQuestion, options: opts});
+                  }}
+                  required
+                  className="h-10 px-5 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-4">
+            <div className="flex-1 space-y-1.5">
+              <Label className="text-[11px] font-black text-primary/40 tracking-widest uppercase">Correct Answer</Label>
+              <select
+                value={newQuestion.correctOptionIndex}
+                onChange={e => setNewQuestion({...newQuestion, correctOptionIndex: parseInt(e.target.value)})}
+                className="w-full h-10 px-5 rounded-xl bg-slate-50 border-none font-bold text-xs outline-none shadow-inner"
+              >
+                <option value={0}>Answer: a</option>
+                <option value={1}>Answer: b</option>
+                <option value={2}>Answer: c</option>
+                <option value={3}>Answer: d</option>
+              </select>
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <Label className="text-[11px] font-black text-primary/40 tracking-widest uppercase">Topic Tag</Label>
+              <Input
+                placeholder="e.g. Algebra"
+                value={newQuestion.topic}
+                onChange={e => setNewQuestion({...newQuestion, topic: e.target.value})}
+                className="h-10 px-5 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-inner"
+              />
+            </div>
+          </div>
+          <div className="flex gap-4 pt-4">
+            <Button type="submit" className="flex-1 h-14 bg-slate-900 text-white font-black rounded-2xl shadow-xl hover:bg-black transition-all tracking-widest text-xs uppercase">Commit Item</Button>
+            <Button type="button" onClick={onClose} variant="outline" className="h-14 px-8 rounded-2xl font-black text-xs border-primary/10 uppercase">Discard</Button>
           </div>
         </form>
       </motion.div>
