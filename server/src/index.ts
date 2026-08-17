@@ -48,6 +48,18 @@ app.use(cors({ origin: "*" }));
 app.use(express.json());
 app.use(ipBlocker);
 
+// Database availability middleware
+app.use((req, res, next) => {
+  const dbIgnoredPaths = ["/health", "/"];
+  if (!AppDataSource.isInitialized && !dbIgnoredPaths.includes(req.path)) {
+    return res.status(503).json({
+      message: "System initializing. Please wait a moment...",
+      retryAfter: 5
+    });
+  }
+  next();
+});
+
 // --- 4. APPLICATION ROUTES ---
 app.use("/auth", authRoutes);
 app.use("/exams", examRoutes);
@@ -84,7 +96,7 @@ async function initializeServices() {
       } catch (err: any) {
         dbRetries++;
         console.error(`[DB RETRY ${dbRetries}] ${err.message}`);
-        await new Promise(r => setTimeout(res, 5000));
+        if (dbRetries < 5) await new Promise(r => setTimeout(r, 5000));
       }
     }
 
