@@ -22,6 +22,10 @@ import ExamSlip from '@/src/pages/ExamSlip';
 import ExamInstructions from '@/src/pages/ExamInstructions';
 import ForgotPassword from '@/src/pages/ForgotPassword';
 import ResetPassword from '@/src/pages/ResetPassword';
+import About from '@/src/pages/About';
+import Contact from '@/src/pages/Contact';
+import Terms from '@/src/pages/Terms';
+import Privacy from '@/src/pages/Privacy';
 
 const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) => {
   const { user, profile, loading } = useAuth();
@@ -137,6 +141,10 @@ export default function App() {
             <Route path="/staff" element={<PublicRoute><StaffLogin /></PublicRoute>} />
             <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
             <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route path="/exam-slip/:examNumber" element={<ProtectedRoute><ExamSlip /></ProtectedRoute>} />
             <Route path="/results" element={<ResultChecker />} />
             <Route path="/result-slip/:examNumber" element={<ProtectedRoute><ResultSlip /></ProtectedRoute>} />
