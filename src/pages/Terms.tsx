@@ -39,7 +39,7 @@ export default function Terms() {
             <div className="space-y-12">
               {[
                 { title: '01. User Eligibility', content: 'Candidates must be registered with a valid email and unique examination number. Unauthorized access to the examination portal is strictly prohibited and subject to legal action.' },
-                { title: '02. Code of Conduct', content: 'During examinations, candidates must adhere to AI proctoring regulations. Use of external aids, unauthorized software, or attempts to bypass security protocols will result in immediate disqualification.' },
+                { title: '02. Code of Conduct', content: 'During examinations, candidates must adhere to cbt exam regulations. Use of external aids, unauthorized software, or attempts to bypass security protocols will result in immediate disqualification.' },
                 { title: '03. Identity Verification', content: 'VIVI CBT utilizes biometric and live-capture verification. By using this service, you consent to identity checks throughout the examination session.' },
                 { title: '04. Data Transmission', content: 'Session progress is synchronized in real-time. In the event of network failure, locally cached data will be recovered upon reconnection. VIVI Systems is not responsible for hardware failure at the candidate terminal.' },
                 { title: '05. Result Policy', content: 'Examination results are subject to administrative audit. The institution reserves the right to withhold or nullify results if security violations are detected post-session.' }
@@ -54,8 +54,8 @@ export default function Terms() {
         </div>
       </main>
 
-      <footer className="py-20 text-center border-t border-primary/5 opacity-40">
-        <p className="text-[10px] font-black tracking-[0.3em]">&copy; 2026 VIVI CBT SYSTEMS • LEGAL DIVISION</p>
+      <footer className="py-20 text-center border-t border-primary/5 ">
+        <p className="text-[12px] font-white ">&copy; 2026 VIVI CBT SYSTEMS • LEGAL DIVISION</p>
       </footer>
     </div>
   );

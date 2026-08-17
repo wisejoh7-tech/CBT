@@ -96,15 +96,24 @@ async function initializeServices() {
       } catch (err: any) {
         dbRetries++;
         console.error(`[DB RETRY ${dbRetries}] ${err.message}`);
+
+        if (config.dbUrl?.includes("-a.oregon-postgres.render.com")) {
+          console.warn("⚠️ TROUBLESHOOTING: You are using an INTERNAL Render URL. Please switch to the EXTERNAL URL in your .env file.");
+        }
+
+        if (err.message?.includes("connection timeout")) {
+          console.warn("⚠️ TROUBLESHOOTING: Connection timed out. Ensure your public IP is added to the Render 'Access Control' allowlist.");
+        }
+
         if (dbRetries < 5) await new Promise(r => setTimeout(r, 5000));
       }
     }
 
     // Redis Connection
-    try {
-      await redisClient.connect();
+    const isRedisConnected = await redisClient.connect();
+    if (isRedisConnected) {
       console.log("✅ Redis Connected.");
-    } catch (e) {
+    } else {
       console.warn("⚠️ Redis unavailable, using Memory Fallback.");
     }
 

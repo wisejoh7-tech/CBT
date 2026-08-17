@@ -25,7 +25,15 @@ realRedisClient.on("error", (err: any) => {
 });
 
 export const redisClient = {
-  connect: () => realRedisClient.connect().catch(() => logger.warn("Redis failed. Using Memory Fallback.")),
+  connect: async () => {
+    try {
+      await realRedisClient.connect();
+      return true;
+    } catch (err) {
+      logger.warn("Redis connection failed. Using Memory Fallback.");
+      return false;
+    }
+  },
   disconnect: () => realRedisClient.disconnect(),
   set: async (key: string, value: string, options?: any) => {
     try {
