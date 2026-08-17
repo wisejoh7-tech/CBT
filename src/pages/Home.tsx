@@ -209,6 +209,22 @@ export default function Home() {
           <span className="font-black text-lg tracking-tighter text-primary">VIVI CBT SYSTEMS</span>
         </div>
         <div className="max-w-2xl mx-auto space-y-8">
+          <div className="flex justify-center gap-6 flex-wrap">
+            {[
+              { label: 'ABOUT', path: '/about' },
+              { label: 'CONTACT', path: '/contact' },
+              { label: 'TERMS', path: '/terms' },
+              { label: 'PRIVACY', path: '/privacy' }
+            ].map((link) => (
+              <button
+                key={link.label}
+                onClick={() => navigate(link.path)}
+                className="text-[10px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors"
+              >
+                {link.label}
+              </button>
+            ))}
+          </div>
           <p className="text-[10px] font-black text-primary/30 tracking-[0.3em] leading-relaxed">
             &copy; {new Date().getFullYear()} VIVI CBT Systems. All Rights Reserved. <br/>
             Engineered for academic integrity and global excellence.
