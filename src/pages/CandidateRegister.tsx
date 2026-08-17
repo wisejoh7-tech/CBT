@@ -368,7 +368,23 @@ export default function CandidateRegister() {
         </motion.div>
       </div>
 
-      <footer className="py-8 sm:py-10 text-center bg-white border-t border-primary/5">
+      <footer className="py-8 sm:py-12 text-center bg-white border-t border-primary/5 space-y-6">
+        <div className="flex justify-center gap-6 flex-wrap px-4">
+          {[
+            { label: 'ABOUT', path: '/about' },
+            { label: 'CONTACT', path: '/contact' },
+            { label: 'TERMS', path: '/terms' },
+            { label: 'PRIVACY', path: '/privacy' }
+          ].map((link) => (
+            <button
+              key={link.label}
+              onClick={() => navigate(link.path)}
+              className="text-[10px] font-black tracking-widest text-primary/30 hover:text-primary transition-colors uppercase"
+            >
+              {link.label}
+            </button>
+          ))}
+        </div>
         <p className="text-[8px] sm:text-[10px] font-black text-primary/10 uppercase tracking-[0.3em] px-4">&copy; {new Date().getFullYear()} VIVI CBT • SECURE ENROLLMENT TERMINAL</p>
       </footer>
     </div>

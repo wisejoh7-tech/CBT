@@ -209,7 +209,7 @@ export default function Home() {
           <span className="font-black text-lg tracking-tighter text-primary">VIVI CBT SYSTEMS</span>
         </div>
         <div className="max-w-2xl mx-auto space-y-8">
-          <div className="flex justify-center gap-6 flex-wrap">
+          <div className="flex justify-center gap-6 flex-wrap px-4">
             {[
               { label: 'ABOUT', path: '/about' },
               { label: 'CONTACT', path: '/contact' },
@@ -219,7 +219,7 @@ export default function Home() {
               <button
                 key={link.label}
                 onClick={() => navigate(link.path)}
-                className="text-[10px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors"
+                className="text-[10px] font-black tracking-widest text-primary/30 hover:text-primary transition-colors"
               >
                 {link.label}
               </button>

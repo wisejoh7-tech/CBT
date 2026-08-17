@@ -126,7 +126,23 @@ export default function ForgotPassword() {
         </motion.div>
       </div>
 
-      <footer className="py-12 z-10 w-full text-center border-t border-primary/5 bg-white">
+      <footer className="py-12 z-10 w-full text-center border-t border-primary/5 bg-white space-y-6">
+        <div className="flex justify-center gap-6 flex-wrap px-4">
+          {[
+            { label: 'ABOUT', path: '/about' },
+            { label: 'CONTACT', path: '/contact' },
+            { label: 'TERMS', path: '/terms' },
+            { label: 'PRIVACY', path: '/privacy' }
+          ].map((link) => (
+            <button
+              key={link.label}
+              onClick={() => navigate(link.path)}
+              className="text-[10px] font-black tracking-widest text-primary/30 hover:text-primary transition-colors uppercase"
+            >
+              {link.label}
+            </button>
+          ))}
+        </div>
         <p className="text-[10px] font-bold text-primary/20 tracking-widest">&copy; {new Date().getFullYear()} VIVI CBT Systems. Secure Recovery Terminal.</p>
       </footer>
     </div>
