@@ -11,17 +11,26 @@ const memoryStore = new Map<string, string>();
 
 const realRedisClient = createClient({
   url: config.redisUrl,
-  socket: config.redisUrl?.startsWith("rediss://")
-    ? { tls: true, rejectUnauthorized: false }
-    : undefined
+  socket: {
+    tls: config.redisUrl?.startsWith("rediss://"),
+    rejectUnauthorized: false,
+    reconnectStrategy: (retries) => {
+      if (retries > 3) {
+        // Stop retrying after 3 failures to prevent console spam
+        return new Error("Redis reconnection exhausted");
+      }
+      return 5000; // Retry every 5 seconds
+    }
+  }
 });
 
+let errorLogged = false;
 realRedisClient.on("error", (err: any) => {
-  if (err.message?.includes("allowlist") || err.message?.includes("timeout")) {
-    // Only log once to avoid spamming
-    return;
+  if (!errorLogged) {
+    logger.warn("Redis connection could not be established. Enabling Memory Fallback.");
+    logger.debug(`Redis technical detail: ${err.message}`);
+    errorLogged = true;
   }
-  logger.error("Redis connection error:", err.message);
 });
 
 export const redisClient = {

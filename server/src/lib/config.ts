@@ -4,7 +4,7 @@ if (process.env.NODE_ENV !== "production") {
   dotenv.config();
 }
 
-const PORT = Number(process.env.PORT) || 5000;
+const PORT = Number(process.env.PORT) || 5001;
 console.log(`[BOOT] Initializing on PORT: ${PORT}`);
 console.log(`[BOOT] ENV Check: DB=${!!process.env.DATABASE_URL}, REDIS=${!!process.env.REDIS_URL}, JWT=${!!process.env.JWT_SECRET}`);
 
@@ -27,6 +27,13 @@ export const config = {
   apiUrl: process.env.VITE_API_URL,
   socketUrl: process.env.VITE_SOCKET_URL,
   dbUrl: process.env.DATABASE_URL,
+  db: {
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    pass: process.env.DB_PASS,
+    name: process.env.DB_NAME,
+    port: Number(process.env.DB_PORT) || 5432,
+  },
   redisUrl: process.env.REDIS_URL,
   JWT_SECRET: process.env.JWT_SECRET!,
   mail: {
@@ -41,5 +48,5 @@ export const config = {
     phoneNumber: process.env.TWILIO_PHONE_NUMBER,
   },
   NODE_ENV: process.env.NODE_ENV || "development",
-  PORT: Number(process.env.PORT) || 5000,
+  PORT: Number(process.env.PORT) || 5001,
 } as const;

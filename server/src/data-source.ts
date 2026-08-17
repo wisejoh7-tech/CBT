@@ -17,18 +17,30 @@ import { SeatSubscriber } from "./subscribers/SeatSubscriber";
 import { ExamSubscriber } from "./subscribers/ExamSubscriber";
 import { CandidateSubscriber } from "./subscribers/CandidateSubscriber";
 
+if (!config.dbUrl) {
+  console.error("❌ ERROR: DATABASE_URL is not defined in environment variables!");
+} else {
+  const host = config.dbUrl.split('@')[1]?.split('/')[0] || 'unknown';
+  console.log(`[DB] Preparing connection to: ${host}`);
+}
+
 export const AppDataSource = new DataSource({
   type: "postgres",
-  url: config.dbUrl,
+  host: config.db.host || undefined,
+  port: config.db.port,
+  username: config.db.user || undefined,
+  password: config.db.pass || undefined,
+  database: config.db.name || undefined,
+  url: (!config.db.host && config.dbUrl) ? config.dbUrl : undefined,
   synchronize: config.NODE_ENV !== "production",
   logging: config.NODE_ENV !== "production",
-  ssl: config.dbUrl?.includes("render.com") || config.dbUrl?.includes("supabase.co") || config.dbUrl?.includes("neon.tech") || config.NODE_ENV === 'production'
-    ? { rejectUnauthorized: false }
-    : false,
+  ssl: {
+    rejectUnauthorized: false,
+  },
   extra: {
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000, // Increased from 2000 to 10000
+    connectionTimeoutMillis: 30000,
   },
   entities: [User, Candidate, Exam, Question, Attempt, Seat, Log, Subject],
   migrations: [

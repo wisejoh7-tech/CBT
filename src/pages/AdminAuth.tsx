@@ -58,88 +58,76 @@ export default function AdminAuth() {
 
   return (
     <div className="relative min-h-screen flex flex-col bg-slate-900 selection:bg-primary/20 text-slate-100">
-      <nav className="sticky top-0 w-full bg-slate-900/80 backdrop-blur-md border-b-2 border-white/5 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>
-            <span className="font-black text-xl tracking-tighter text-white">VIVI Admin</span>
-          </div>
-          <div className="h-8 w-[1px] bg-white/10 hidden md:block" />
-          <div className="hidden md:flex items-center gap-2 text-white/40">
-            <div className="relative">
-              <Monitor className="w-6 h-6" />
-              <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-            </div>
-            <span className="text-[8px] font-black tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
-          </div>
+      <nav className="sticky top-0 w-full bg-slate-900/80 backdrop-blur-md border-b border-white/5 px-6 py-3 flex justify-between items-center z-[100] shadow-sm">
+        <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-black text-base shadow-lg shadow-primary/20">V</div>
+          <span className="font-black text-lg tracking-tighter text-white uppercase">VIVI Admin</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-8">
-          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-slate-400 hover:text-white transition-colors">Home</button>
-          <button onClick={() => navigate('/staff')} className="text-[14px] font-black tracking-widest text-slate-400 hover:text-white transition-colors">Staff Portal</button>
-          <Separator orientation="vertical" className="h-4 bg-white/10" />
-          <button onClick={() => navigate('/admin/auth')} className="text-[14px] font-black tracking-widest text-white transition-colors flex items-center gap-2">
-            <Shield className="w-3 h-3" /> Admin Access
-          </button>
+        <div className="hidden md:flex items-center gap-6">
+          <button onClick={() => navigate('/')} className="text-[11px] font-black tracking-widest text-slate-400 hover:text-white transition-colors uppercase">Home</button>
+          <button onClick={() => navigate('/staff')} className="text-[11px] font-black tracking-widest text-slate-400 hover:text-white transition-colors uppercase">Staff</button>
+          <div onClick={() => navigate('/admin/auth')} className="text-[9px] font-black tracking-[0.2em] text-white bg-white/5 px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2 cursor-pointer">
+            < Shield className="w-3 h-3 text-primary" /> AUTH
+          </div>
         </div>
       </nav>
 
-      <div className="flex-1 flex flex-col items-center justify-center relative px-6 py-12">
+      <div className="flex-1 flex flex-col items-center justify-center relative px-6 py-6">
         <div className="absolute inset-0 z-0 pointer-events-none">
           <div className="cbt-background" />
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px] opacity-[0.05]" />
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1px,transparent:1px)] [background-size:24px_24px] opacity-[0.05]" />
         </div>
 
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative z-10 w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-primary/10 border-2 border-primary/20 rounded-[40px] flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-primary/5">
-              <ShieldCheck className="w-12 h-12 text-primary" />
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative z-10 w-full max-w-[340px]">
+          <div className="text-center mb-6">
+            <div className="w-14 h-14 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
+              <ShieldCheck className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-3xl font-black tracking-tighter text-white leading-none mb-2">Admin Page</h1>
-            <p className="text-[10px] font-black text-primary/40 tracking-[0.4em]">System Administration</p>
+            <h1 className="text-xl font-black tracking-tighter leading-none mb-1 uppercase">Control Terminal</h1>
+            <p className="text-[8px] font-bold uppercase tracking-[0.3em] text-slate-500">Security Authorization Required</p>
           </div>
 
-          <Card className="rounded-[40px] border-2 border-white/5 bg-slate-800 shadow-2xl overflow-hidden">
-            <div className="flex border-b-2 border-white/5 bg-slate-800/50">
-              <button onClick={() => setIsLogin(true)} className={cn("flex-1 py-5 font-black tracking-widest text-[10px] transition-all", isLogin ? "bg-slate-700 text-white" : "text-slate-500 hover:text-slate-300")}>AUTHORIZE</button>
-              <button onClick={() => setIsLogin(false)} className={cn("flex-1 py-5 font-black tracking-widest text-[10px] transition-all", !isLogin ? "bg-slate-700 text-white" : "text-slate-500 hover:text-slate-300")}>PROVISION</button>
+          <Card className="rounded-[28px] border border-white/10 bg-slate-800/80 backdrop-blur-xl shadow-2xl overflow-hidden">
+            <div className="flex bg-white/5 p-1 m-2 rounded-2xl">
+              <button onClick={() => setIsLogin(true)} className={cn("flex-1 py-2.5 rounded-xl font-black tracking-widest text-[8px] transition-all uppercase", isLogin ? "bg-primary text-white shadow-lg" : "text-slate-400 hover:text-slate-200")}>Login</button>
+              <button onClick={() => setIsLogin(false)} className={cn("flex-1 py-2.5 rounded-xl font-black tracking-widest text-[8px] transition-all uppercase", !isLogin ? "bg-primary text-white shadow-lg" : "text-slate-400 hover:text-slate-200")}>Enroll</button>
             </div>
 
-            <CardContent className="p-10">
-              <form onSubmit={handleSubmit} className="space-y-6">
+            <CardContent className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-3.5">
                 <AnimatePresence mode="wait">
                   {!isLogin && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden">
-                      <Label className="text-[10px] font-black text-slate-400 tracking-widest">Admin Identity</Label>
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-1 overflow-hidden">
+                      <Label className="text-[8px] font-black text-slate-500 tracking-widest uppercase ml-1">Full Name</Label>
                       <div className="relative group">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-primary transition-colors" />
-                        <Input placeholder="Enter Full Name" value={name} onChange={e => setName(e.target.value)} className="h-14 pl-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all shadow-inner" />
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600 group-focus-within:text-primary transition-colors" />
+                        <Input placeholder="Full Legal Name" value={name} onChange={e => setName(e.target.value)} className="h-10 pl-10 rounded-xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white text-[10px]" />
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black text-slate-400 tracking-widest">Email Address</Label>
+                <div className="space-y-1">
+                  <Label className="text-[8px] font-black text-slate-500 tracking-widest uppercase ml-1">Admin Email Address</Label>
                   <div className="relative group">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-primary transition-colors" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600 group-focus-within:text-primary transition-colors" />
                     <Input
                       name="email"
                       type="email"
-                      autoComplete="email"
-                      placeholder="admin@vivicbt.com"
+                      placeholder="admin@access.terminal"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      className="h-14 pl-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all shadow-inner"
+                      className="h-10 pl-10 rounded-xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white text-[10px]"
                       required
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black text-slate-400 tracking-widest">Security Key</Label>
+                <div className="space-y-1">
+                  <Label className="text-[8px] font-black text-slate-500 tracking-widest uppercase ml-1">Admin Password</Label>
                   <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-primary transition-colors" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600 group-focus-within:text-primary transition-colors" />
                     <Input
                       name="password"
                       type={showPassword ? 'text' : 'password'}
@@ -147,38 +135,41 @@ export default function AdminAuth() {
                       placeholder="••••••••"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      className="h-14 pl-12 pr-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all shadow-inner"
+                      className="h-10 pl-10 pr-10 rounded-xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white text-[10px]"
                       required
                     />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-white transition-colors">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-white transition-colors">{showPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}</button>
                   </div>
                 </div>
 
                 {!isLogin && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
-                    <Label className="text-[10px] font-black text-slate-400 tracking-widest">Confirm Key</Label>
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-1">
+                    <Label className="text-[8px] font-black text-slate-500 tracking-widest uppercase ml-1">Confirm Password</Label>
                     <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-primary transition-colors" />
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600 group-focus-within:text-primary transition-colors" />
                       <Input
                         type={showPassword ? 'text' : 'password'}
                         placeholder="••••••••"
                         value={confirmPassword}
                         onChange={e => setConfirmPassword(e.target.value)}
-                        className="h-14 pl-12 rounded-2xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white transition-all shadow-inner"
+                        className="h-10 pl-10 rounded-xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white text-[10px]"
                         required
                       />
                     </div>
                   </motion.div>
                 )}
 
-                <Button type="submit" disabled={loading} className="w-full h-16 bg-primary text-white hover:bg-primary/90 rounded-[24px] font-black tracking-widest text-[11px] shadow-2xl shadow-primary/20 border-none transition-all active:scale-95">
-                  {loading ? "Authenticating..." : (isLogin ? "Verify Access" : "Provision Master")}
-                </Button>
+                <div className="pt-2">
+                  <Button type="submit" disabled={loading} className="w-full h-11 bg-primary text-white rounded-xl font-black tracking-[0.2em] text-[9px] uppercase shadow-lg transition-all active:scale-95">
+                    {loading ? "Decrypting..." : (isLogin ? "Verify Identity" : "Provision Root")}
+                  </Button>
+                </div>
+
                 {isLogin && (
                   <button
                     type="button"
                     onClick={() => navigate('/forgot-password')}
-                    className="w-full text-[10px] font-black text-slate-500 hover:text-white transition-colors tracking-widest mt-2"
+                    className="w-full text-[9px] font-black text-slate-500 hover:text-white transition-colors tracking-widest uppercase"
                   >
                     Forgotten Password?
                   </button>
@@ -186,30 +177,27 @@ export default function AdminAuth() {
               </form>
 
               {isLogin && (
-                <div className="mt-8 pt-8 border-t-2 border-white/5 space-y-4">
-                   <div className="flex flex-col items-center gap-3">
-                      <p className="text-[8px] font-black text-primary/40 tracking-[0.4em]">Administrative Override</p>
+                <div className="mt-5 pt-5 border-t border-white/5">
+                   <div className="flex flex-col items-center gap-2">
+                      <p className="text-[7px] font-black text-primary/40 tracking-[0.4em] uppercase">Emergency Protocol</p>
                       <Button
                         variant="outline"
                         onClick={async () => {
                           try {
-                            toast.loading("Initializing Rescue Access...");
+                            toast.loading("Rescuing Account...");
                             await devAdminLogin();
                             toast.dismiss();
-                            toast.success("Emergency Access Granted.");
+                            toast.success("Root Access Active.");
                             navigate('/admin');
                           } catch (e: any) {
                             toast.dismiss();
-                            toast.error("Rescue failed. Ensure your backend is running and connected to the database.");
+                            toast.error("Rescue Denied.");
                           }
                         }}
-                        className="w-full h-14 rounded-2xl border-2 border-dashed border-white/10 text-slate-400 font-black text-[10px] hover:border-primary hover:text-white transition-all gap-2 bg-transparent"
+                        className="w-full h-9 rounded-lg border border-dashed border-white/10 text-slate-500 font-black text-[8px] hover:border-primary hover:text-white transition-all gap-2 bg-transparent uppercase"
                       >
-                        <Terminal className="w-4 h-4" /> Emergency Access
+                        <Terminal className="w-3 h-3"/> Bypass Authorization
                       </Button>
-                      <p className="text-[7px] text-slate-400 font-bold text-center px-4 leading-tight">
-                        Use only if credentials fail.
-                      </p>
                    </div>
                 </div>
               )}
@@ -218,8 +206,8 @@ export default function AdminAuth() {
         </motion.div>
       </div>
 
-      <footer className="py-8 z-10 w-full text-center border-t border-white/5 bg-slate-900">
-        <p className="text-[10px] font-bold text-slate-600 tracking-widest">&copy; {new Date().getFullYear()} VIVI CBT Systems. Secure Master Terminal.</p>
+      <footer className="py-5 z-10 w-full text-center border-t border-white/5 bg-slate-900/50">
+        <p className="text-[9px] font-bold text-slate-600 tracking-widest uppercase">&copy; {new Date().getFullYear()} VIVI CBT • SYSTEM ADMINISTRATION</p>
       </footer>
     </div>
   );

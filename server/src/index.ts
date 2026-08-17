@@ -22,12 +22,18 @@ import { redisClient } from "./lib/services";
 
 const app = express();
 const httpServer = createServer(app);
-const PORT = Number(process.env.PORT) || 5000;
+const PORT = Number(process.env.PORT) || 5001;
 
 // --- 1. IMMEDIATE PORT BINDING (Render Requirement) ---
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 DEPLOYMENT STATUS: Port ${PORT} is now OPEN and listening.`);
   console.log(`[BOOT] Environment: ${process.env.NODE_ENV || 'development'}`);
+}).on('error', (err: any) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌ ERROR: Port ${PORT} is already in use!`);
+    console.error(`💡 FIX: Run 'stop-process -Id (Get-NetTCPConnection -LocalPort ${PORT}).OwningProcess -Force' in PowerShell\n`);
+    process.exit(1);
+  }
 });
 
 // --- 2. PRIORITY ROUTES (Bypass all middleware) ---
@@ -95,14 +101,19 @@ async function initializeServices() {
         break;
       } catch (err: any) {
         dbRetries++;
-        console.error(`[DB RETRY ${dbRetries}] ${err.message}`);
+        console.error(`[DB ERROR] Attempt ${dbRetries}: ${err.message}`);
 
-        if (config.dbUrl?.includes("-a.oregon-postgres.render.com")) {
+        // Log the full error to see hidden properties
+        console.log("[DIAGNOSTIC] Full Error Object:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
+
+        if (config.dbUrl?.includes("-a.oregon-postgres.render.com") || config.db.host?.includes("-a.oregon-postgres.render.com")) {
           console.warn("⚠️ TROUBLESHOOTING: You are using an INTERNAL Render URL. Please switch to the EXTERNAL URL in your .env file.");
         }
 
-        if (err.message?.includes("connection timeout")) {
-          console.warn("⚠️ TROUBLESHOOTING: Connection timed out. Ensure your public IP is added to the Render 'Access Control' allowlist.");
+        if (err.message?.includes("connection timeout") || err.message?.includes("terminated unexpectedly")) {
+          console.warn("⚠️ TROUBLESHOOTING: Potential Network/IP Block.");
+          console.warn("👉 1. Verify your IP (105.117.7.230) is in Render dashboard -> Postgres -> Access Control.");
+          console.warn("👉 2. If it still fails, try adding '0.0.0.0/0' to Render Access Control to confirm connectivity.");
         }
 
         if (dbRetries < 5) await new Promise(r => setTimeout(r, 5000));
