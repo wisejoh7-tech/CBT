@@ -12,6 +12,10 @@ env:
   ECS_CLUSTER: cbt-cluster
   ECS_TASK_DEFINITION_BACKEND: .aws/task-definition-backend.json
   ECS_TASK_DEFINITION_FRONTEND: .aws/task-definition-frontend.json
+  CONTAINER_NAME_BACKEND: cbt-backend
+  CONTAINER_NAME_FRONTEND: cbt-frontend
+  ECS_SERVICE_BACKEND: cbt-backend-service
+  ECS_SERVICE_FRONTEND: cbt-frontend-service
 
 jobs:
   deploy:
@@ -54,5 +58,34 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-    # Note: For full ECS deployment, you would also need to update task definitions
-    # and use aws-actions/amazon-ecs-deploy-task-definition
+    - name: Fill in the new image ID in the amazon ECS task definition for backend
+      id: task-def-backend
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: ${{ env.ECS_TASK_DEFINITION_BACKEND }}
+        container-name: ${{ env.CONTAINER_NAME_BACKEND }}
+        image: ${{ steps.build-image-backend.outputs.image }}
+
+    - name: Deploy Amazon ECS task definition for backend
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+      with:
+        task-definition: ${{ steps.task-def-backend.outputs.task-definition }}
+        service: ${{ env.ECS_SERVICE_BACKEND }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
+
+    - name: Fill in the new image ID in the amazon ECS task definition for frontend
+      id: task-def-frontend
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: ${{ env.ECS_TASK_DEFINITION_FRONTEND }}
+        container-name: ${{ env.CONTAINER_NAME_FRONTEND }}
+        image: ${{ steps.build-image-frontend.outputs.image }}
+
+    - name: Deploy Amazon ECS task definition for frontend
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+      with:
+        task-definition: ${{ steps.task-def-frontend.outputs.task-definition }}
+        service: ${{ env.ECS_SERVICE_FRONTEND }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true

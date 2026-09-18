@@ -2,6 +2,7 @@ import { Attempt } from "../entities/Attempt";
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { z } from "zod";
 import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
 import { Candidate } from "../entities/Candidate";
@@ -61,7 +62,25 @@ router.post("/candidate/send-token", async (req, res) => {
 
 // Candidate Final Registration
 router.post("/candidate/register", async (req, res) => {
-  const { email, token, fullName, subjectCombination, dateOfBirth, password, phoneNumber, stateOfOrigin, lga, country, city, schoolAttended, address } = req.body;
+  const registerSchema = z.object({
+    email: z.string().email("Invalid email address"),
+    token: z.string().min(1, "Token is required"),
+    fullName: z.string().min(3, "Full name must be at least 3 characters"),
+    subjectCombination: z.array(z.string()).min(1, "At least one subject is required"),
+    dateOfBirth: z.string().min(1, "Date of birth is required"),
+    password: z.string().min(6, "Password must be at least 6 characters").optional(),
+    phoneNumber: z.string().optional(),
+  }).passthrough();
+
+  const validation = registerSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      message: "Validation failed",
+      errors: validation.error.flatten().fieldErrors
+    });
+  }
+
+  const { email, token, fullName, subjectCombination, dateOfBirth, password, phoneNumber, stateOfOrigin, lga, country, city, schoolAttended, address } = validation.data;
 
   try {
     const candidateRepository = AppDataSource.getRepository(Candidate);
@@ -184,7 +203,17 @@ router.post("/candidate/register", async (req, res) => {
 // Candidate Login (Email/Password)
 router.post("/candidate/login-email", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const loginSchema = z.object({
+      email: z.string().email("Invalid email format"),
+      password: z.string().min(1, "Password is required"),
+    });
+
+    const validation = loginSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ message: "Invalid email or password format" });
+    }
+
+    const { email, password } = validation.data;
     const candidateRepository = AppDataSource.getRepository(Candidate);
 
     const candidate = await candidateRepository.findOne({
@@ -246,7 +275,15 @@ router.post("/register", async (req, res) => {
 // Staff/Admin Login
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const adminLoginSchema = z.object({
+      email: z.string().email(),
+      password: z.string().min(1),
+    });
+
+    const validation = adminLoginSchema.safeParse(req.body);
+    if (!validation.success) return res.status(400).json({ message: "Invalid credentials format" });
+
+    const { email, password } = validation.data;
     const userRepository = AppDataSource.getRepository(User);
 
     const user = await userRepository.findOneBy({ email });

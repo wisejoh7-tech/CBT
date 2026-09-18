@@ -34,9 +34,9 @@ export const AppDataSource = new DataSource({
   url: (!config.db.host && config.dbUrl) ? config.dbUrl : undefined,
   synchronize: config.NODE_ENV !== "production",
   logging: config.NODE_ENV !== "production",
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: (config.NODE_ENV === "production" || config.dbUrl?.includes("render.com") || config.dbUrl?.includes("supabase"))
+    ? { rejectUnauthorized: false }
+    : false,
   extra: {
     max: 20,
     idleTimeoutMillis: 30000,
@@ -48,6 +48,7 @@ export const AppDataSource = new DataSource({
       ? "dist/migrations/*.js"
       : "src/migrations/*.ts"
   ],
+  migrationsRun: config.NODE_ENV === "production",
   subscribers: [
     SeatSubscriber,
     ExamSubscriber,

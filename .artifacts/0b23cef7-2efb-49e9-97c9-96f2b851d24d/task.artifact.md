@@ -1,0 +1,6 @@
+- [x] Add Socket.io Redis adapter to `services.ts`
+- [x] Complete ECS deployment in `deploy.yml`
+- [x] Implement input validation in `auth.ts`
+- [x] Tighten CSP in `index.ts`
+- [x] Configure production logging in `logger.ts`
+- [x] Finalize migration strategy in `data-source.ts`

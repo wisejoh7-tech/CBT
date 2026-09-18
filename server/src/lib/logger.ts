@@ -1,4 +1,5 @@
 import winston from "winston";
+import "winston-daily-rotate-file";
 import { AppDataSource } from "../data-source";
 import { Log, LogType, LogSeverity } from "../entities/Log";
 import { automationEngine } from "./automation-engine";
@@ -22,8 +23,21 @@ export const logger = winston.createLogger({
     new winston.transports.Console(),
     ...(process.env.NODE_ENV === "production"
       ? [
-          new winston.transports.File({ filename: "logs/error.log", level: "error" }),
-          new winston.transports.File({ filename: "logs/combined.log" }),
+          new winston.transports.DailyRotateFile({
+            filename: 'logs/application-%DATE%.log',
+            datePattern: 'YYYY-MM-DD',
+            zippedArchive: true,
+            maxSize: '20m',
+            maxFiles: '14d'
+          }),
+          new winston.transports.DailyRotateFile({
+            level: 'error',
+            filename: 'logs/error-%DATE%.log',
+            datePattern: 'YYYY-MM-DD',
+            zippedArchive: true,
+            maxSize: '20m',
+            maxFiles: '30d'
+          })
         ]
       : []),
   ],

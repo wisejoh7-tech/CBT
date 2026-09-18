@@ -4,6 +4,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
 import { User } from "./entities/User";
 import { Subject } from "./entities/Subject";
@@ -49,8 +50,22 @@ app.get("/health", (req, res) => {
 app.get("/", (req, res) => res.send("VIVI CBT API - ONLINE"));
 
 // --- 3. MIDDLEWARE & SECURITY ---
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: "*" }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://apis.google.com", "https://www.gstatic.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://*.firebaseio.com", "https://*.googleapis.com", "wss://*.onrender.com"],
+      frameSrc: ["'self'", "https://*.firebaseapp.com"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+}));
+app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
 app.use(express.json());
 app.use(ipBlocker);
 
@@ -129,7 +144,14 @@ async function initializeServices() {
     }
 
     // Socket.io Setup
-    const io = new Server(httpServer, { cors: { origin: "*" } });
+    const io = new Server(httpServer, { cors: { origin: process.env.CORS_ORIGIN || "*" } });
+
+    const adapter = redisClient.getAdapter();
+    if (adapter) {
+      io.adapter(adapter);
+      console.log("✅ Socket.io Redis Adapter Enabled.");
+    }
+
     app.set("io", io);
     automationEngine.setSocketIO(io);
 

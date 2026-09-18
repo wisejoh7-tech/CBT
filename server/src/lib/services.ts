@@ -2,6 +2,7 @@
 import "reflect-metadata";
 
 import { createClient } from "redis";
+import { createAdapter } from "@socket.io/redis-adapter";
 import nodemailer from "nodemailer";
 import { config } from "./config"; // named import (matches src/lib/config.ts)
 import { logger } from "./logger";
@@ -24,6 +25,8 @@ const realRedisClient = createClient({
   }
 });
 
+const subClient = realRedisClient.duplicate();
+
 let errorLogged = false;
 realRedisClient.on("error", (err: any) => {
   if (!errorLogged) {
@@ -36,14 +39,26 @@ realRedisClient.on("error", (err: any) => {
 export const redisClient = {
   connect: async () => {
     try {
-      await realRedisClient.connect();
+      await Promise.all([
+        realRedisClient.connect(),
+        subClient.connect()
+      ]);
       return true;
     } catch (err) {
       logger.warn("Redis connection failed. Using Memory Fallback.");
       return false;
     }
   },
-  disconnect: () => realRedisClient.disconnect(),
+  disconnect: () => {
+    realRedisClient.disconnect();
+    subClient.disconnect();
+  },
+  getAdapter: () => {
+    if (realRedisClient.isOpen && subClient.isOpen) {
+      return createAdapter(realRedisClient, subClient);
+    }
+    return null;
+  },
   set: async (key: string, value: string, options?: any) => {
     try {
       if (realRedisClient.isOpen) return await realRedisClient.set(key, value, options);
