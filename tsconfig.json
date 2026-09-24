@@ -2,8 +2,13 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "NodeNext",
-    "rootDir": "src",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["*"]
+    },
+    "rootDir": ".",
     "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
@@ -14,6 +19,6 @@
     "allowJs": false,
     "allowImportingTsExtensions": true
   },
-  "include": ["src"],
+  "include": ["src", "lib"],
   "exclude": ["node_modules", "dist"]
 }
