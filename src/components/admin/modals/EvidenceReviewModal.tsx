@@ -23,7 +23,7 @@ export const EvidenceReviewModal: React.FC<EvidenceReviewModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6 overflow-hidden">
-      <div className="cbt-background opacity-[0.1] pointer-events-none" />
+      <div className="cbt-background" />
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

@@ -36,6 +36,10 @@ realRedisClient.on("error", (err: any) => {
   }
 });
 
+subClient.on("error", (err: any) => {
+  // Silent fallback for duplicate pub/sub client
+});
+
 export const redisClient = {
   connect: async () => {
     try {

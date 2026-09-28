@@ -90,9 +90,10 @@ export default function ExamDashboard() {
   if (loading) return <div className="p-20 text-center font-black">Loading</div>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-900 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-slate-900/50 relative overflow-hidden">
+      <div className="cbt-background cbt-background-dark" />
       {/* Intense futuristic background for exam terminal */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 pointer-events-none">
          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#0EA5E910,transparent)]" />
          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:40px_40px]" />
       </div>

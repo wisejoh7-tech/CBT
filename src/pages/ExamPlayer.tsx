@@ -151,7 +151,18 @@ export default function ExamPlayer() {
 
     const setupProctoring = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 160, height: 120 } });
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error("Webcam API unavailable.");
+        }
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user", width: { ideal: 320 }, height: { ideal: 240 } }
+          });
+        } catch (e1) {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        }
+
         if (videoRefProctor.current) {
           videoRefProctor.current.srcObject = stream;
         }
@@ -391,9 +402,9 @@ export default function ExamPlayer() {
 
   if (!hasStarted && !isCompleted) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6 relative">
-        <div className="cbt-background opacity-[0.05] pointer-events-none" />
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl w-full bg-white p-12 rounded-[48px] shadow-2xl border-2 border-primary/20 text-center relative z-10">
+      <div className="min-h-screen bg-slate-50/20 flex items-center justify-center p-6 relative">
+        <div className="cbt-background" />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl w-full bg-white/90 backdrop-blur-md p-12 rounded-[48px] shadow-2xl border-2 border-primary/20 text-center relative z-10">
           <h2 className="text-1xl font-black mb-6 text-primary">EXAMINATION PROTOCOLS</h2>
           <div className="text-left space-y-4 mb-10 text-primary/70">
             <p className="font-bold flex items-center gap-2">1. Fullscreen is mandatory.</p>
@@ -411,9 +422,9 @@ export default function ExamPlayer() {
 
   if (isCompleted) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6 text-black selection:bg-slate-100 relative">
-        <div className="cbt-background opacity-[0.05] pointer-events-none" />
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-xl w-full bg-white p-12 rounded-[48px] shadow-2xl border border-primary/10 text-center relative z-10">
+      <div className="min-h-screen bg-slate-50/20 flex items-center justify-center p-6 text-black selection:bg-slate-100 relative">
+        <div className="cbt-background" />
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-xl w-full bg-white/90 backdrop-blur-md p-12 rounded-[48px] shadow-2xl border border-primary/10 text-center relative z-10">
           <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-6" />
           <h2 className="text-3xl font-black mb-4 tracking-tighter">Session Terminated Successfully</h2>
           <p className="text-slate-500 font-bold text-sm mb-10 leading-relaxed">
@@ -430,7 +441,8 @@ export default function ExamPlayer() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background text-primary selection:bg-primary/10 relative">
+    <div className="h-screen flex flex-col bg-slate-50/20 text-primary selection:bg-primary/10 relative">
+      <div className="cbt-background" />
       <header className="h-20 px-8 flex items-center justify-between border-b-2 border-primary/10 bg-white sticky top-0 z-50">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">

@@ -7,17 +7,14 @@ import { Input } from '@/lib/ui/input';
 import { Label } from '@/lib/ui/label';
 import { GraduationCap, Shield, User, Monitor, Mail, Lock, Search, ArrowLeft, Menu, X, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { Separator } from '@/lib/ui/separator';
 import { cn } from '@/src/lib/utils/utils';
-import { getApiUrl } from '@/src/lib/api-config';
+import { Separator } from '@/lib/ui/separator';
 
 export default function CandidateLogin() {
+  const { loginCandidateWithEmail, loginWithExamNumber, loading } = useAuth();
   const navigate = useNavigate();
-  const { loginWithExamNumber, loginCandidateWithEmail, user, profile, loading } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'reg_admin';
   const [email, setEmail] = useState('');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [examNumber, setExamNumber] = useState(localStorage.getItem('pendingExamNumber') || '');
@@ -60,9 +57,9 @@ export default function CandidateLogin() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-slate-50 selection:bg-primary/10 ">
+    <div className="relative min-h-screen flex flex-col bg-slate-50/20 selection:bg-primary/10">
+      <div className="cbt-background" />
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="cbt-background" />
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px] opacity-[0.05]" />
       </div>
 

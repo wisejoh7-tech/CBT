@@ -66,7 +66,7 @@ export const BulkAssignModal: React.FC<BulkAssignModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 overflow-hidden text-base">
-      <div className="cbt-background opacity-[0.1] pointer-events-none" />
+      <div className="cbt-background" />
       <motion.div
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}

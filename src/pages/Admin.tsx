@@ -105,10 +105,21 @@ export default function Admin() {
   const startCapture = async () => {
     setIsCapturing(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 400, height: 400, facingMode: "user" } });
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Webcam API unavailable.");
+      }
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }
+        });
+      } catch (e1) {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
       if (videoRef.current) videoRef.current.srcObject = stream;
-    } catch (err) {
-      toast.error("Camera access denied.");
+    } catch (err: any) {
+      console.warn("Admin camera error:", err);
+      toast.error("Camera permission denied or camera unavailable.");
       setIsCapturing(false);
     }
   };
@@ -117,15 +128,17 @@ export default function Admin() {
     const video = videoRef.current;
     if (!video) return;
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
     canvas.getContext('2d')?.drawImage(video, 0, 0);
     const data = canvas.toDataURL('image/jpeg', 0.9);
     setNewCandidate({ ...newCandidate, faceUrl: data });
 
     // Stop stream
-    const stream = video.srcObject as MediaStream;
-    stream.getTracks().forEach(track => track.stop());
+    if (video.srcObject) {
+      const stream = video.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+    }
     setIsCapturing(false);
     toast.success("Biometric Data Captured.");
   };
@@ -519,8 +532,8 @@ export default function Admin() {
   if (loading) return <div className="h-screen flex items-center justify-center font-black animate-pulse text-primary">Loading...</div>;
 
   return (
-    <div className="min-h-screen flex bg-slate-50 font-sans antialiased text-slate-900 overflow-hidden text-sm relative">
-      <div className="cbt-background opacity-[0.03] pointer-events-none" />
+    <div className="min-h-screen flex bg-slate-50/30 font-sans antialiased text-slate-900 overflow-hidden text-sm relative">
+      <div className="cbt-background" />
 
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>

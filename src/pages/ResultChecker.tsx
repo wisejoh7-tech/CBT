@@ -51,8 +51,8 @@ export default function ResultChecker() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 relative">
-      <div className="cbt-background opacity-[0.05]" />
+    <div className="min-h-screen flex flex-col bg-slate-50/20 relative">
+      <div className="cbt-background" />
       {/* Navigation */}
       <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b-2 border-primary/10 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
         <div className="flex items-center gap-4">

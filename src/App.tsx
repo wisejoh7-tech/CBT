@@ -92,7 +92,8 @@ export default function App() {
     <AuthProvider>
       <SocketProvider>
         <BrowserRouter>
-          <div className="min-h-screen">
+          <div className="min-h-screen relative">
+            <div className="cbt-background" />
             <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/candidate-login" element={<PublicRoute><CandidateLogin /></PublicRoute>} />

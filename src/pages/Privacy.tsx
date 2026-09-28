@@ -9,8 +9,8 @@ export default function Privacy() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans antialiased text-slate-900 relative overflow-hidden">
-      <div className="cbt-background opacity-[0.03] pointer-events-none" />
+    <div className="min-h-screen bg-slate-50/20 font-sans antialiased text-slate-900 relative overflow-hidden">
+      <div className="cbt-background" />
 
       <header className="h-20 bg-white/80 backdrop-blur-md border-b border-primary/5 px-8 flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>

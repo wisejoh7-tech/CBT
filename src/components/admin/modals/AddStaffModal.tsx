@@ -25,7 +25,7 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6 text-base overflow-hidden">
-      <div className="cbt-background opacity-[0.05] pointer-events-none" />
+      <div className="cbt-background" />
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}

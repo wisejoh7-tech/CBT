@@ -1,4 +1,15 @@
+console.log("SERVER STARTING...");
 import "reflect-metadata";
+
+// Prevent unhandled network/DNS promise rejections from crashing the process
+process.on('unhandledRejection', (reason: any) => {
+  console.warn('[SYSTEM WARN] Unhandled Promise Rejection:', reason?.message || reason);
+});
+
+process.on('uncaughtException', (err: any) => {
+  console.warn('[SYSTEM WARN] Uncaught Exception:', err?.message || err);
+});
+
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";

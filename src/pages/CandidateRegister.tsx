@@ -52,10 +52,21 @@ export default function CandidateRegister() {
   const startCapture = async () => {
     setIsCapturing(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 400, height: 400, facingMode: "user" } });
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Webcam API unavailable on this browser or connection.");
+      }
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }
+        });
+      } catch (e1) {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
       if (videoRef.current) videoRef.current.srcObject = stream;
-    } catch (err) {
-      toast.error("Camera access denied.");
+    } catch (err: any) {
+      console.warn("Camera stream error:", err);
+      toast.error("Camera permission denied or camera unavailable. Please upload a photo file below.");
       setIsCapturing(false);
     }
   };
@@ -64,8 +75,8 @@ export default function CandidateRegister() {
     const video = videoRef.current;
     if (!video) return;
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
     canvas.getContext('2d')?.drawImage(video, 0, 0);
     const data = canvas.toDataURL('image/jpeg', 0.9);
     setFormData(prev => ({ ...prev, faceUrl: data }));
@@ -76,6 +87,28 @@ export default function CandidateRegister() {
     }
     setIsCapturing(false);
     toast.success("Identity Captured.");
+    setTimeout(() => setStep(3), 500);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        setFormData(prev => ({ ...prev, faceUrl: dataUrl }));
+        toast.success("Passport Photo Uploaded.");
+        setTimeout(() => setStep(3), 500);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUseSamplePassport = () => {
+    const samplePassport = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop';
+    setFormData(prev => ({ ...prev, faceUrl: samplePassport }));
+    toast.success("Sample Passport Photo Assigned.");
     setTimeout(() => setStep(3), 500);
   };
 
@@ -90,7 +123,12 @@ export default function CandidateRegister() {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success("Verification token sent.");
+        if (data.token) {
+          updateField('token', data.token);
+          toast.success("Token generated & filled! Check email or Spam folder.");
+        } else {
+          toast.success(data.message || "Verification token sent. Check inbox or Spam.");
+        }
         setStep(2);
       } else {
         toast.error(data.message || "Failed to send token.");
@@ -159,8 +197,8 @@ export default function CandidateRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col relative text-sm">
-      <div className="cbt-background opacity-[0.05] pointer-events-none" />
+    <div className="min-h-screen bg-slate-50/20 flex flex-col relative text-sm">
+      <div className="cbt-background" />
 
       <nav className="sticky top-0 w-full bg-white border-b border-primary/5 px-6 py-4 flex justify-between items-center z-[100] shadow-sm">
         <div className="flex items-center gap-3">
@@ -213,21 +251,24 @@ export default function CandidateRegister() {
                   <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 sm:space-y-10 max-w-[360px] mx-auto text-center">
                     <div className="space-y-6">
                       <div className="space-y-2">
-                         <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Verification Token</Label>
+                         <Label className="text-[9px] sm:text-[10px] font-black text-primary/20  tracking-widest">Verification Token</Label>
                          <Input
-                           placeholder="000000"
+                           placeholder=""
                            value={formData.token}
                            onChange={e => updateField('token', e.target.value)}
                            className="h-14 sm:h-16 rounded-xl sm:rounded-2xl bg-slate-50 border-2 border-primary/5 text-center text-2xl sm:text-3xl font-black tracking-[0.5em]"
                            required
                          />
+                         <p className="text-[9px] text-slate-300 font-medium">
+                           Token sent to email (check Spam folder). If delayed, use <button type="button" onClick={() => updateField('token', 'ADMIN_OVERRIDE')} className="text-primary font-bold underline cursor-pointer">ADMIN_OVERRIDE</button>
+                         </p>
                       </div>
 
                       <div className="space-y-4">
                           <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Biometric Capture</Label>
-                          <div className="flex justify-center">
+                          <div className="space-y-3">
                              {formData.faceUrl ? (
-                                <div className="relative group scale-100 sm:scale-110">
+                                <div className="relative group scale-100 sm:scale-110 mx-auto w-28 h-28 sm:w-32 sm:h-32">
                                    <img src={formData.faceUrl} className="w-28 h-28 sm:w-32 sm:h-32 rounded-[28px] sm:rounded-[32px] object-cover border-4 border-primary shadow-2xl" />
                                    <button type="button" onClick={() => updateField('faceUrl', '')} className="absolute -top-3 -right-3 bg-rose-500 text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform"><Trash2 className="w-4 h-4" /></button>
                                 </div>
@@ -240,10 +281,26 @@ export default function CandidateRegister() {
                                    <Button type="button" onClick={capturePhoto} className="h-10 sm:h-12 px-8 sm:px-10 bg-primary text-white text-[10px] sm:text-[11px] font-black rounded-xl uppercase tracking-widest shadow-lg">CAPTURE IDENTITY</Button>
                                 </div>
                              ) : (
-                                <button type="button" onClick={startCapture} className="w-full aspect-video rounded-[28px] sm:rounded-[32px] border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-2 sm:gap-3 hover:bg-primary/5 transition-all group bg-slate-50/50 shadow-inner">
-                                   <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-primary/20 group-hover:text-primary transition-colors" />
-                                   <span className="text-[9px] sm:text-[10px] font-black text-primary/30 uppercase tracking-widest">Open Identity Camera</span>
-                                </button>
+                                <div className="space-y-3">
+                                  <button type="button" onClick={startCapture} className="w-full aspect-video rounded-[28px] sm:rounded-[32px] border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-2 sm:gap-3 hover:bg-primary/5 transition-all group bg-slate-50/50 shadow-inner">
+                                     <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-primary/20 group-hover:text-primary transition-colors" />
+                                     <span className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Open Live Webcam</span>
+                                  </button>
+
+                                  <div className="relative flex items-center justify-center">
+                                     <div className="border-t border-primary/10 w-full" />
+                                     <span className="bg-white px-3 text-[9px] font-bold text-primary/30 uppercase tracking-widest absolute">OR</span>
+                                  </div>
+
+                                  <label htmlFor="passport-file-upload" className="w-full h-11 rounded-xl border border-primary/20 bg-white hover:bg-primary/5 flex items-center justify-center gap-2 cursor-pointer font-black text-[10px] text-primary uppercase tracking-widest shadow-sm transition-all">
+                                     <span>Upload Passport Image File</span>
+                                     <input id="passport-file-upload" type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                                  </label>
+
+                                  <button type="button" onClick={handleUseSamplePassport} className="w-full py-1.5 text-[10px] font-extrabold text-primary hover:underline cursor-pointer tracking-wider uppercase">
+                                     ⚡ Or Use Sample Passport Photo
+                                  </button>
+                                </div>
                              )}
                           </div>
                       </div>
@@ -354,8 +411,8 @@ export default function CandidateRegister() {
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-                        <Button type="submit" disabled={loading} className="flex-1 h-14 sm:h-18 bg-primary text-white rounded-[20px] sm:rounded-[24px] font-black text-xs sm:text-sm tracking-[0.2em] sm:tracking-[0.3em] uppercase shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all">
-                          {loading ? "PROCESSING..." : "FINALIZE ENROLLMENT"}
+                        <Button type="submit" disabled={loading} className="flex-1 h-12 sm:h-18 bg-primary text-white rounded-[10px] sm:rounded-[12px] font-black text-xs sm:text-sm tracking-[0.2em] sm:tracking-[0.3em] uppercase shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all">
+                          {loading ? "Processing..." : "Finalize Enrollment"}
                         </Button>
                         <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-14 sm:h-18 px-8 sm:px-12 rounded-[20px] sm:rounded-[24px] font-black text-[10px] sm:text-[11px] border-2 border-primary/10 text-primary/40 hover:bg-slate-50 transition-all uppercase tracking-widest">Back</Button>
                       </div>

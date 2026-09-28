@@ -1,0 +1,9 @@
+allowBuilds:
+  '@firebase/util': true
+  '@google/genai': true
+  bcryptjs: true
+  core-js: true
+  electron-winstaller: true
+  esbuild: true
+  protobufjs: true
+  re2: true

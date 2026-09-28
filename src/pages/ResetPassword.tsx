@@ -55,8 +55,8 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col relative">
-      <div className="cbt-background opacity-[0.05]" />
+    <div className="min-h-screen bg-slate-50/20 flex flex-col relative">
+      <div className="cbt-background" />
 
       <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b-2 border-primary/10 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
         <div className="flex items-center gap-4">

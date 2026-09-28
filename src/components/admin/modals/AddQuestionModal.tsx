@@ -22,7 +22,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
 }) => {
   return (
     <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6 text-base overflow-hidden">
-      <div className="cbt-background opacity-[0.05] pointer-events-none" />
+      <div className="cbt-background" />
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -47,9 +47,9 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
                 <Label className="text-[10px] font-black text-primary/30 tracking-widest ">Option {String.fromCharCode(65 + i)}</Label>
                 <Input
                   placeholder={`option ${String.fromCharCode(65 + i)}`}
-                  value={newQuestion.options[i]}
+                  value={newQuestion.options[i] || ''}
                   onChange={e => {
-                    const opts = [...newQuestion.option];
+                    const opts = [...(newQuestion.options || ['', '', '', ''])];
                     opts[i] = e.target.value;
                     setNewQuestion({...newQuestion, options: opts});
                   }}

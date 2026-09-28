@@ -102,8 +102,8 @@ export default function CandidateDashboard() {
   if (loading) return <div className="p-20 text-center font-black animate-pulse text-primary tracking-widest">Loading Portal...</div>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 font-sans relative antialiased tracking-tight text-sm sm:text-base">
-      <div className="cbt-background opacity-[0.03] pointer-events-none" />
+    <div className="min-h-screen flex flex-col bg-slate-50/20 font-sans relative antialiased tracking-tight text-sm sm:text-base">
+      <div className="cbt-background" />
 
       {/* Header */}
       <header className="h-16 sm:h-20 bg-white border-b border-primary/5 px-4 sm:px-8 flex justify-between items-center sticky top-0 z-50 shadow-sm">
@@ -125,7 +125,7 @@ export default function CandidateDashboard() {
 
           {/* Main Action Card */}
           <Card className="p-6 sm:p-8 bg-primary text-white rounded-[28px] sm:rounded-[32px] shadow-2xl shadow-primary/20 flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-8 border-none overflow-hidden relative group">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-white/10 transition-colors" />
+             <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-white/10 transition-colors" />
              <div className="flex items-center gap-4 sm:gap-5 relative z-10 w-full md:w-auto">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/10 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/20 backdrop-blur-sm shrink-0">
                    <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
@@ -145,7 +145,7 @@ export default function CandidateDashboard() {
                onClick={() => navigate(dashboardData?.assignedExamId ? `/instructions/${dashboardData.assignedExamId}` : '/instructions/unified')}
                className="h-12 sm:h-14 w-full md:w-auto px-8 sm:px-10 bg-white text-primary rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest shadow-xl active:scale-95 transition-all hover:bg-slate-50 border-none shrink-0"
              >
-               {dashboardData?.assignedExamId ? "START ASSIGNED EXAM" : "ENTER EXAM TERMINAL"}
+               {dashboardData?.assignedExamId ? "START ASSIGNED EXAM" : "Start Exam"}
              </Button>
           </Card>
 

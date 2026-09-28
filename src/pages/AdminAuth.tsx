@@ -57,7 +57,8 @@ export default function AdminAuth() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-slate-900 selection:bg-primary/20 text-slate-100">
+    <div className="relative min-h-screen flex flex-col bg-slate-900/50 selection:bg-primary/20 text-slate-100">
+      <div className="cbt-background cbt-background-dark" />
       <nav className="sticky top-0 w-full bg-slate-900/80 backdrop-blur-md border-b border-white/5 px-6 py-3 flex justify-between items-center z-[100] shadow-sm">
         <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-black text-base shadow-lg shadow-primary/20">V</div>

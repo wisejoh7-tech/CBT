@@ -14,25 +14,27 @@ export default function Home() {
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'reg_admin';
 
   return (
-    <div className="min-h-screen flex flex-col bg-white selection:bg-primary/10 font-sans relative  antialiased tracking-tight">
+    <div className="min-h-screen flex flex-col bg-slate-50/20 selection:bg-primary/10 font-sans relative antialiased tracking-tight">
+      <div className="cbt-background" />
+
       {/* Navigation */}
       <nav className="sticky top-0 w-full bg-white/90 backdrop-blur-md border-b border-primary/5 px-8 py-4 flex justify-between items-center z-[100]">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-primary/20">V</div>
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-primary/10">V</div>
           <span className="font-black text-xl tracking-tighter text-primary">VIVI CBT</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-8 ">
+        <div className="hidden md:flex items-center gap-8  ">
           {[
             { label: 'HOME', path: '/' },
-            { label: 'CANDIDATE LOGIN', path: '/candidate-login' },
+            { label: 'LOGIN', path: '/candidate-login' },
             { label: 'REGISTER', path: '/candidate-register' },
             { label: 'RESULTS', path: '/results' }
           ].map((item) => (
             <button
               key={item.label}
               onClick={() => navigate(item.path)}
-              className="text-[14px] font-black tracking-widest text-primary/60 hover:text-primary transition-colors"
+              className="text-[11px] font-black tracking-widest w-28 h-9 text-primary/60 hover:text-primary transition-colors bg-primary text-white rounded-3xl "
             >
               {item.label}
             </button>
@@ -79,31 +81,32 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <header className="relative pt-24 pb-16 px-8 bg-slate-50/50 overflow-hidden min-h-[60vh] flex items-center">
+
+      <header className="relative pt-24 pb-16 px-8 bg-slate-50/10 overflow-hidden min-h-[60vh] flex items-center">
+
         <div className="absolute inset-0 z-0 pointer-events-none">
-          <div className="cbt-background opacity-[0.15]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/40 to-transparent" />
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:40px_40px] opacity-[0.08]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/20 to-transparent" />
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:40px_40px] opacity-[0.05]" />
         </div>
         <div className="container mx-auto text-center max-w-4xl relative z-10">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 mb-8 px-6 py-2 rounded-full border-2 border-primary/10 bg-white shadow-md">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 mb-8 px-6 py-2 rounded-full border-2  bg-white shadow-md  border-primary/100">
             <ShieldCheck className="w-4 h-4 text-primary" />
-            <span className="text-[9px] font-black tracking-[0.3em] text-primary">Standard Examination Portal</span>
+            <span className="text-[10px] font-black tracking-[0.3em] text-primary border-primary/100 border-2">Standard Examination Portal</span>
           </motion.div>
 
-          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-2xl md:text-3xl font-black text-blue/100 tracking-tighter leading-[1.8] mb-8 ">
-            The Gold  Standard <br/> <span className="text-blue/100">In CBT Excellence</span>
-          </motion.h1>
+          <motion.h4 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-2xl md:text-1xl font-black text-blue/90 tracking-tighter leading-[1.8] mb-8 ">
+            The Gold  Standard <br/> <span className="text-blue/90">In CBT Excellence</span>
+          </motion.h4>
 
           <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-sm md:text-base text-blue/100 font-large mb-12 max-w-2xl text-bold mx-auto leading-relaxed">
             Welcome to VIVI CBT Systems, where cutting-edge technology meets academic excellence. Experience a secure, fair, and seamless examination environment.
           </motion.p>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-col sm:flex-row justify-center gap-6">
-            <Button onClick={() => navigate('/candidate-register')} className="h-14 px-10 bg-primary text-white rounded-2xl font-black text-sm tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all flex gap-2 items-center">
+            <Button onClick={() => navigate('/candidate-register')} className="h-14 px-10 bg-primary text-white rounded-2xl font-black text-sm tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all flex gap-2 items-center ">
               Register Now <ArrowRight className="w-5 h-5" />
             </Button>
-            <Button onClick={() => navigate('/candidate-login')} variant="outline" className="h-14 px-10 border-2 border-primary/10 text-primary font-black text-sm tracking-widest bg-white hover:bg-slate-50 transition-all">
+            <Button onClick={() => navigate('/candidate-login')} variant="outline" className="h-14 px-10 border-2 border-primary/100 text-primary font-black text-sm tracking-widest bg-white hover:bg-slate-50 transition-all">
               Candidate Login
             </Button>
           </motion.div>
@@ -169,7 +172,7 @@ export default function Home() {
                    <BookOpen className="w-7 h-7 text-white" />
                 </div>
                 <h4 className="font-black text-sm mb-3 tracking-widest">Global Curriculum</h4>
-                <p className="text-[10px] font-bold text-white/40 leading-relaxed">Comprehensive management for all UTME elective subjects and combinations.</p>
+                <p className="text-[10px] font-bold text-white/40 leading-relaxed">Comprehensive management for all VIVI cbt elective subjects and combinations.</p>
               </Card>
             </div>
           </div>
@@ -179,13 +182,13 @@ export default function Home() {
       {/* Steps Section */}
       <section className="py-20 bg-white px-8">
         <div className="container mx-auto max-w-5xl text-center">
-          <h2 className="text-xl font-black tracking-[0.3em] text-primary/20 mb-12">The Journey</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+          <h2 className="text-2xl font-black  text-primary/60 mb-12">The Journey</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-12 text-primary/60">
             {[
-              { step: '01', label: 'Registration', desc: 'Secure Enrollment' },
-              { step: '02', label: 'Verification', desc: 'Biometric Check' },
-              { step: '03', label: 'Examination', desc: 'Real-time Testing' },
-              { step: '04', label: 'Results', desc: 'Instant Analysis' },
+              { step: '1', label: 'Registration', desc: 'Secure Enrollment' },
+              { step: '2', label: 'Verification', desc: 'Biometric Check' },
+              { step: '3', label: 'Examination', desc: 'Real-time Testing' },
+              { step: '4', label: 'Results', desc: 'Instant Analysis' },
             ].map((s, idx) => (
               <div key={idx} className="space-y-6 group">
                 <div className="relative inline-block">
@@ -229,11 +232,7 @@ export default function Home() {
             &copy; {new Date().getFullYear()} VIVI CBT Systems. All Rights Reserved. <br/>
             Engineered for academic integrity and global excellence.
           </p>
-          <div className="flex justify-center gap-8">
-            <button onClick={() => navigate('/admin/auth')} className="text-[8px] font-black text-primary/10 hover:text-primary transition-colors flex items-center gap-2 tracking-widest">
-              <Lock className="w-2.5 h-2.5" /> Staff Access
-            </button>
-          </div>
+          
         </div>
       </footer>
     </div>

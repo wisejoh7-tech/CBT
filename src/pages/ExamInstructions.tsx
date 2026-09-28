@@ -88,8 +88,8 @@ export default function ExamInstructions() {
   const totalQuestions = exams.reduce((acc, curr) => acc + curr.totalQuestions, 0);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center selection:bg-slate-100 relative text-black">
-      <div className="cbt-background opacity-[0.05] pointer-events-none" />
+    <div className="min-h-screen bg-slate-50/20 flex flex-col items-center selection:bg-slate-100 relative text-black">
+      <div className="cbt-background" />
       <nav className="sticky top-0 w-full bg-white border-b-2 border-slate-100 px-8 py-4 flex justify-between items-center z-[100] shadow-sm mb-12">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>

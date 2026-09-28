@@ -40,7 +40,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-4 text-sm overflow-hidden">
-      <div className="cbt-background opacity-[0.05] pointer-events-none" />
+      <div className="cbt-background" />
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -204,10 +204,31 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                     <Button type="button" onClick={capturePhoto} className="h-8 px-4 bg-primary text-white font-black rounded-lg tracking-widest text-[8px] shadow-md uppercase">Capture</Button>
                   </div>
                 ) : (
-                  <button type="button" onClick={startCapture} className="w-full aspect-square max-w-[100px] rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/[0.02] transition-all group bg-white shadow-sm">
-                    <div className="w-8 h-8 rounded-xl bg-primary/5 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary/10 transition-all"><Camera className="w-5 h-5" /></div>
-                    <span className="text-[7px] font-black text-primary/30 tracking-widest uppercase">Start Camera</span>
-                  </button>
+                  <div className="flex flex-col items-center gap-2">
+                    <button type="button" onClick={startCapture} className="w-full aspect-square max-w-[100px] rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/[0.02] transition-all group bg-white shadow-sm">
+                      <div className="w-8 h-8 rounded-xl bg-primary/5 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary/10 transition-all"><Camera className="w-5 h-5" /></div>
+                      <span className="text-[7px] font-black text-primary/30 tracking-widest uppercase">Start Camera</span>
+                    </button>
+
+                    <label htmlFor="admin-passport-file" className="text-[9px] font-black text-primary underline cursor-pointer uppercase">
+                      Upload File
+                      <input
+                        id="admin-passport-file"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            if (ev.target?.result) setNewCandidate({ ...newCandidate, faceUrl: ev.target.result as string });
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                  </div>
                 )}
              </div>
           </div>

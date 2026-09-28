@@ -33,8 +33,8 @@ export default function ExamSlip() {
   if (!candidate) return <div className="p-20 text-center">Candidate not found.</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans relative">
-      <div className="cbt-background opacity-[0.05] pointer-events-none" />
+    <div className="min-h-screen bg-slate-50/20 py-8 px-4 font-sans relative">
+      <div className="cbt-background" />
       <nav className="max-w-4xl mx-auto mb-10 bg-white/80 backdrop-blur-md border-2 border-primary/10 px-8 py-4 rounded-[24px] flex justify-between items-center shadow-sm relative z-10">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>

@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/lib/ui/card';
 import { Mail, Key, ArrowRight, Monitor, User, ArrowLeft, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiUrl } from '@/src/lib/api-config';
+import { cn } from '@/src/lib/utils/utils';
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -41,8 +42,8 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col relative">
-      <div className="cbt-background opacity-[0.05]" />
+    <div className="min-h-screen bg-slate-50/20 flex flex-col relative">
+      <div className="cbt-background" />
 
       <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b-2 border-primary/10 px-8 py-4 flex justify-between items-center z-[100] shadow-sm">
         <div className="flex items-center gap-4">
@@ -147,8 +148,4 @@ export default function ForgotPassword() {
       </footer>
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
 }

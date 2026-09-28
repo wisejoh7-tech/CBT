@@ -26,29 +26,25 @@ if (!config.dbUrl) {
 
 export const AppDataSource = new DataSource({
   type: "postgres",
-  host: config.db.host || undefined,
-  port: config.db.port,
-  username: config.db.user || undefined,
-  password: config.db.pass || undefined,
-  database: config.db.name || undefined,
-  url: (!config.db.host && config.dbUrl) ? config.dbUrl : undefined,
+  url: config.dbUrl || undefined,
+  host: !config.dbUrl ? config.db.host : undefined,
+  port: !config.dbUrl ? config.db.port : undefined,
+  username: !config.dbUrl ? config.db.user : undefined,
+  password: !config.dbUrl ? config.db.pass : undefined,
+  database: !config.dbUrl ? config.db.name : undefined,
   synchronize: config.NODE_ENV !== "production",
   logging: config.NODE_ENV !== "production",
-  ssl: (config.NODE_ENV === "production" || config.dbUrl?.includes("render.com") || config.dbUrl?.includes("supabase"))
+  ssl: (config.dbUrl?.includes("render.com") || config.db.host?.includes("render.com"))
     ? { rejectUnauthorized: false }
-    : false,
+    : undefined,
   extra: {
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 30000,
   },
   entities: [User, Candidate, Exam, Question, Attempt, Seat, Log, Subject],
-  migrations: [
-    config.NODE_ENV === "production"
-      ? "dist/migrations/*.js"
-      : "src/migrations/*.ts"
-  ],
-  migrationsRun: config.NODE_ENV === "production",
+  migrations: [],
+  migrationsRun: false,
   subscribers: [
     SeatSubscriber,
     ExamSubscriber,

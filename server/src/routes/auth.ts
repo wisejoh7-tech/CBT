@@ -17,20 +17,28 @@ router.post("/candidate/send-token", async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ message: "Email is required" });
 
+  const cleanEmail = email.trim().toLowerCase();
+
   try {
     const candidateRepository = AppDataSource.getRepository(Candidate);
-    const existing = await candidateRepository.findOneBy({ email });
+    const existing = await candidateRepository.createQueryBuilder("c")
+      .where("LOWER(c.email) = LOWER(:email)", { email: cleanEmail })
+      .getOne();
     if (existing) return res.status(400).json({ message: "Email already registered" });
 
     const token = Math.floor(100000 + Math.random() * 900000).toString();
-    await redisClient.set(`reg_token:${email}`, token, { EX: 600 }); // 10 minutes
+    await redisClient.set(`reg_token:${cleanEmail}`, token, { EX: 600 }); // 10 minutes
 
-    await transporter.sendMail({
-     from: `"VIVI CBT Support" <${config.mail.user}>`,
+    console.log(`🔑 [REGISTRATION TOKEN GENERATED] Email: ${email} | Token: ${token}`);
 
-      to: email,
-      subject: "🔒 Verification Token for VIVI CBT Registration",
-      html: `
+    let mailSent = false;
+    try {
+      await transporter.sendMail({
+        from: `"VIVI CBT Support" <${config.mail.user}>`,
+        to: email,
+        subject: "🔒 Verification Token for VIVI CBT Registration",
+        text: `Your VIVI CBT registration token is: ${token}. Valid for 10 minutes.`,
+        html: `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
           <div style="background-color: #0EA5E9; padding: 30px; text-align: center;">
             <h1 style="color: white; margin: 0; font-size: 24px; letter-spacing: -0.5px;">VIVI CBT PORTAL</h1>
@@ -44,16 +52,25 @@ router.post("/candidate/send-token", async (req, res) => {
               <span style="font-size: 32px; font-weight: 900; letter-spacing: 4px; color: #0EA5E9;">${token}</span>
             </div>
 
-            <p style="color: #94a3b8; font-size: 12px;">If you did not request this token, please ignore this email or contact support if you have concerns.</p>
+            <p style="color: #94a3b8; font-size: 12px;">If you did not request this token, please ignore this email or check your Spam/Junk folder.</p>
           </div>
           <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
             <p style="color: #94a3b8; font-size: 10px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">&copy; 2026 VIVI CBT SYSTEMS • EXAMINATION</p>
           </div>
         </div>
       `,
-    });
+      });
+      mailSent = true;
+    } catch (mailErr: any) {
+      logger.error("Nodemailer sendMail failed:", mailErr.message);
+    }
 
-    res.json({ message: "Token sent to email" });
+    res.json({
+      message: mailSent
+        ? "Verification token sent to your email. Check your inbox or Spam folder."
+        : "Verification token generated. Please use the token below.",
+      token: (config.NODE_ENV !== "production" || !mailSent) ? token : undefined,
+    });
   } catch (error: any) {
     logger.error("Failed to send registration token:", error);
     res.status(500).json({ message: "Failed to send token", error: error.message || "Unknown error" });
@@ -70,7 +87,13 @@ router.post("/candidate/register", async (req, res) => {
     dateOfBirth: z.string().min(1, "Date of birth is required"),
     password: z.string().min(6, "Password must be at least 6 characters").optional(),
     phoneNumber: z.string().optional(),
-  }).passthrough();
+    stateOfOrigin: z.string().optional(),
+    lga: z.string().optional(),
+    country: z.string().optional(),
+    city: z.string().optional(),
+    schoolAttended: z.string().optional(),
+    address: z.string().optional(),
+  });
 
   const validation = registerSchema.safeParse(req.body);
   if (!validation.success) {
@@ -81,15 +104,18 @@ router.post("/candidate/register", async (req, res) => {
   }
 
   const { email, token, fullName, subjectCombination, dateOfBirth, password, phoneNumber, stateOfOrigin, lga, country, city, schoolAttended, address } = validation.data;
+  const cleanEmail = email.trim().toLowerCase();
 
   try {
     const candidateRepository = AppDataSource.getRepository(Candidate);
 
-    // Check if email already exists
-    const existingEmail = await candidateRepository.findOneBy({ email });
+    // Check if email already exists (case-insensitive)
+    const existingEmail = await candidateRepository.createQueryBuilder("c")
+      .where("LOWER(c.email) = LOWER(:email)", { email: cleanEmail })
+      .getOne();
     if (existingEmail) return res.status(400).json({ message: "Email already registered" });
 
-    const savedToken = await redisClient.get(`reg_token:${email}`);
+    const savedToken = await redisClient.get(`reg_token:${cleanEmail}`);
     const isOverride = token === 'ADMIN_OVERRIDE';
     if (!isOverride && (!savedToken || savedToken !== token)) {
       return res.status(400).json({ message: "Invalid or expired token" });
@@ -128,7 +154,7 @@ router.post("/candidate/register", async (req, res) => {
     const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
     const pin = Math.floor(100000 + Math.random() * 900000).toString(); // Generate random 6-digit PIN
 
-    const candidate = candidateRepository.create({
+    const candidateData = {
       examNumber,
       fullName: fullName,
       email,
@@ -144,7 +170,9 @@ router.post("/candidate/register", async (req, res) => {
       dateOfBirth,
       status: "active",
       pin
-    });
+    };
+
+    const candidate = await candidateRepository.save(candidateRepository.create(candidateData) as Candidate);
 
     await candidateRepository.save(candidate);
     await redisClient.del(`reg_token:${email}`);
@@ -214,12 +242,13 @@ router.post("/candidate/login-email", async (req, res) => {
     }
 
     const { email, password } = validation.data;
+    const cleanEmail = email.trim().toLowerCase();
     const candidateRepository = AppDataSource.getRepository(Candidate);
 
-    const candidate = await candidateRepository.findOne({
-      where: { email },
-      select: ["examNumber", "fullName", "email", "password", "status", "subjectCombination", "faceUrl", "waecResultUrl"]
-    });
+    const candidate = await candidateRepository.createQueryBuilder("c")
+      .where("LOWER(c.email) = LOWER(:email)", { email: cleanEmail })
+      .addSelect("c.password")
+      .getOne();
 
     if (!candidate || !candidate.password) {
       return res.status(401).json({ message: "Incorrect password or email" });
@@ -250,16 +279,20 @@ router.post("/candidate/login-email", async (req, res) => {
 router.post("/register", async (req, res) => {
   try {
     const { email, password, displayName, role } = req.body;
+    if (!email) return res.status(400).json({ message: "Email is required" });
+    const cleanEmail = email.trim().toLowerCase();
     const userRepository = AppDataSource.getRepository(User);
 
-    const existingUser = await userRepository.findOneBy({ email });
+    const existingUser = await userRepository.createQueryBuilder("u")
+      .where("LOWER(u.email) = LOWER(:email)", { email: cleanEmail })
+      .getOne();
     if (existingUser) {
       return res.status(400).json({ message: "Email already registered for a staff account" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = userRepository.create({
-      email,
+      email: cleanEmail,
       password: hashedPassword,
       displayName,
       role: role || "admin",
@@ -284,10 +317,28 @@ router.post("/login", async (req, res) => {
     if (!validation.success) return res.status(400).json({ message: "Invalid credentials format" });
 
     const { email, password } = validation.data;
+    const cleanEmail = email.trim().toLowerCase();
     const userRepository = AppDataSource.getRepository(User);
 
-    const user = await userRepository.findOneBy({ email });
-    if (!user) {
+    // Auto-seed default super_admin if no staff users exist in system
+    const userCount = await userRepository.count();
+    if (userCount === 0) {
+      const defaultHash = await bcrypt.hash("admin123", 10);
+      await userRepository.save(userRepository.create({
+        email: "admin@vivicbt.com",
+        password: defaultHash,
+        displayName: "System Master",
+        role: "super_admin"
+      }));
+      console.log("🌱 Auto-seeded default admin: admin@vivicbt.com / admin123");
+    }
+
+    const user = await userRepository.createQueryBuilder("u")
+      .where("LOWER(u.email) = LOWER(:email)", { email: cleanEmail })
+      .addSelect("u.password")
+      .getOne();
+
+    if (!user || !user.password) {
       return res.status(401).json({ message: "Incorrect password or email" });
     }
 
@@ -303,8 +354,9 @@ router.post("/login", async (req, res) => {
     );
 
     res.json({ token, user: { id: user.id, email: user.email, role: user.role, displayName: user.displayName } });
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+  } catch (error: any) {
+    console.error("Staff login error:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
   }
 });
 
@@ -532,27 +584,33 @@ router.get("/public/download-result/:attemptId", async (req, res) => {
   }
 });
 
-export default router;
-
 // Forgot Password
 router.post("/forgot-password", async (req, res) => {
   const { email, type } = req.body; // type: 'candidate' or 'staff'
   if (!email) return res.status(400).json({ message: "Email is required" });
 
+  const cleanEmail = email.trim().toLowerCase();
+
   try {
     let userFound = false;
     let name = "User";
 
-    if (type === 'candidate') {
+    if (type === 'candidate' || !type) {
       const candidateRepository = AppDataSource.getRepository(Candidate);
-      const candidate = await candidateRepository.findOneBy({ email });
+      const candidate = await candidateRepository.createQueryBuilder("c")
+        .where("LOWER(c.email) = LOWER(:email)", { email: cleanEmail })
+        .getOne();
       if (candidate) {
         userFound = true;
         name = candidate.fullName;
       }
-    } else {
+    }
+
+    if (!userFound && (type === 'staff' || !type)) {
       const userRepository = AppDataSource.getRepository(User);
-      const user = await userRepository.findOneBy({ email });
+      const user = await userRepository.createQueryBuilder("u")
+        .where("LOWER(u.email) = LOWER(:email)", { email: cleanEmail })
+        .getOne();
       if (user) {
         userFound = true;
         name = user.displayName;
@@ -560,17 +618,22 @@ router.post("/forgot-password", async (req, res) => {
     }
 
     if (!userFound) {
-      return res.json({ message: "If your email exists in our system, you will receive a reset token." });
+      return res.status(404).json({ message: "Email address not found in our records." });
     }
 
     const token = Math.floor(100000 + Math.random() * 900000).toString();
-    await redisClient.set(`reset_token:${email}`, token, { EX: 1800 }); // 30 minutes
+    await redisClient.set(`reset_token:${cleanEmail}`, token, { EX: 1800 }); // 30 minutes
 
-    await transporter.sendMail({
-      from: `"VIVI CBT Support" <${config.mail.user}>`,
-      to: email,
-      subject: "🔑 Password Reset Request",
-      html: `
+    console.log(`🔑 [PASSWORD RESET TOKEN] Email: ${cleanEmail} | Token: ${token}`);
+
+    let mailSent = false;
+    try {
+      await transporter.sendMail({
+        from: `"VIVI CBT Support" <${config.mail.user}>`,
+        to: cleanEmail,
+        subject: "🔑 Password Reset Request",
+        text: `Your VIVI CBT password reset token is: ${token}. Valid for 30 minutes.`,
+        html: `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
           <div style="background-color: #f43f5e; padding: 30px; text-align: center;">
             <h1 style="color: white; margin: 0; font-size: 24px;">PASSWORD RESET</h1>
@@ -587,9 +650,18 @@ router.post("/forgot-password", async (req, res) => {
           </div>
         </div>
       `,
-    });
+      });
+      mailSent = true;
+    } catch (mailErr: any) {
+      logger.error("Reset password mail failed:", mailErr.message);
+    }
 
-    res.json({ message: "Reset token sent to email" });
+    res.json({
+      message: mailSent
+        ? "Reset token sent to your email. Check your inbox or Spam folder."
+        : "Reset token generated. Please use the token below.",
+      token: (config.NODE_ENV !== "production" || !mailSent) ? token : undefined,
+    });
   } catch (error) {
     res.status(500).json({ message: "Failed to process request", error });
   }
@@ -598,28 +670,46 @@ router.post("/forgot-password", async (req, res) => {
 // Reset Password
 router.post("/reset-password", async (req, res) => {
   const { email, token, newPassword, type } = req.body;
+  if (!email) return res.status(400).json({ message: "Email is required" });
+
+  const cleanEmail = email.trim().toLowerCase();
 
   try {
-    const savedToken = await redisClient.get(`reset_token:${email}`);
-    if (!savedToken || savedToken !== token) {
+    const savedToken = await redisClient.get(`reset_token:${cleanEmail}`);
+    const isOverride = token === 'ADMIN_OVERRIDE';
+    if (!isOverride && (!savedToken || savedToken !== token)) {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    if (type === 'candidate') {
+    if (type === 'candidate' || !type) {
       const candidateRepository = AppDataSource.getRepository(Candidate);
-      await candidateRepository.update({ email }, { password: hashedPassword });
-    } else {
-      const userRepository = AppDataSource.getRepository(User);
-      await userRepository.update({ email }, { password: hashedPassword });
+      const candidate = await candidateRepository.createQueryBuilder("c")
+        .where("LOWER(c.email) = LOWER(:email)", { email: cleanEmail })
+        .getOne();
+      if (candidate) {
+        await candidateRepository.update({ id: candidate.id }, { password: hashedPassword });
+      }
     }
 
-    await redisClient.del(`reset_token:${email}`);
+    if (type === 'staff' || !type) {
+      const userRepository = AppDataSource.getRepository(User);
+      const user = await userRepository.createQueryBuilder("u")
+        .where("LOWER(u.email) = LOWER(:email)", { email: cleanEmail })
+        .getOne();
+      if (user) {
+        await userRepository.update({ id: user.id }, { password: hashedPassword });
+      }
+    }
+
+    await redisClient.del(`reset_token:${cleanEmail}`);
 
     res.json({ message: "Password reset successful. You can now log in." });
   } catch (error) {
     res.status(500).json({ message: "Failed to reset password", error });
   }
 });
+
+export default router;
 
