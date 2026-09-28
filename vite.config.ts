@@ -13,7 +13,29 @@ export default defineConfig(({ mode }) => {
       // VitePWA disabled temporarily to fix "rolling" issue
       /*
       VitePWA({
-        ...
+        registerType: 'autoUpdate',
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        workbox: {
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        },
+        manifest: {
+          name: 'VIVI CBT Simulator',
+          short_name: 'VIVI CBT',
+          description: 'A production-ready Computer Based Testing (CBT) environment',
+          theme_color: '#0EA5E9',
+          icons: [
+            {
+              src: 'pwa-192x192.png',
+              sizes: '192x192',
+              type: 'image/png'
+            },
+            {
+              src: 'pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png'
+            }
+          ]
+        }
       })
       */
     ],
