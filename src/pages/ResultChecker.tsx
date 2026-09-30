@@ -124,13 +124,13 @@ export default function ResultChecker() {
         <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px]" />
         </div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm text-center space-y-12">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm text-center space-y-12 ">
           <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white border-2 border-primary shadow-sm">
             <GraduationCap className="w-4 h-4 text-primary" />
             <span className="text-[12px] font-black text-primary tracking-widest">RESULT PORTAL</span>
           </div>
 
-          <div className="bg-white p-6 rounded-[4px]  border-2 border-primary shadow-1xl relative overflow-hidden">
+          <div className="bg-white p-6 rounded-[8px]  border-2 border-primary shadow-1xl relative overflow-hidden">
             <div className="space-y-8 ">
               <h4 className="text-1xl font-black tracking-tighter text-primary">CHECK RESULT</h4>
               <form onSubmit={handleCheckResult} className="space-y-4">
@@ -138,7 +138,7 @@ export default function ResultChecker() {
                   <Input value={targetExamNumber} onChange={e => setTargetExamNumber(e.target.value)} placeholder="Registration Number" className="h-12 rounded-xl bg-slate-50 border-2 border-primary/20 focus:border-primary text-center font-black shadow-sm" />
                   <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-10" />
                 </div>
-                <Button type="submit" disabled={checkingResult} className="w-full h-14 bg-primary text-white text-1xl rounded-2xl font-black tracking-widest shadow-1xl">
+                <Button type="submit" disabled={checkingResult} className="w-full h-14 bg-primary text-white text-1xl rounded-2xl font-black tracking-widest shadow-1xl hover:text-white hover:scale-105 transition-all active:bg-green-700">
                   {checkingResult ? "VERIFYING..." : "ENTER "}
                 </Button>
               </form>

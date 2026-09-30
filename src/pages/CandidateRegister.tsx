@@ -218,11 +218,11 @@ export default function CandidateRegister() {
       <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12 relative z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={cn("w-full transition-all duration-500", step === 3 ? "max-w-5xl" : "max-w-md")}>
           <div className="text-center mb-6 sm:mb-10">
-            <h2 className="text-2xl sm:text-4xl text-primary font-black leading-none mb-3">Enrollment</h2>
+            <h2 className="text-1xl sm:text-2xl text-primary font-black leading-none mb-3">Registration portal</h2>
             <p className="text-[10px] sm:text-[11px] text-primary/40 font-black tracking-[0.4em] uppercase">Step {step} of 3</p>
           </div>
 
-          <Card className="rounded-[32px] sm:rounded-[40px] border border-primary/5 bg-white shadow-2xl overflow-hidden">
+          <Card className="rounded-[12px] sm:rounded-[12px] border border-primary/900 bg-white shadow-2xl overflow-hidden">
             <CardContent className="p-6 sm:p-12">
               <AnimatePresence mode="wait">
                 {step === 1 && (
@@ -241,7 +241,7 @@ export default function CandidateRegister() {
                         />
                       </div>
                     </div>
-                    <Button type="submit" disabled={loading} className="w-full h-12 sm:h-14 bg-primary text-white rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-[12px] tracking-widest uppercase shadow-xl transition-all active:scale-95">
+                    <Button type="submit" disabled={loading} className="w-full h-12 sm:h-14 bg-primary text-white rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-[12px] tracking-widest uppercase shadow-xl transition-all active:scale-95 hover:scale-[1.02] active:bg-green-700">
                       {loading ? "SENDING CODE..." : "SEND VERIFICATION CODE"}
                     </Button>
                   </motion.form>

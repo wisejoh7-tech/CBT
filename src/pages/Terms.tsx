@@ -26,27 +26,27 @@ export default function Terms() {
         <div className="text-center space-y-6 mb-16">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-6 py-2 rounded-full border-2 border-primary/10 bg-white shadow-md">
             <Scale className="w-4 h-4 text-primary" />
-            <span className="text-[9px] font-black tracking-[0.3em] text-primary">Legal Framework</span>
+            <span className="text-[12px] font-black tracking-[0.3em] text-primary">Legal Framework</span>
           </motion.div>
-          <h1 className="text-4xl md:text-5xl font-black text-primary tracking-tighter leading-none">
+          <h1 className="text-2xl md:text-2xl font-black text-primary tracking-tighter leading-none">
             Terms of Service.
           </h1>
-          <p className="text-sm font-black text-slate-400 tracking-widest uppercase">Last Protocol Update: August 2026</p>
+          <p className="text-sm text-primary font-black  tracking-widest uppercase">Last Protocol Update: August 2026</p>
         </div>
 
-        <div className="bg-white rounded-[48px] border border-primary/5 shadow-2xl overflow-hidden p-12">
-          <ScrollArea className="h-[600px] pr-8">
+        <div className="bg-white rounded-[12px] border border-primary/900 shadow-2xl overflow-hidden p-12">
+          <ScrollArea className="h-[600px] pr-4">
             <div className="space-y-12">
               {[
-                { title: '01. User Eligibility', content: 'Candidates must be registered with a valid email and unique examination number. Unauthorized access to the examination portal is strictly prohibited and subject to legal action.' },
-                { title: '02. Code of Conduct', content: 'During examinations, candidates must adhere to cbt exam regulations. Use of external aids, unauthorized software, or attempts to bypass security protocols will result in immediate disqualification.' },
-                { title: '03. Identity Verification', content: 'VIVI CBT utilizes biometric and live-capture verification. By using this service, you consent to identity checks throughout the examination session.' },
-                { title: '04. Data Transmission', content: 'Session progress is synchronized in real-time. In the event of network failure, locally cached data will be recovered upon reconnection. VIVI Systems is not responsible for hardware failure at the candidate terminal.' },
-                { title: '05. Result Policy', content: 'Examination results are subject to administrative audit. The institution reserves the right to withhold or nullify results if security violations are detected post-session.' }
+                { title: '1. User Eligibility', content: 'Candidates must be registered with a valid email and unique examination number. Unauthorized access to the examination portal is strictly prohibited and subject to legal action.' },
+                { title: '2. Code of Conduct', content: 'During examinations, candidates must adhere to cbt exam regulations. Use of external aids, unauthorized software, or attempts to bypass security protocols will result in immediate disqualification.' },
+                { title: '3. Identity Verification', content: 'VIVI CBT utilizes biometric and live-capture verification. By using this service, you consent to identity checks throughout the examination session.' },
+                { title: '4. Data Transmission', content: 'Session progress is synchronized in real-time. In the event of network failure, locally cached data will be recovered upon reconnection. VIVI Systems is not responsible for hardware failure at the candidate terminal.' },
+                { title: '5. Result Policy', content: 'Examination results are subject to administrative audit. The institution reserves the right to withhold or nullify results if security violations are detected post-session.' }
               ].map((section, i) => (
                 <div key={i} className="space-y-4">
-                  <h3 className="font-black text-lg tracking-tight text-slate-800 uppercase border-b border-primary/5 pb-2">{section.title}</h3>
-                  <p className="text-slate-600 font-medium leading-relaxed">{section.content}</p>
+                  <h6 className="font-black text-sm tracking-tight text-slate-800 uppercase border-b border-primary/5 pb-2">{section.title}</h6>
+                  <p className="text-slate-900 font-small leading-relaxed">{section.content}</p>
                 </div>
               ))}
             </div>

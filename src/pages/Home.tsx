@@ -34,7 +34,7 @@ export default function Home() {
             <button
               key={item.label}
               onClick={() => navigate(item.path)}
-              className="text-[11px] font-black tracking-widest w-28 h-9 text-primary/60 hover:text-primary transition-colors bg-primary text-white rounded-3xl "
+              className="text-[11px] font-black tracking-widest w-28 h-9 text-primary/60 hover:text-white active:bg-green-500 transition-colors bg-primary text-white rounded-3xl "
             >
               {item.label}
             </button>
@@ -103,10 +103,10 @@ export default function Home() {
           </motion.p>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-col sm:flex-row justify-center gap-6">
-            <Button onClick={() => navigate('/candidate-register')} className="h-14 px-10 bg-primary text-white rounded-2xl font-black text-sm tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all flex gap-2 items-center ">
+            <Button onClick={() => navigate('/candidate-register')} className="h-14 px-10 bg-primary text-white rounded-2xl font-black text-sm tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 active:bg-green-700 active:text-white-700 transition-all flex gap-2 items-center ">
               Register Now <ArrowRight className="w-5 h-5" />
             </Button>
-            <Button onClick={() => navigate('/candidate-login')} variant="outline" className="h-14 px-10 border-2 border-primary/100 text-primary font-black text-sm tracking-widest bg-white hover:bg-slate-50 transition-all">
+            <Button onClick={() => navigate('/candidate-login')} variant="outline" className="h-14 px-10 border-2 border-primary/100 text-primary font-black text-sm tracking-widest bg-white hover:bg-slate-50 active:bg-green-700  active:text-white transition-all">
               Candidate Login
             </Button>
           </motion.div>

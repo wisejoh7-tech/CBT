@@ -28,20 +28,20 @@ export default function Privacy() {
             <ShieldCheck className="w-4 h-4 text-primary" />
             <span className="text-[9px] font-black tracking-[0.3em] text-primary">Privacy Protocol</span>
           </motion.div>
-          <h1 className="text-4xl md:text-5xl font-black text-primary tracking-tighter leading-none">
-            Privacy Policy.
+          <h1 className="text-2xl md:text-2xl font-black text-primary tracking-tighter leading-none">
+            Privacy Policy
           </h1>
-          <p className="text-sm font-black text-slate-400 tracking-widest uppercase">Global Data Protection Compliance</p>
+          <p className="text-sm font-black text-primary tracking-widest ">Global Data Protection Compliance</p>
         </div>
 
-        <div className="bg-white rounded-[48px] border border-primary/5 shadow-2xl overflow-hidden p-12">
-          <ScrollArea className="h-[600px] pr-8">
+        <div className="bg-white rounded-[12px] border border-primary/900 shadow-2xl overflow-hidden p-12">
+          <ScrollArea className="h-[600px] pr-4">
             <div className="space-y-12">
-              <div className="flex items-start gap-6 p-8 bg-primary/5 rounded-3xl border border-primary/5">
-                <Lock className="w-10 h-10 text-primary shrink-0" />
+              <div className="flex items-start gap-6 p-8 bg-primary/5 rounded-2xl border border-primary/5">
+                <Lock className="w-6 h-6 text-primary shrink-0" />
                 <div>
-                   <h3 className="font-black text-lg text-primary uppercase mb-2">We value your privacy</h3>
-                   <p className="text-sm text-slate-600 font-medium leading-relaxed">VIVI CBT uses advanced encryption to protect your biometric data and examination records. We never share your personal information with third parties without institutional consent.</p>
+                   <h3 className="font-black text-sm text-primary  mb-2">We value your privacy</h3>
+                   <p className="text-sm text-slate-600 font-sm leading-relaxed">VIVI CBT uses advanced encryption to protect your biometric data and examination records. We never share your personal information with third parties without institutional consent.</p>
                 </div>
               </div>
 
@@ -53,8 +53,8 @@ export default function Privacy() {
                 { title: 'Data Subject Rights', content: 'Candidates may request access to their performance records or data deletion through their registered institution following the final result release.' }
               ].map((section, i) => (
                 <div key={i} className="space-y-4">
-                  <h3 className="font-black text-lg tracking-tight text-slate-800 uppercase border-b border-primary/5 pb-2">{section.title}</h3>
-                  <p className="text-slate-600 font-medium leading-relaxed">{section.content}</p>
+                  <h6 className="font-black text-sm tracking-tight text-slate-800 uppercase border-b border-primary/5 pb-2">{section.title}</h6>
+                  <p className="text-slate-900 font-small leading-relaxed">{section.content}</p>
                 </div>
               ))}
             </div>
@@ -62,8 +62,8 @@ export default function Privacy() {
         </div>
       </main>
 
-      <footer className="py-20 text-center border-t border-primary/5 opacity-40">
-        <p className="text-[10px] font-black tracking-[0.3em]">&copy; 2026 VIVI CBT SYSTEMS • PRIVACY DIVISION</p>
+      <footer className="py-20 text-center border-t border-primary/500 ">
+        <p className="text-[10px] font-green tracking-[0.3em]">&copy; 2026 VIVI CBT SYSTEMS • PRIVACY DIVISION</p>
       </footer>
     </div>
   );
