@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: my-exam
+    env: static
+    buildCommand: pnpm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
