@@ -125,7 +125,7 @@ export default function CandidateDashboard() {
 
           {/* Main Action Card */}
           <Card className="p-6 sm:p-8 bg-primary text-white rounded-[28px] sm:rounded-[32px] shadow-2xl shadow-primary/20 flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-8 border-none overflow-hidden relative group">
-             <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-white/10 transition-colors" />
+             <div className="absolute top-0 right-0 w-20 h-20g bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-white/10 transition-colors" />
              <div className="flex items-center gap-4 sm:gap-5 relative z-10 w-full md:w-auto">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/10 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/20 backdrop-blur-sm shrink-0">
                    <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
