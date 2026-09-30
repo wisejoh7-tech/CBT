@@ -16,7 +16,7 @@ export default function About() {
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-primary/20">V</div>
           <span className="font-black text-xl tracking-tighter text-primary">VIVI CBT</span>
         </div>
-        <Button variant="ghost" onClick={() => navigate('/')} className="text-primary/40 hover:text-primary gap-2 font-black text-[10px] tracking-widest uppercase">
+        <Button variant="ghost" onClick={() => navigate('/')} className="text-primary/900 hover:text-primary/900 gap-2 font-black text-[8px] tracking-widest ">
           <ArrowLeft className="w-4 h-4" /> Back to Home
         </Button>
       </header>
@@ -27,10 +27,10 @@ export default function About() {
             <GraduationCap className="w-4 h-4 text-primary" />
             <span className="text-[9px] font-black tracking-[0.3em] text-primary">About VIVI Systems</span>
           </motion.div>
-          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-4xl md:text-6xl font-black text-primary tracking-tighter leading-none">
+          <motion.h6 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-2xl md:text-2xl font-black text-primary tracking-tighter leading-none">
             Empowering the Future <br/> of Examination.
-          </motion.h1>
-          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-lg text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
+          </motion.h6>
+          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-sm text-primary font-medium max-w-2xl mx-auto leading-relaxed">
             VIVI CBT is a high-fidelity examination portal engineered for integrity, security, and scalability. We provide academic institutions with the tools they need to conduct fair and seamless digital assessments.
           </motion.p>
         </section>
@@ -41,19 +41,19 @@ export default function About() {
             { icon: Globe, title: 'Global Standard', desc: 'Compliance with international examination protocols and academic standards.' },
             { icon: Cpu, title: 'Smart Analysis', desc: 'Real-time performance metrics and deep topic mastery analysis for candidates.' }
           ].map((feature, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.1 }} className="p-8 bg-white rounded-[32px] border border-primary/5 shadow-xl hover:shadow-2xl transition-all space-y-4">
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.1 }} className="p-8 bg-white rounded-[12px] border border-primary/900 shadow-xl hover:shadow-2xl transition-all space-y-4">
               <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center text-primary shadow-inner">
                 <feature.icon className="w-6 h-6" />
               </div>
-              <h3 className="font-black text-lg tracking-tight text-slate-800 uppercase">{feature.title}</h3>
-              <p className="text-sm text-slate-500 font-medium leading-relaxed">{feature.desc}</p>
+              <h6 className="font-black text-sm tracking-tight text-slate-800 uppercase">{feature.title}</h6>
+              <p className="text-sm text-primary font-sm leading-relaxed">{feature.desc}</p>
             </motion.div>
           ))}
         </section>
 
-        <section className="p-12 bg-primary rounded-[48px] text-white relative overflow-hidden shadow-2xl shadow-primary/20 text-center space-y-8">
+        <section className="p-6 bg-primary rounded-[12px] text-white relative overflow-hidden shadow-2xl shadow-primary/20 text-center space-y-8">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full translate-x-1/2 -translate-y-1/2 blur-3xl" />
-          <h2 className="text-3xl font-black tracking-tight leading-none relative z-10">Ready to join thousands of <br/> successful candidates?</h2>
+          <h4 className="text-2xl font-black tracking-tight leading-none relative z-10">Ready to join thousands of <br/> successful candidates?</h4>
           <Button onClick={() => navigate('/candidate-register')} className="h-16 px-12 bg-white text-primary rounded-2xl font-black text-xs tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all relative z-10 uppercase">
             Start Registration
           </Button>
