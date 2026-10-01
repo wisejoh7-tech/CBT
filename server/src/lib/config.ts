@@ -4,7 +4,7 @@ if (process.env.NODE_ENV !== "production") {
   dotenv.config();
 }
 
-const PORT = Number(process.env.PORT) || 5001;
+const PORT = Number(process.env.PORT) || 10000;
 console.log(`[BOOT] Initializing on PORT: ${PORT}`);
 console.log(`[BOOT] ENV Check: DB=${!!process.env.DATABASE_URL}, REDIS=${!!process.env.REDIS_URL}, JWT=${!!process.env.JWT_SECRET}`);
 
@@ -56,5 +56,5 @@ export const config = {
     phoneNumber: process.env.TWILIO_PHONE_NUMBER,
   },
   NODE_ENV: process.env.NODE_ENV || "development",
-  PORT: Number(process.env.PORT) || 5001,
+  PORT: Number(process.env.PORT) || 10000,
 } as const;

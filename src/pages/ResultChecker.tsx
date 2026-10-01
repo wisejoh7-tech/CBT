@@ -5,7 +5,7 @@ import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
 import { Search, GraduationCap, Lock, AlertCircle, User, Shield, Monitor, ArrowLeft, Menu, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
 import { useAuth } from '@/src/context/AuthContext';
 import { Separator } from '@/lib/ui/separator';
 import { AnimatePresence } from 'framer-motion';
@@ -38,8 +38,7 @@ export default function ResultChecker() {
         body: JSON.stringify({ examNumber: cleanId })
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to fetch result");
+      await safeJsonResponse(res);
 
       toast.success("Result found. Accessing Transcript...");
       navigate(`/result-slip/${cleanId}`);

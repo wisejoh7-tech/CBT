@@ -25,7 +25,7 @@ import { Badge } from '@/lib/ui/badge';
 import { Input } from '@/lib/ui/input';
 import { Label } from '@/lib/ui/label';
 import { toast } from 'sonner';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
 import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
 
 export default function CandidateDashboard() {
@@ -44,8 +44,8 @@ export default function CandidateDashboard() {
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch(getApiUrl('/candidates/dashboard'), { headers: getHeaders() });
-      const data = await res.json();
-      if (res.ok && data.candidate) {
+      const data = await safeJsonResponse(res);
+      if (data && data.candidate) {
         setDashboardData(data.candidate);
         setAttempts(data.attempts || []);
         setEditEditForm(data.candidate);
@@ -76,14 +76,10 @@ export default function CandidateDashboard() {
         },
         body: JSON.stringify(editForm)
       });
-      if (res.ok) {
-        toast.success("Profile Updated");
-        setIsEditing(false);
-        fetchData();
-      } else {
-        const data = await res.json();
-        toast.error(data.message || "Update failed");
-      }
+      await safeJsonResponse(res);
+      toast.success("Profile Updated");
+      setIsEditing(false);
+      fetchData();
     } catch (err) {
       toast.error("Network error");
     } finally {

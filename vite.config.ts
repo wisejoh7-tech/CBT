@@ -63,12 +63,12 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: 'http://localhost:5000',
+          target: 'http://localhost:10000',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         },
         '/socket.io': {
-          target: 'http://localhost:5000',
+          target: 'http://localhost:10000',
           ws: true,
         },
       },
