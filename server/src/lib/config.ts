@@ -10,16 +10,24 @@ console.log(`[BOOT] ENV Check: DB=${!!process.env.DATABASE_URL}, REDIS=${!!proce
 
 const requiredEnv = [
   'DATABASE_URL',
+  'JWT_SECRET'
+];
+
+const optionalEnv = [
   'REDIS_URL',
-  'JWT_SECRET',
   'GEMINI_API_KEY'
 ];
 
 if (process.env.NODE_ENV === 'production') {
-  const missing = requiredEnv.filter(k => !process.env[k]);
-  if (missing.length > 0) {
-    console.error(`FATAL ERROR: Missing production environment variables: ${missing.join(', ')}`);
+  const missingRequired = requiredEnv.filter(k => !process.env[k]);
+  if (missingRequired.length > 0) {
+    console.error(`FATAL ERROR: Missing required production environment variables: ${missingRequired.join(', ')}`);
     process.exit(1);
+  }
+
+  const missingOptional = optionalEnv.filter(k => !process.env[k]);
+  if (missingOptional.length > 0) {
+    console.warn(`[BOOT WARN] Missing optional production environment variables: ${missingOptional.join(', ')}. Optional features may be degraded.`);
   }
 }
 
