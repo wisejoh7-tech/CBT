@@ -34,11 +34,11 @@ import { redisClient } from "./lib/services";
 
 const app = express();
 const httpServer = createServer(app);
-const PORT = Number(process.env.PORT) || 5001;
+const PORT = Number(process.env.PORT) || 10000;
 
 // --- 1. IMMEDIATE PORT BINDING (Render Requirement) ---
 httpServer.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 DEPLOYMENT STATUS: Port ${PORT} is now OPEN and listening.`);
+  console.log(`Server running on port ${PORT}`);
   console.log(`[BOOT] Environment: ${process.env.NODE_ENV || 'development'}`);
 }).on('error', (err: any) => {
   if (err.code === 'EADDRINUSE') {
