@@ -99,7 +99,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       await safeJsonResponse(res);
 
-      toast.success("Account provisioned. Authorizing...");
       toast.success("Account created successfully. Logging you in...");
       await signInWithEmail(email, pass);
     } catch (e: any) {
@@ -181,7 +180,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser({ uid: profileData.uid });
 
     } catch (e: any) {
-      toast.error(getFriendlyErrorMessage(e));
       throw e;
     } finally {
       setLoading(false);
