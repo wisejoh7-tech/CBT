@@ -7,7 +7,7 @@ import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
 import { Mail, Key, ArrowRight, Monitor, User, ArrowLeft, Shield } from 'lucide-react';
 import { toast } from 'sonner';
-import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 import { cn } from '@/src/lib/utils/utils';
 
 export default function ForgotPassword() {
@@ -20,7 +20,7 @@ export default function ForgotPassword() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/auth/forgot-password'), {
+      const res = await apiFetch(getApiUrl('/auth/forgot-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, type })
@@ -30,6 +30,9 @@ export default function ForgotPassword() {
         toast.success(data.message);
         localStorage.setItem('resetEmail', email);
         localStorage.setItem('resetType', type);
+        if (data.token) {
+          localStorage.setItem('resetToken', data.token);
+        }
         navigate('/reset-password');
       } else {
         toast.error(data.message || "Request failed");

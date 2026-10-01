@@ -34,7 +34,7 @@ router.post("/candidate/send-token", async (req, res) => {
     let mailSent = false;
     try {
       await transporter.sendMail({
-        from: `"VIVI CBT Support" <${config.mail.user}>`,
+        from: `"VIVI CBT Support" <${config.mail.user || "noreply@vivicbt.com"}>`,
         to: email,
         subject: "🔒 Verification Token for VIVI CBT Registration",
         text: `Your VIVI CBT registration token is: ${token}. Valid for 10 minutes.`,
@@ -184,7 +184,7 @@ router.post("/candidate/register", async (req, res) => {
     try {
       const downloadLink = `${req.protocol}://${req.get('host')}/auth/public/download-slip/${examNumber}`;
       await transporter.sendMail({
-        from: `"VIVI CBT Support" <${config.mail.user}>`,
+        from: `"VIVI CBT Support" <${config.mail.user || "noreply@vivicbt.com"}>`,
         to: email,
         subject: "🎉 Registration Successful - VIVI CBT 2026",
         html: `
@@ -632,7 +632,7 @@ router.post("/forgot-password", async (req, res) => {
     let mailSent = false;
     try {
       await transporter.sendMail({
-        from: `"VIVI CBT Support" <${config.mail.user}>`,
+        from: `"VIVI CBT Support" <${config.mail.user || "noreply@vivicbt.com"}>`,
         to: cleanEmail,
         subject: "🔑 Password Reset Request",
         text: `Your VIVI CBT password reset token is: ${token}. Valid for 30 minutes.`,
