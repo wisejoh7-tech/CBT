@@ -93,6 +93,8 @@ router.post("/candidate/register", async (req, res) => {
     city: z.string().optional(),
     schoolAttended: z.string().optional(),
     address: z.string().optional(),
+    faceUrl: z.string().optional(),
+    waecResultUrl: z.string().optional(),
   });
 
   const validation = registerSchema.safeParse(req.body);
@@ -103,8 +105,9 @@ router.post("/candidate/register", async (req, res) => {
     });
   }
 
-  const { email, token, fullName, subjectCombination, dateOfBirth, password, phoneNumber, stateOfOrigin, lga, country, city, schoolAttended, address } = validation.data;
+  const { email, token, fullName, subjectCombination, dateOfBirth, password, phoneNumber, stateOfOrigin, lga, country, city, schoolAttended, address, faceUrl, waecResultUrl } = validation.data;
   const cleanEmail = email.trim().toLowerCase();
+  const cleanPhone = phoneNumber?.trim() ? phoneNumber.trim() : undefined;
 
   try {
     const candidateRepository = AppDataSource.getRepository(Candidate);
@@ -122,8 +125,8 @@ router.post("/candidate/register", async (req, res) => {
     }
 
     // Check if phone number already exists if provided
-    if (phoneNumber) {
-      const existingPhone = await candidateRepository.findOneBy({ phoneNumber });
+    if (cleanPhone) {
+      const existingPhone = await candidateRepository.findOneBy({ phoneNumber: cleanPhone });
       if (existingPhone) return res.status(400).json({ message: "Phone number already registered" });
     }
 
@@ -157,14 +160,16 @@ router.post("/candidate/register", async (req, res) => {
     const candidateData = {
       examNumber,
       fullName: fullName,
-      email,
-      phoneNumber,
+      email: cleanEmail,
+      phoneNumber: cleanPhone,
       stateOfOrigin,
       lga,
       country,
       city,
       schoolAttended,
       address,
+      faceUrl,
+      waecResultUrl,
       password: hashedPassword,
       subjectCombination,
       dateOfBirth,
@@ -173,8 +178,6 @@ router.post("/candidate/register", async (req, res) => {
     };
 
     const candidate = await candidateRepository.save(candidateRepository.create(candidateData) as Candidate);
-
-    await candidateRepository.save(candidate);
     await redisClient.del(`reg_token:${email}`);
 
     // Send Welcome Email

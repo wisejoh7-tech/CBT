@@ -32,7 +32,7 @@ export class Candidate {
   @Column({ type: "text", nullable: true })
   thumbprintData?: string;
 
-  @Column({ type: "varchar", length: 1024, nullable: true })
+  @Column({ type: "text", nullable: true })
   faceUrl?: string;
 
   @Column({ type: "text", nullable: true })

@@ -146,7 +146,7 @@ export default function CandidateRegister() {
       toast.error("Passwords do not match.");
       return;
     }
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
     if (!passwordRegex.test(formData.password)) {
       toast.error("Password must include uppercase, lowercase, number and symbol.");
       return;
