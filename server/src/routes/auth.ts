@@ -171,7 +171,7 @@ router.post("/candidate/register", async (req, res) => {
     };
 
     const candidate = await candidateRepository.save(candidateRepository.create(candidateData) as Candidate);
-    await redisClient.del(`reg_token:${email}`);
+    await redisClient.del(`reg_token:${cleanEmail}`);
 
     // Send Welcome Email
     try {
@@ -247,7 +247,35 @@ router.post("/candidate/login-email", async (req, res) => {
       .getOne();
 
     if (!candidate) {
-      return res.status(404).json({ message: "User not found. Click to register." });
+      // Fallback: Check staff/admin User repository if candidate account is not found
+      const userRepository = AppDataSource.getRepository(User);
+      const user = await userRepository.createQueryBuilder("u")
+        .where("LOWER(u.email) = LOWER(:email)", { email: cleanEmail })
+        .addSelect("u.password")
+        .getOne();
+
+      if (user && user.password) {
+        const isUserMatch = await bcrypt.compare(password, user.password);
+        if (isUserMatch) {
+          const token = jwt.sign(
+            { id: user.id, role: user.role },
+            config.JWT_SECRET,
+            { expiresIn: "1d" }
+          );
+          const { password: _, ...userWithoutPassword } = user;
+          return res.json({
+            token,
+            profile: {
+              ...userWithoutPassword,
+              uid: user.id,
+              role: user.role,
+              displayName: user.displayName,
+            }
+          });
+        }
+      }
+
+      return res.status(404).json({ message: "User not found or invalid credentials provided. Click to register if you don't have an account." });
     }
 
     if (!candidate.password) {
@@ -269,7 +297,8 @@ router.post("/candidate/login-email", async (req, res) => {
       { expiresIn: "6h" }
     );
 
-    res.json({ token, profile: candidate });
+    const { password: _, ...candidateWithoutPassword } = candidate;
+    res.json({ token, profile: candidateWithoutPassword });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
@@ -321,6 +350,7 @@ router.post("/login", async (req, res) => {
     const userRepository = AppDataSource.getRepository(User);
 
     // Ensure default super_admin admin@vivicbt.com exists
+    // Auto-seed default super_admin if admin@vivicbt.com does not exist
     const defaultAdmin = await userRepository.createQueryBuilder("u")
       .where("LOWER(u.email) = LOWER(:email)", { email: "admin@vivicbt.com" })
       .getOne();
@@ -342,7 +372,38 @@ router.post("/login", async (req, res) => {
       .getOne();
 
     if (!user) {
-      return res.status(404).json({ message: "User not found. Click to register." });
+      // Fallback: Check Candidate repository if staff user account is not found
+      const candidateRepository = AppDataSource.getRepository(Candidate);
+      const candidate = await candidateRepository.createQueryBuilder("c")
+        .where("LOWER(c.email) = LOWER(:email)", { email: cleanEmail })
+        .addSelect("c.password")
+        .getOne();
+
+      if (candidate && candidate.password) {
+        const isCandidateMatch = await bcrypt.compare(password, candidate.password);
+        if (isCandidateMatch) {
+          if (candidate.status !== "active") {
+            return res.status(403).json({ message: "Registration is not active" });
+          }
+          const token = jwt.sign(
+            { id: candidate.examNumber, role: "student", examNumber: candidate.examNumber },
+            config.JWT_SECRET,
+            { expiresIn: "6h" }
+          );
+          const { password: _, ...candidateWithoutPassword } = candidate;
+          return res.json({
+            token,
+            user: {
+              ...candidateWithoutPassword,
+              id: candidate.examNumber,
+              role: "student",
+              displayName: candidate.fullName,
+            }
+          });
+        }
+      }
+
+      return res.status(404).json({ message: "User not found or invalid credentials provided. Click to register if you don't have an account." });
     }
 
     if (!user.password) {
