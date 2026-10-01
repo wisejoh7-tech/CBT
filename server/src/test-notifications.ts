@@ -1,4 +1,4 @@
-import { transporter, redisClient } from "./lib/services";
+import { sendEmailSafely, redisClient } from "./lib/services";
 import { sendSMS } from "./lib/sms";
 import { config } from "./lib/config";
 
@@ -24,13 +24,16 @@ async function testNotifications() {
   // 1. Test Email
   console.log(`Testing Email to: ${testEmail}`);
   try {
-    await transporter.sendMail({
-      from: `"Test Support" <${config.mail.user}>`,
+    const success = await sendEmailSafely({
       to: testEmail,
       subject: "🔔 Test Notification",
       text: "This is a test email from the VIVI CBT system."
     });
-    console.log("✅ Email sent successfully");
+    if (success) {
+      console.log("✅ Email sent successfully");
+    } else {
+      console.log("⚠️ Email dispatch skipped or failed (check logs)");
+    }
   } catch (error) {
     console.error("❌ Email failed:", error);
   }
