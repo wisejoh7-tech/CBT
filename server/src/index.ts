@@ -12,6 +12,7 @@ process.on('uncaughtException', (err: any) => {
 
 import express from "express";
 import { createServer } from "http";
+import path from "path";
 import { Server } from "socket.io";
 import cors from "cors";
 import helmet from "helmet";
@@ -124,6 +125,22 @@ app.use("/analytics", analyticsRoutes);
 app.use("/center", centerRoutes);
 app.use("/candidates", candidateRoutes);
 app.use("/subjects", subjectRoutes);
+
+// --- STATIC FRONTEND ASSETS & SPA FALLBACK ---
+const distPath = path.join(__dirname, "../../dist");
+app.use(express.static(distPath));
+
+// Fallback to index.html for SPA client-side routes
+app.get("*", (req, res, next) => {
+  const isApiRoute = ["/auth", "/exams", "/analytics", "/center", "/candidates", "/subjects", "/health"].some(route => req.path.startsWith(route));
+  if (isApiRoute) {
+    return next();
+  }
+  const indexPath = path.join(distPath, "index.html");
+  res.sendFile(indexPath, (err) => {
+    if (err) next();
+  });
+});
 
 // --- 5. BACKGROUND SERVICE INITIALIZATION ---
 async function initializeServices() {
