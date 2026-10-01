@@ -131,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     } catch (e: any) {
       console.error("Login Sequence Failure:", e);
+      toast.error(getFriendlyErrorMessage(e));
       throw new Error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);

@@ -254,12 +254,12 @@ router.post("/candidate/login-email", async (req, res) => {
       .getOne();
 
     if (!candidate || !candidate.password) {
-      return res.status(401).json({ message: "Incorrect password or email" });
+      return res.status(401).json({ message: "User not found or password and email do not match" });
     }
 
     const isMatch = await bcrypt.compare(password, candidate.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Incorrect password or email" });
+      return res.status(401).json({ message: "User not found or password and email do not match" });
     }
 
     if (candidate.status !== "active") {
@@ -342,12 +342,12 @@ router.post("/login", async (req, res) => {
       .getOne();
 
     if (!user || !user.password) {
-      return res.status(401).json({ message: "Incorrect password or email" });
+      return res.status(401).json({ message: "User not found or password and email do not match" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Incorrect password or email" });
+      return res.status(401).json({ message: "User not found or password and email do not match" });
     }
 
     const token = jwt.sign(
@@ -375,7 +375,7 @@ router.post("/candidate-login", async (req, res) => {
       .getOne();
 
     if (!candidate) {
-      return res.status(404).json({ message: "Invalid Exam Number" });
+      return res.status(404).json({ message: "User not found or exam number is incorrect" });
     }
 
     if (candidate.status !== "active") {
