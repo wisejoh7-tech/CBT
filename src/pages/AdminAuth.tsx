@@ -123,7 +123,7 @@ export default function AdminAuth() {
                     <Input
                       name="email"
                       type="email"
-                      placeholder="admin@access.terminal"
+                      placeholder="admin@vivicbt.com"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       className="h-10 pl-10 rounded-xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white text-[10px]"
@@ -193,7 +193,7 @@ export default function AdminAuth() {
                 )}
               </form>
 
-              {isLogin && (
+              {isLogin && process.env.NODE_ENV !== 'production' && (
                 <div className="mt-5 pt-5 border-t border-white/5">
                    <div className="flex flex-col items-center gap-2">
                       <p className="text-[7px] font-black text-primary/40 tracking-[0.4em] uppercase">Emergency Protocol</p>
@@ -213,7 +213,7 @@ export default function AdminAuth() {
                         }}
                         className="w-full h-9 rounded-lg border border-dashed border-white/10 text-slate-500 font-black text-[8px] hover:border-primary hover:text-white transition-all gap-2 bg-transparent uppercase"
                       >
-                        <Terminal className="w-3 h-3"/> Bypass Authorization
+                        <Terminal className="w-3 h-3"/> Dev Admin Bypass
                       </Button>
                    </div>
                 </div>

@@ -170,7 +170,8 @@ async function initializeServices() {
 
         // Seed Default Admin
         const userRepo = AppDataSource.getRepository(User);
-        if (await userRepo.count() === 0) {
+        const adminUser = await userRepo.findOneBy({ email: "admin@vivicbt.com" });
+        if (!adminUser) {
           const hashedPassword = await bcrypt.hash(process.env.INITIAL_ADMIN_PASSWORD || "admin123", 10);
           await userRepo.save(userRepo.create({
             email: "admin@vivicbt.com",
