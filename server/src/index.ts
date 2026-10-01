@@ -168,7 +168,7 @@ async function initializeServices() {
         await AppDataSource.initialize();
         console.log("✅ Postgres Connected Successfully.");
 
-        // Seed Default Admin
+        // Seed Default Admin if missing
         const userRepo = AppDataSource.getRepository(User);
         const adminUser = await userRepo.findOneBy({ email: "admin@vivicbt.com" });
         if (!adminUser) {

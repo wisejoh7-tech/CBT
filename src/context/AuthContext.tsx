@@ -69,17 +69,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await safeJsonResponse(res);
 
-      if (!data || !data.user) {
-        throw new Error("User not found or invalid response received");
+      const userObj = data?.user || data?.profile;
+      if (!data || !userObj) {
+        throw new Error("Invalid response received from server");
       }
 
-      const userId = data.user?.id || data.user?.uid || data.user?.email;
+      const userId = userObj?.id || userObj?.uid || userObj?.email;
       localStorage.setItem('token', data.token);
-      localStorage.setItem('profile', JSON.stringify(data.user));
+      localStorage.setItem('profile', JSON.stringify(userObj));
 
-      setProfile(data.user);
+      setProfile(userObj);
       setUser({ uid: userId });
-      toast.success("Welcome back, " + (data.user.displayName || "User"));
+      toast.success("Welcome back, " + (userObj.displayName || userObj.fullName || "User"));
     } catch (e: any) {
       throw e;
     } finally {
@@ -119,14 +120,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       const data = await safeJsonResponse(res);
 
-      if (!data || !data.profile) {
-        throw new Error("User not found or invalid profile data received");
+      const profileObj = data?.profile || data?.user;
+      if (!data || !profileObj) {
+        throw new Error("Invalid response received from server");
       }
 
       const profileData: UserProfile = {
-        ...data.profile,
-        uid: data.profile?.examNumber || data.profile?.id,
-        displayName: data.profile?.fullName || data.profile?.displayName,
+        ...profileObj,
+        uid: profileObj?.examNumber || profileObj?.id,
+        displayName: profileObj?.fullName || profileObj?.displayName,
         role: 'student',
         loginMethod: 'examNumber'
       };
@@ -135,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('profile', JSON.stringify(profileData));
 
       setProfile(profileData);
-      setCandidate(data.profile);
+      setCandidate(profileObj);
       setUser({ uid: profileData.uid });
 
     } catch (e: any) {
@@ -158,14 +160,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await safeJsonResponse(res);
 
-      if (!data || !data.profile) {
-        throw new Error("User not found or invalid profile data received");
+      const profileObj = data?.profile || data?.user;
+      if (!data || !profileObj) {
+        throw new Error("Invalid response received from server");
       }
 
       const profileData: UserProfile = {
-        ...data.profile,
-        uid: data.profile?.examNumber || data.profile?.id,
-        displayName: data.profile?.fullName || data.profile?.displayName,
+        ...profileObj,
+        uid: profileObj?.examNumber || profileObj?.id,
+        displayName: profileObj?.fullName || profileObj?.displayName,
         role: 'student',
         loginMethod: 'email'
       };
@@ -174,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('profile', JSON.stringify(profileData));
 
       setProfile(profileData);
-      setCandidate(data.profile);
+      setCandidate(profileObj);
       setUser({ uid: profileData.uid });
 
     } catch (e: any) {
