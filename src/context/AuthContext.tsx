@@ -99,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await safeJsonResponse(res);
 
       toast.success("Account provisioned. Authorizing...");
+      toast.success("Account created successfully. Logging you in...");
       await signInWithEmail(email, pass);
     } catch (e: any) {
       throw e;

@@ -322,6 +322,11 @@ router.post("/login", async (req, res) => {
 
     // Auto-seed default super_admin if admin@vivicbt.com does not exist
     const defaultAdmin = await userRepository.findOneBy({ email: "admin@vivicbt.com" });
+    // Ensure default super_admin admin@vivicbt.com exists
+    const defaultAdmin = await userRepository.createQueryBuilder("u")
+      .where("LOWER(u.email) = LOWER(:email)", { email: "admin@vivicbt.com" })
+      .getOne();
+
     if (!defaultAdmin) {
       const defaultHash = await bcrypt.hash("admin123", 10);
       await userRepository.save(userRepository.create({
