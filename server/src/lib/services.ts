@@ -90,16 +90,20 @@ export const redisClient = {
 // --- Mailer Setup ---
 const mailUser = config.mail?.user;
 const mailPass = config.mail?.pass;
+const mailHost = config.mail?.host || "smtp.gmail.com";
+const mailPort = Number(config.mail?.port) || 587;
+const isSecure = mailPort === 465;
 
 export const transporter = nodemailer.createTransport({
+  host: mailHost,
+  port: mailPort,
+  secure: isSecure, // true for 465, false for other ports (e.g. 587 with STARTTLS)
   ...(mailUser && mailPass ? {
-    service: 'gmail',
-    auth: { user: mailUser, pass: mailPass },
-  } : {
-    host: config.mail?.host || "smtp.gmail.com",
-    port: Number(config.mail?.port) || 587,
-    secure: false,
-  }),
+    auth: {
+      user: mailUser,
+      pass: mailPass,
+    },
+  } : {}),
   tls: {
     rejectUnauthorized: false,
     minVersion: 'TLSv1.2'
@@ -114,8 +118,8 @@ export const sendEmailSafely = async (options: nodemailer.SendMailOptions): Prom
   try {
     const fromAddress = config.mail.user;
     await transporter.sendMail({
+      from: `"VIVI CBT Support" <${fromAddress}>`,
       ...options,
-      from: `"VIVI CBT Support" <${fromAddress}>`
     });
     return true;
   } catch (err: any) {
