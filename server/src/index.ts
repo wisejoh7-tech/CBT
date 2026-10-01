@@ -168,9 +168,12 @@ async function initializeServices() {
         await AppDataSource.initialize();
         console.log("✅ Postgres Connected Successfully.");
 
-        // Seed Default Admin
+        // Seed Default Admin if missing
         const userRepo = AppDataSource.getRepository(User);
-        if (await userRepo.count() === 0) {
+        const defaultAdmin = await userRepo.createQueryBuilder("u")
+          .where("LOWER(u.email) = LOWER(:email)", { email: "admin@vivicbt.com" })
+          .getOne();
+        if (!defaultAdmin) {
           const hashedPassword = await bcrypt.hash(process.env.INITIAL_ADMIN_PASSWORD || "admin123", 10);
           await userRepo.save(userRepo.create({
             email: "admin@vivicbt.com",
