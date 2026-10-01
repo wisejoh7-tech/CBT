@@ -7,7 +7,7 @@ import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
 import { Mail, User, BookOpen, Key, Calendar, ArrowRight, CheckCircle, Monitor, Phone, MapPin, Camera, Trash2, ArrowLeft, Menu, X, Eye, EyeOff, FileCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
 import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
 import { cn } from '@/src/lib/utils/utils';
 
@@ -41,8 +41,8 @@ export default function CandidateRegister() {
 
   React.useEffect(() => {
     fetch(getApiUrl('/subjects'))
-      .then(res => res.json())
-      .then(data => setOfferedSubjects(data))
+      .then(res => safeJsonResponse(res))
+      .then(data => setOfferedSubjects(Array.isArray(data) ? data : []))
       .catch(err => console.error("Failed to fetch subjects", err));
   }, []);
 
@@ -121,8 +121,8 @@ export default function CandidateRegister() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
       });
-      const data = await res.json();
-      if (res.ok) {
+      const data = await safeJsonResponse(res);
+      if (data) {
         if (data.token) {
           updateField('token', data.token);
           toast.success("Token generated & filled! Check email or Spam folder.");
@@ -168,8 +168,8 @@ export default function CandidateRegister() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
-      if (res.ok) {
+      const data = await safeJsonResponse(res);
+      if (data) {
         toast.success(`Registration Successful!`);
         navigate('/candidate-login');
       } else {

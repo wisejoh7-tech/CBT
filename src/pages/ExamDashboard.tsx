@@ -21,7 +21,7 @@ import { cn } from '@/src/lib/utils/utils';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/lib/ui/badge';
 import { toast } from 'sonner';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
 
 export default function ExamDashboard() {
   const [exams, setExams] = useState<Exam[]>([]);
@@ -48,15 +48,15 @@ export default function ExamDashboard() {
     const fetchData = async () => {
       try {
         const examRes = await fetch(getApiUrl('/exams'), { headers: getHeaders() });
-        const allExams: Exam[] = await examRes.json();
+        const allExams: Exam[] = await safeJsonResponse(examRes);
         const subjectNames = profile.subjectCombination || [];
-        const filteredExams = allExams.filter(e =>
+        const filteredExams = Array.isArray(allExams) ? allExams.filter(e =>
           subjectNames.some(s => s.trim().toLowerCase() === e.subject.trim().toLowerCase())
-        );
+        ) : [];
         setExams(filteredExams);
 
         const attemptRes = await fetch(getApiUrl('/exams/attempts/my'), { headers: getHeaders() });
-        const myAttempts = await attemptRes.json();
+        const myAttempts = await safeJsonResponse(attemptRes);
 
         setAttempts(myAttempts || []);
 

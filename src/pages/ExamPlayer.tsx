@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils/utils';
 import { shuffleArray } from '@/src/lib/utils/shuffle';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
 
 export default function ExamPlayer() {
   const { examId } = useParams<{ examId: string }>();
@@ -236,8 +236,7 @@ export default function ExamPlayer() {
       try {
         setLoading(true);
         const res = await fetch(getApiUrl('/exams'), { headers: getHeaders() });
-        if (!res.ok) throw new Error("Could not fetch examination list");
-        const allExams: any = await res.json();
+        const allExams: any = await safeJsonResponse(res);
 
         if (!Array.isArray(allExams)) {
            throw new Error("Invalid response from server");
@@ -270,7 +269,7 @@ export default function ExamPlayer() {
         for (const exam of filteredExams) {
           const qRes = await fetch(getApiUrl(`/exams/${exam.id}`), { headers: getHeaders() });
           if (qRes.ok) {
-            const examData = await qRes.json();
+            const examData = await safeJsonResponse(qRes);
             // Randomization: Shuffle questions for each student
             const randomizedQuestions = shuffleArray<Question>(examData.questions || []);
             qMap[exam.id] = randomizedQuestions;
@@ -284,12 +283,7 @@ export default function ExamPlayer() {
           headers: getHeaders()
         });
 
-        if (!attRes.ok) {
-           const errData = await attRes.json().catch(() => ({}));
-           throw new Error(errData.message || "Failed to initialize examination session");
-        }
-
-        const attempt: Attempt = await attRes.json();
+        const attempt: Attempt = await safeJsonResponse(attRes);
         setCurrentAttemptId(attempt.id);
 
         if (attempt.status === 'completed') {

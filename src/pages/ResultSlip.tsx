@@ -4,7 +4,7 @@ import { Candidate, Attempt } from '@/src/types';
 import { Button } from '@/lib/ui/button';
 import { Badge } from '@/lib/ui/badge';
 import { Printer, ArrowLeft, ShieldCheck, BadgeCheck, Download, Award, Monitor, User } from 'lucide-react';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import jsPDF from 'jspdf';
@@ -27,7 +27,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
       const res = await fetch(getApiUrl(`/exams/attempt/${unifiedAttempt.id}/study-guide`), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
-      if (res.ok) setStudyGuide(await res.json());
+      if (res.ok) setStudyGuide(await safeJsonResponse(res));
       else toast.error("Could not generate study guide.");
     } catch (e) {
       toast.error("Network error.");
@@ -52,8 +52,8 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
           body: JSON.stringify({ examNumber: examNumber })
         });
 
-        const data = await res.json();
-        if (res.ok) {
+        const data = await safeJsonResponse(res);
+        if (data) {
           setCandidate(data.candidate);
           setUnifiedAttempt(data.attempt);
         }

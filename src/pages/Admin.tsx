@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/src/context/AuthContext';
 import { cn } from '@/src/lib/utils/utils';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
 import { useAdminData } from './useAdminData';
 import { Candidate } from '@/src/types';
 
@@ -60,13 +60,9 @@ export default function Admin() {
         method: 'DELETE',
         headers: getHeaders()
       });
-      if (res.ok) {
-        toast.success("Log entry removed");
-        setLogs((prev: any[]) => prev.filter(l => l.id !== id));
-      } else {
-        const data = await res.json();
-        toast.error(data.message || "Failed to delete log");
-      }
+      await safeJsonResponse(res);
+      toast.success("Log entry removed");
+      setLogs((prev: any[]) => prev.filter(l => l.id !== id));
     } catch (e) {
       toast.error("Network error");
     }
@@ -79,13 +75,9 @@ export default function Admin() {
         method: 'DELETE',
         headers: getHeaders()
       });
-      if (res.ok) {
-        toast.success("All logs cleared");
-        setLogs([]);
-      } else {
-        const data = await res.json();
-        toast.error(data.message || "Failed to clear logs");
-      }
+      await safeJsonResponse(res);
+      toast.success("All logs cleared");
+      setLogs([]);
     } catch (e) {
       toast.error("Network error");
     }
@@ -206,13 +198,9 @@ export default function Admin() {
         body: JSON.stringify({ count: 100 })
       });
 
-      if (res.ok) {
-        toast.success("Hall initialized with 100 seats");
-        fetchData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || "Initialization failed");
-      }
+      await safeJsonResponse(res);
+      toast.success("Hall initialized with 100 seats");
+      fetchData();
     } catch (e) {
       console.error(e);
       toast.error("Network error during initialization");
@@ -280,16 +268,11 @@ export default function Admin() {
         body: JSON.stringify({ name: newOfferedSubject.trim() })
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        toast.success("Subject added");
-        setShowAddSubject(false);
-        setNewOfferedSubject('');
-        fetchData();
-      } else {
-        toast.error(data.message || "Failed to add subject");
-      }
+      await safeJsonResponse(res);
+      toast.success("Subject added");
+      setShowAddSubject(false);
+      setNewOfferedSubject('');
+      fetchData();
     } catch (err) {
       toast.error("Network error while adding subject");
     }
@@ -339,15 +322,11 @@ export default function Admin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (res.ok) {
-        toast.success("Candidate registered successfully");
-        setShowAddCandidate(false);
-        setNewCandidate(initialCandidateState);
-        fetchData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || "Registration failed");
-      }
+      await safeJsonResponse(res);
+      toast.success("Candidate registered successfully");
+      setShowAddCandidate(false);
+      setNewCandidate(initialCandidateState);
+      fetchData();
     } catch (e) {
       toast.error("Network error during registration");
     } finally {
@@ -374,15 +353,11 @@ export default function Admin() {
         headers: getHeaders(),
         body: JSON.stringify(newStaff)
       });
-      if (res.ok) {
-        toast.success("Staff provisioned");
-        setShowAddStaff(false);
-        setNewStaff({ displayName: '', email: '', password: '', confirmPassword: '', role: 'admin' });
-        fetchData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || "Staff registration failed");
-      }
+      await safeJsonResponse(res);
+      toast.success("Staff provisioned");
+      setShowAddStaff(false);
+      setNewStaff({ displayName: '', email: '', password: '', confirmPassword: '', role: 'admin' });
+      fetchData();
     } catch (e) {
       toast.error("Network error during registration");
     } finally {
@@ -401,14 +376,10 @@ export default function Admin() {
         },
         body: JSON.stringify(data)
       });
-      if (res.ok) {
-        toast.success("Assignment protocol complete");
-        setShowBulkAssign(false);
-        fetchData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || "Protocol failed");
-      }
+      await safeJsonResponse(res);
+      toast.success("Assignment protocol complete");
+      setShowBulkAssign(false);
+      fetchData();
     } catch (e) {
       toast.error("Critical communication failure");
     } finally {
@@ -425,13 +396,9 @@ export default function Admin() {
         headers: getHeaders(),
         body: JSON.stringify({ examId })
       });
-      if (res.ok) {
-        toast.success("Exam pushed successfully");
-        fetchData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || "Failed to push exam");
-      }
+      await safeJsonResponse(res);
+      toast.success("Exam pushed successfully");
+      fetchData();
     } catch (e) {
       toast.error("Network error");
     } finally {
@@ -505,13 +472,9 @@ export default function Admin() {
         method: 'POST',
         headers: getHeaders()
       });
-      if (res.ok) {
-        toast.success("Result published and notifications sent");
-        fetchData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || "Release failed");
-      }
+      await safeJsonResponse(res);
+      toast.success("Result published and notifications sent");
+      fetchData();
     } catch (e) {
       toast.error("Protocol failure");
     }

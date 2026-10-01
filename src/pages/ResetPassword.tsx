@@ -7,7 +7,7 @@ import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
 import { Key, Lock, ArrowRight, Monitor, User, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -33,7 +33,7 @@ export default function ResetPassword() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, token, newPassword, type })
       });
-      const data = await res.json();
+      const data = await safeJsonResponse(res);
       if (res.ok) {
         toast.success(data.message);
         localStorage.removeItem('resetEmail');

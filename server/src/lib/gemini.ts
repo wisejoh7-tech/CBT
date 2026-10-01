@@ -5,6 +5,41 @@ dotenv.config();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.replace(/['"]/g, '');
 const GEMINI_MODEL = "gemini-1.5-flash";
 
+async function safeFetchJson<T = any>(res: Response): Promise<T | null> {
+  try {
+    const text = await res.text();
+    if (!text || text.trim().length === 0) return null;
+    return JSON.parse(text) as T;
+  } catch (e) {
+    console.error("Failed to parse Gemini response body as JSON:", e);
+    return null;
+  }
+}
+
+function safeParseTextJson<T = any>(text: string | null | undefined): T | null {
+  if (!text || typeof text !== 'string' || text.trim().length === 0) return null;
+  try {
+    return JSON.parse(text) as T;
+  } catch (e) {
+    try {
+      const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+      const startObj = cleaned.indexOf('{');
+      const endObj = cleaned.lastIndexOf('}');
+      if (startObj !== -1 && endObj !== -1) {
+        return JSON.parse(cleaned.substring(startObj, endObj + 1)) as T;
+      }
+      const startArr = cleaned.indexOf('[');
+      const endArr = cleaned.lastIndexOf(']');
+      if (startArr !== -1 && endArr !== -1) {
+        return JSON.parse(cleaned.substring(startArr, endArr + 1)) as T;
+      }
+    } catch {
+      console.error("Failed to parse extracted JSON block:", text);
+    }
+    return null;
+  }
+}
+
 export async function analyzeProctoringSnapshot(base64Image: string) {
   if (!GEMINI_API_KEY) {
     console.warn("GEMINI_API_KEY not configured. Skipping analysis.");
@@ -42,9 +77,9 @@ export async function analyzeProctoringSnapshot(base64Image: string) {
       throw new Error(`Gemini API error: ${response.statusText}`);
     }
 
-    const data = (await response.json()) as { candidates?: any[] };
-    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    return resultText ? JSON.parse(resultText) : null;
+    const data = await safeFetchJson<{ candidates?: any[] }>(response);
+    const resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    return safeParseTextJson(resultText);
   } catch (error) {
     console.error("Gemini Analysis failed:", error);
     return null;
@@ -67,8 +102,8 @@ export async function generateQuestionExplanation(question: string, options: str
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify(payload)
       });
-      const data = (await response.json()) as { candidates?: any[] };
-      return data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const data = await safeFetchJson<{ candidates?: any[] }>(response);
+      return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
    } catch (error) {
       return null;
    }
@@ -101,37 +136,23 @@ export async function generateBulkQuestionsFromSyllabus(syllabus: string, count:
     });
 
     if (!response.ok) {
-      const errorData = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
+      const errorData = (await safeFetchJson(response)) as { error?: { message?: string } } | null;
       console.error("Gemini API Error Detail:", JSON.stringify(errorData));
-      throw new Error(`AI Engine Error: ${errorData.error?.message || response.statusText}. Please verify your GEMINI_API_KEY.`);
+      throw new Error(`AI Engine Error: ${errorData?.error?.message || response.statusText}. Please verify your GEMINI_API_KEY.`);
     }
 
-    const data = (await response.json()) as { candidates?: any[] };
-    let resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const data = await safeFetchJson<{ candidates?: any[] }>(response);
+    let resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!resultText) {
       throw new Error(`Gemini Error: No text in response. This often happens if the syllabus is too short or violates safety filters.`);
     }
 
-    // Advanced JSON Extraction
-    try {
-      const parsed = JSON.parse(resultText);
+    const parsed = safeParseTextJson(resultText);
+    if (parsed) {
       return Array.isArray(parsed) ? parsed : [parsed];
-    } catch {
-      try {
-        const cleaned = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
-        const start = cleaned.indexOf('[');
-        const end = cleaned.lastIndexOf(']');
-        if (start !== -1 && end !== -1) {
-          const parsed = JSON.parse(cleaned.substring(start, end + 1));
-          return Array.isArray(parsed) ? parsed : [parsed];
-        }
-        throw new Error("No JSON array found in AI response");
-      } catch {
-        console.error("Failed to parse Gemini output. Raw text:", resultText);
-        throw new Error("AI returned data in an invalid format. Please try a clearer syllabus.");
-      }
     }
+    throw new Error("AI returned data in an invalid format. Please try a clearer syllabus.");
   } catch (error: any) {
     console.error("Bulk AI Generation Critical Failure:", error.message);
     throw error;
@@ -162,9 +183,9 @@ export async function verifyCandidateIdentity(liveSnapshot: string, registration
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    const data = (await response.json()) as { candidates?: any[] };
-    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    return resultText ? JSON.parse(resultText) : null;
+    const data = await safeFetchJson<{ candidates?: any[] }>(response);
+    const resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    return safeParseTextJson(resultText);
   } catch (error) {
     console.error("Face Match failed:", error);
     return null;
@@ -190,9 +211,9 @@ export async function generatePersonalizedStudyGuide(performanceData: any) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    const data = (await response.json()) as { candidates?: any[] };
-    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    return resultText ? JSON.parse(resultText) : null;
+    const data = await safeFetchJson<{ candidates?: any[] }>(response);
+    const resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    return safeParseTextJson(resultText);
   } catch (error) {
     console.error("Study Guide Generation failed:", error);
     return null;

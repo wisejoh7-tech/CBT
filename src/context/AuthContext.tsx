@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { UserProfile, Candidate } from '@/src/types';
 import { toast } from 'sonner';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
 
 interface AuthContextType {
   user: any | null;
@@ -29,25 +29,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem('token');
       const savedProfile = localStorage.getItem('profile');
 
-      if (token && savedProfile) {
+      if (token && savedProfile && savedProfile.trim() !== '' && savedProfile !== 'undefined') {
         try {
           const parsedProfile = JSON.parse(savedProfile);
-          // Standardize profile structure
-          const standardizedProfile = {
-            ...parsedProfile,
-            displayName: parsedProfile.displayName || parsedProfile.fullName,
-            uid: parsedProfile.uid || parsedProfile.id || parsedProfile.examNumber
-          };
-          setProfile(standardizedProfile);
-          setUser({ uid: standardizedProfile.uid });
-          if (standardizedProfile.role === 'student') {
-            setCandidate(standardizedProfile);
+          if (parsedProfile && typeof parsedProfile === 'object') {
+            const standardizedProfile = {
+              ...parsedProfile,
+              displayName: parsedProfile.displayName || parsedProfile.fullName,
+              uid: parsedProfile.uid || parsedProfile.id || parsedProfile.examNumber
+            };
+            setProfile(standardizedProfile);
+            setUser({ uid: standardizedProfile.uid });
+            if (standardizedProfile.role === 'student') {
+              setCandidate(standardizedProfile);
+            }
           }
         } catch (e) {
           console.error("Auth restoration failed", e);
           localStorage.removeItem('token');
           localStorage.removeItem('profile');
         }
+      } else if (savedProfile === 'undefined' || savedProfile === '') {
+        localStorage.removeItem('profile');
       }
       setLoading(false);
     };
@@ -64,8 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, password: pass }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
+      const data = await safeJsonResponse(res);
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('profile', JSON.stringify(data.user));
@@ -90,8 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, password: pass, displayName: name, role }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Registration failed');
+      await safeJsonResponse(res);
 
       toast.success("Account created successfully. Please login.");
     } catch (e: any) {
@@ -111,8 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ examNumber }),
       });
       
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
+      const data = await safeJsonResponse(res);
 
       const profileData: UserProfile = {
         ...data.profile,
@@ -146,8 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, password: pass }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
+      const data = await safeJsonResponse(res);
 
       const profileData: UserProfile = {
         ...data.profile,

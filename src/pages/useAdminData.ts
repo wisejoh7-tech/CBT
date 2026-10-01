@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Exam, Question, Attempt, Candidate, UserProfile } from '@/src/types';
 import { toast } from 'sonner';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
 import { useAuth } from '@/src/context/AuthContext';
 import { useSocket } from '@/src/context/SocketContext';
 
@@ -39,7 +39,7 @@ export function useAdminData() {
       try {
         const res = await fetch(getApiUrl(url), { headers: getHeaders() });
         if (res.ok) {
-          const data = await res.json();
+          const data = await safeJsonResponse(res);
           setter(data);
         } else {
           console.warn(`Failed to fetch ${url}: ${res.status}`);
@@ -55,7 +55,7 @@ export function useAdminData() {
     if (isSuperOrAdmin) {
       try {
         const res = await fetch(getApiUrl('/auth/staff'), { headers: getHeaders() });
-        if (res.ok) setStaff(await res.json());
+        if (res.ok) setStaff(await safeJsonResponse(res));
       } catch (err) {
         console.warn("Failed to fetch staff:", err);
       }
@@ -65,7 +65,7 @@ export function useAdminData() {
   const fetchQuestions = useCallback(async (examId: string) => {
     const res = await fetch(getApiUrl(`/exams/${examId}`), { headers: getHeaders() });
     if (res.ok) {
-      const data = await res.json();
+      const data = await safeJsonResponse(res);
       setQuestions(data.questions || []);
     }
   }, [getHeaders]);
