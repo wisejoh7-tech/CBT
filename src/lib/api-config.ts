@@ -10,13 +10,20 @@ export const getApiUrl = (path: string) => {
 
 export async function safeJsonResponse<T = any>(res: Response): Promise<T> {
   const rawText = await res.text();
+  const trimmed = rawText ? rawText.trim() : "";
   let parsed: any = null;
 
-  if (rawText && rawText.trim().length > 0) {
+  if (trimmed.length > 0) {
+    if (trimmed.startsWith("<")) {
+      throw new Error(
+        "Backend service unreachable or API URL misconfigured. The server returned an HTML page instead of JSON."
+      );
+    }
     try {
-      parsed = JSON.parse(rawText);
+      parsed = JSON.parse(trimmed);
     } catch (e) {
-      console.error("[safeJsonResponse] JSON parse error on response body:", rawText.slice(0, 200));
+      console.error("[safeJsonResponse] JSON parse error on response body:", trimmed.slice(0, 200));
+      throw new Error("Invalid response format received from server.");
     }
   }
 

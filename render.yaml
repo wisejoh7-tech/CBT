@@ -4,6 +4,12 @@ services:
     env: static
     buildCommand: "npm install && npm run build"
     staticPublishPath: "./dist"
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: my-exam-backend
+          property: url
     routes:
       - type: rewrite
         source: /*
@@ -17,6 +23,6 @@ services:
     startCommand: npm start
     envVars:
       - key: PORT
-        value: 5001
+        value: 10000
       - key: NODE_ENV
         value: production
