@@ -18,6 +18,6 @@ RUN mkdir -p logs && chown -R node:node logs
 
 USER node
 
-EXPOSE 5000
+EXPOSE 5001
 ENV NODE_ENV=production
 CMD ["node", "dist/index.js"]
