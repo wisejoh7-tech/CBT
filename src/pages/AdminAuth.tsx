@@ -33,27 +33,33 @@ export default function AdminAuth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error("Security credentials required.");
+    if (!email.trim() || !password) {
+      toast.error("Invalid input. Email and password are required.");
       return;
     }
 
     try {
       if (isLogin) {
-        await signInWithEmail(email, password);
+        await signInWithEmail(email.trim(), password);
         toast.success("Admin Authorization Verified.");
       } else {
-        if (!name) { toast.error("Identity required."); return; }
+        if (!name.trim()) { toast.error("Invalid input. Name is required."); return; }
         if (password !== confirmPassword) {
           toast.error("Security keys do not match.");
           return;
         }
-        await signUpWithEmail(email, password, name, 'super_admin');
+        await signUpWithEmail(email.trim(), password, name.trim(), 'super_admin');
         toast.success("System Master Provisioned.");
       }
       navigate('/admin');
     } catch (error: any) {
-      // Errors are toasted in AuthContext
+      const msg = getFriendlyErrorMessage(error?.message || error);
+      toast.error(msg, {
+        action: isLogin && (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('register')) ? {
+          label: 'Enroll',
+          onClick: () => setIsLogin(false)
+        } : undefined
+      });
     }
   };
 
@@ -168,13 +174,22 @@ export default function AdminAuth() {
                 </div>
 
                 {isLogin && (
-                  <button
-                    type="button"
-                    onClick={() => navigate('/forgot-password')}
-                    className="w-full text-[9px] font-black text-slate-500 hover:text-white transition-colors tracking-widest uppercase"
-                  >
-                    Forgotten Password?
-                  </button>
+                  <div className="space-y-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsLogin(false)}
+                      className="w-full py-2 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 text-[9px] font-black text-primary transition-all tracking-widest uppercase shadow-sm"
+                    >
+                      USER NOT FOUND? CLICK HERE TO ENROLL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/forgot-password')}
+                      className="w-full text-[9px] font-black text-slate-500 hover:text-white transition-colors tracking-widest uppercase"
+                    >
+                      Forgotten Password?
+                    </button>
+                  </div>
                 )}
               </form>
 

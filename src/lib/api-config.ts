@@ -34,7 +34,7 @@ export const getApiUrl = (path: string) => {
 
 export function getFriendlyErrorMessage(err: any): string {
   if (!err) return "An unexpected error occurred. Please try again.";
-  const msg = typeof err === "string" ? err : err.message || String(err);
+  const msg = typeof err === "string" ? err : err?.message || String(err);
 
   if (
     msg === "Failed to fetch" ||
@@ -44,6 +44,10 @@ export function getFriendlyErrorMessage(err: any): string {
     msg.includes("TypeError: Failed to fetch")
   ) {
     return "Unable to connect to the server. Please check your internet connection or try again later.";
+  }
+
+  if (msg.includes("Cannot read properties of undefined")) {
+    return "User not found or invalid credentials provided. Click to register if you don't have an account.";
   }
 
   return msg;
@@ -72,10 +76,10 @@ export async function safeJsonResponse<T = any>(res: Response): Promise<T> {
     const rawError =
       (parsed && typeof parsed === "object" && (parsed.message || parsed.error)) ||
       `HTTP Error ${res.status}: ${res.statusText || "Server error"}`;
-    throw new Error(rawError);
+    throw new Error(typeof rawError === "string" ? rawError : String(rawError));
   }
 
-  return (parsed !== null ? parsed : {}) as T;
+  return (parsed !== null && parsed !== undefined ? parsed : {}) as T;
 }
 
 /**

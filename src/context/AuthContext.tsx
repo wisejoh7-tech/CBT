@@ -35,12 +35,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (parsedProfile && typeof parsedProfile === 'object') {
             const standardizedProfile = {
               ...parsedProfile,
-              displayName: parsedProfile.displayName || parsedProfile.fullName,
-              uid: parsedProfile.uid || parsedProfile.id || parsedProfile.examNumber
+              displayName: parsedProfile?.displayName || parsedProfile?.fullName,
+              uid: parsedProfile?.uid || parsedProfile?.id || parsedProfile?.examNumber
             };
             setProfile(standardizedProfile);
             setUser({ uid: standardizedProfile.uid });
-            if (standardizedProfile.role === 'student') {
+            if (standardizedProfile?.role === 'student') {
               setCandidate(standardizedProfile);
             }
           }
@@ -69,12 +69,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await safeJsonResponse(res);
 
+      if (!data || !data.user) {
+        throw new Error("User not found or invalid response received");
+      }
+
+      const userId = data.user?.id || data.user?.uid || data.user?.email;
       localStorage.setItem('token', data.token);
       localStorage.setItem('profile', JSON.stringify(data.user));
 
       setProfile(data.user);
-      setUser({ uid: data.user.id });
-      toast.success("Welcome back, " + data.user.displayName);
+      setUser({ uid: userId });
+      toast.success("Welcome back, " + (data.user.displayName || "User"));
     } catch (e: any) {
       toast.error(getFriendlyErrorMessage(e));
       throw e;
@@ -114,10 +119,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       const data = await safeJsonResponse(res);
 
+      if (!data || !data.profile) {
+        throw new Error("User not found or invalid profile data received");
+      }
+
       const profileData: UserProfile = {
         ...data.profile,
-        uid: data.profile.examNumber,
-        displayName: data.profile.fullName,
+        uid: data.profile?.examNumber || data.profile?.id,
+        displayName: data.profile?.fullName || data.profile?.displayName,
         role: 'student',
         loginMethod: 'examNumber'
       };
@@ -127,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setProfile(profileData);
       setCandidate(data.profile);
-      setUser({ uid: data.profile.examNumber });
+      setUser({ uid: profileData.uid });
 
     } catch (e: any) {
       console.error("Login Sequence Failure:", e);
@@ -149,10 +158,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await safeJsonResponse(res);
 
+      if (!data || !data.profile) {
+        throw new Error("User not found or invalid profile data received");
+      }
+
       const profileData: UserProfile = {
         ...data.profile,
-        uid: data.profile.examNumber,
-        displayName: data.profile.fullName,
+        uid: data.profile?.examNumber || data.profile?.id,
+        displayName: data.profile?.fullName || data.profile?.displayName,
         role: 'student',
         loginMethod: 'email'
       };
@@ -162,7 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setProfile(profileData);
       setCandidate(data.profile);
-      setUser({ uid: data.profile.examNumber });
+      setUser({ uid: profileData.uid });
 
     } catch (e: any) {
       toast.error(getFriendlyErrorMessage(e));
