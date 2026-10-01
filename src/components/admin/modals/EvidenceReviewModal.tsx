@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Button } from '@/lib/ui/button';
 import { ScrollArea } from '@/lib/ui/scroll-area';
 import { CircleX, Eye } from 'lucide-react';

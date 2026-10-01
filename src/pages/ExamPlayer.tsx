@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Exam, Question, Attempt } from '@/src/types';
 import { useAuth } from '@/src/context/AuthContext';
 import { useSocket } from '@/src/context/SocketContext';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/lib/ui/button';
 import { ScrollArea } from '@/lib/ui/scroll-area';
 import { Badge } from '@/lib/ui/badge';

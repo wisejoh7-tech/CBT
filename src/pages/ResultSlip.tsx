@@ -5,7 +5,7 @@ import { Button } from '@/lib/ui/button';
 import { Printer, ArrowLeft, ShieldCheck, BadgeCheck, Download, Award, Monitor, User } from 'lucide-react';
 import { getApiUrl } from '@/src/lib/api-config';
 import { toast } from 'sonner';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { cn } from '@/src/lib/utils/utils';

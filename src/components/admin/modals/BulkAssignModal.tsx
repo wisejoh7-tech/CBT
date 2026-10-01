@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Input } from '@/lib/ui/input';
 import { Button } from '@/lib/ui/button';
 import { Label } from '@/lib/ui/label';

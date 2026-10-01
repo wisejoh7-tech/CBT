@@ -8,7 +8,7 @@ import {
   LogOut, Camera, Printer, Monitor, MessageCircle, Activity, ShieldAlert, Cpu, Menu, ArrowLeft, Send, Trash2, PlusCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/src/context/AuthContext';
 import { cn } from '@/src/lib/utils/utils';
 import { getApiUrl } from '@/src/lib/api-config';
