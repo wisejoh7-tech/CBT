@@ -171,7 +171,7 @@ export default function CandidateLogin() {
                             value={examNumber}
                             onChange={e => setExamNumber(e.target.value)}
                             placeholder="Enter Exam Number."
-                            className="h-10 pl-8 rounded-2xl bg-slate-30 border-1 border-primary/10 focus:border-primary font-bold text-lg text-primary transition-all tracking-widest"
+                            className="h-10 pl-8 rounded-2xl bg-slate-30 border-1 border-primary/10 focus:border-primary font-bold text-lg text-primary transition-all tracking-widest placeholder:text-xs"
                             required
                           />
                         </div>
@@ -194,7 +194,7 @@ export default function CandidateLogin() {
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             placeholder="Enter Email"
-                            className="h-10 pl-6 rounded-2xl bg-slate-20 border-1 border-primary/10 focus:border-primary font-bold text-primary transition-all"
+                            className="h-10 pl-6 rounded-2xl bg-slate-20 border-1 border-primary/10 focus:border-primary font-bold text-primary transition-all placeholder:text-xs"
                             required
                           />
                         </div>
@@ -210,7 +210,7 @@ export default function CandidateLogin() {
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             placeholder="Enter Password"
-                            className="h-10 pl-6 pr-10 rounded-2xl bg-slate-20 border-1 border-primary/10 focus:border-primary font-bold text-primary transition-all"
+                            className="h-10 pl-6 pr-10 rounded-2xl bg-slate-20 border-1 border-primary/10 focus:border-primary font-bold text-primary transition-all placeholder:text-xs"
                             required
                           />
                           <button
