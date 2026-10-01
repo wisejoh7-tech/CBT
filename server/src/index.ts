@@ -48,7 +48,50 @@ httpServer.listen(PORT, "0.0.0.0", () => {
   }
 });
 
-// --- 2. PRIORITY ROUTES (Bypass all middleware) ---
+// --- 2. CORS & SECURITY CONFIGURATION ---
+const getCorsOrigins = (): cors.CorsOptions['origin'] => {
+  const envOrigins = process.env.CORS_ORIGIN;
+  if (!envOrigins || envOrigins === '*') return true;
+  const origins = envOrigins.split(',').map(o => o.trim()).filter(Boolean);
+  return (origin, callback) => {
+    if (!origin || origins.includes(origin) || origins.includes('*')) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS Warn] Allowing request from origin: ${origin}`);
+      callback(null, true);
+    }
+  };
+};
+
+const corsOptions: cors.CorsOptions = {
+  origin: getCorsOrigins(),
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://apis.google.com", "https://www.gstatic.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https:", "http:", "wss://*.onrender.com", "https://*.onrender.com", "https://*.firebaseio.com", "https://*.googleapis.com"],
+      frameSrc: ["'self'", "https://*.firebaseapp.com"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
+
+// --- 3. PRIORITY ROUTES ---
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "alive",
@@ -59,24 +102,6 @@ app.get("/health", (req, res) => {
 });
 
 app.get("/", (req, res) => res.send("VIVI CBT API - ONLINE"));
-
-// --- 3. MIDDLEWARE & SECURITY ---
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://apis.google.com", "https://www.gstatic.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://*.firebaseio.com", "https://*.googleapis.com", "wss://*.onrender.com"],
-      frameSrc: ["'self'", "https://*.firebaseapp.com"],
-      objectSrc: ["'none'"],
-      upgradeInsecureRequests: [],
-    },
-  },
-}));
-app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
 app.use(express.json());
 app.use(ipBlocker);
 
@@ -155,7 +180,7 @@ async function initializeServices() {
     }
 
     // Socket.io Setup
-    const io = new Server(httpServer, { cors: { origin: process.env.CORS_ORIGIN || "*" } });
+    const io = new Server(httpServer, { cors: corsOptions });
 
     const adapter = redisClient.getAdapter();
     if (adapter) {

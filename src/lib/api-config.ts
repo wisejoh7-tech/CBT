@@ -1,6 +1,30 @@
 const isProd = import.meta.env.PROD;
-export const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || (isProd ? "/api" : "http://localhost:10000");
-export const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL as string) || (isProd ? "/" : "http://localhost:10000");
+
+// Determine API Base URL with fallback logic
+const resolveApiBaseUrl = (): string => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL as string;
+  }
+  if (!isProd) {
+    return "http://localhost:10000";
+  }
+  // In production if VITE_API_URL is missing, default to relative "/api" or current origin
+  return "/api";
+};
+
+export const API_BASE_URL = resolveApiBaseUrl();
+
+const resolveSocketUrl = (): string => {
+  if (import.meta.env.VITE_SOCKET_URL) {
+    return import.meta.env.VITE_SOCKET_URL as string;
+  }
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL as string;
+  }
+  return isProd ? "/" : "http://localhost:10000";
+};
+
+export const SOCKET_URL = resolveSocketUrl();
 
 export const getApiUrl = (path: string) => {
   const baseUrl = API_BASE_URL.replace(/\/+$/, "");
@@ -48,10 +72,39 @@ export async function safeJsonResponse<T = any>(res: Response): Promise<T> {
     const rawError =
       (parsed && typeof parsed === "object" && (parsed.message || parsed.error)) ||
       `HTTP Error ${res.status}: ${res.statusText || "Server error"}`;
-    throw new Error(getFriendlyErrorMessage(rawError));
+    throw new Error(rawError);
   }
 
   return (parsed !== null ? parsed : {}) as T;
+}
+
+/**
+  Fetch wrapper with retry support for cold starts / network glitches.
+ */
+export async function apiFetch(
+  url: string,
+  options: RequestInit = {},
+  retries = 2,
+  delayMs = 1500
+): Promise<Response> {
+  let lastErr: any;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.status === 503 && attempt < retries) {
+        // Backend DB is initializing / server spinning up
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
+      return response;
+    } catch (err: any) {
+      lastErr = err;
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+  }
+  throw lastErr;
 }
 
 export const config = {

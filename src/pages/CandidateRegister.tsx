@@ -7,7 +7,7 @@ import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
 import { Mail, User, BookOpen, Key, Calendar, ArrowRight, CheckCircle, Monitor, Phone, MapPin, Camera, Trash2, ArrowLeft, Menu, X, Eye, EyeOff, FileCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
 import { cn } from '@/src/lib/utils/utils';
 
@@ -40,7 +40,7 @@ export default function CandidateRegister() {
   const [offeredSubjects, setOfferedSubjects] = useState<any[]>([]);
 
   React.useEffect(() => {
-    fetch(getApiUrl('/subjects'))
+    apiFetch(getApiUrl('/subjects'))
       .then(res => safeJsonResponse(res))
       .then(data => setOfferedSubjects(Array.isArray(data) ? data : []))
       .catch(err => console.warn("Failed to fetch subjects", err));
@@ -116,7 +116,7 @@ export default function CandidateRegister() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/auth/candidate/send-token'), {
+      const res = await apiFetch(getApiUrl('/auth/candidate/send-token'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
@@ -163,7 +163,7 @@ export default function CandidateRegister() {
     setLoading(true);
     try {
       const payload = { ...formData };
-      const res = await fetch(getApiUrl('/auth/candidate/register'), {
+      const res = await apiFetch(getApiUrl('/auth/candidate/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
