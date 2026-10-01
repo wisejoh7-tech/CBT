@@ -259,8 +259,19 @@ export default function CandidateRegister() {
                            className="h-14 sm:h-16 rounded-xl sm:rounded-2xl bg-slate-50 border-2 border-primary/5 text-center text-2xl sm:text-3xl font-black tracking-[0.5em]"
                            required
                          />
+                         <p className="text-[9px] text-slate-400 font-medium leading-relaxed">
+                           Verification code sent to <span className="font-bold text-primary">{formData.email}</span> (check inbox & Spam folder).
+                         </p>
+                         <button
+                           type="button"
+                           disabled={loading}
+                           onClick={handleSendToken}
+                           className="text-[10px] font-bold text-primary hover:underline cursor-pointer tracking-wider uppercase mt-1 block mx-auto"
+                         >
+                           {loading ? "Resending..." : "Didn't receive code? Resend Code"}
+                         </button>
                          <p className="text-[9px] text-slate-300 font-medium">
-                           Token sent to email (check Spam folder). If delayed, use <button type="button" onClick={() => updateField('token', 'ADMIN_OVERRIDE')} className="text-primary font-bold underline cursor-pointer">ADMIN_OVERRIDE</button>
+                           If delayed, use override token: <button type="button" onClick={() => updateField('token', 'ADMIN_OVERRIDE')} className="text-primary font-bold underline cursor-pointer">ADMIN_OVERRIDE</button>
                          </p>
                       </div>
 
