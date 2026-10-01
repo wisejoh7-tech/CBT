@@ -81,7 +81,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser({ uid: userId });
       toast.success("Welcome back, " + (data.user.displayName || "User"));
     } catch (e: any) {
-      toast.error(getFriendlyErrorMessage(e));
       throw e;
     } finally {
       setLoading(false);
@@ -99,10 +98,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       await safeJsonResponse(res);
 
+      toast.success("Account provisioned. Authorizing...");
       toast.success("Account created successfully. Logging you in...");
       await signInWithEmail(email, pass);
     } catch (e: any) {
-      toast.error(getFriendlyErrorMessage(e));
       throw e;
     } finally {
       setLoading(false);
