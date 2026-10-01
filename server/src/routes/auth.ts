@@ -7,7 +7,7 @@ import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
 import { Candidate } from "../entities/Candidate";
 import { createLog, logger } from "../lib/logger";
-import { redisClient, transporter } from "../lib/services";
+import { redisClient, transporter, sendEmailSafely } from "../lib/services";
 import { config } from "../lib/config";
 
 const router = Router();
@@ -31,44 +31,37 @@ router.post("/candidate/send-token", async (req, res) => {
 
     console.log(`🔑 [REGISTRATION TOKEN GENERATED] Email: ${email} | Token: ${token}`);
 
-    let mailSent = false;
-    try {
-      await transporter.sendMail({
-        from: `"VIVI CBT Support" <${config.mail.user || "noreply@vivicbt.com"}>`,
-        to: email,
-        subject: "🔒 Verification Token for VIVI CBT Registration",
-        text: `Your VIVI CBT registration token is: ${token}. Valid for 10 minutes.`,
-        html: `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
-          <div style="background-color: #0EA5E9; padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 24px; letter-spacing: -0.5px;">VIVI CBT PORTAL</h1>
-          </div>
-          <div style="padding: 40px; background-color: white;">
-            <h2 style="color: #1e293b; margin-top: 0;">Registration Verification</h2>
-            <p style="color: #64748b; line-height: 1.6;">Hello,</p>
-            <p style="color: #64748b; line-height: 1.6;">Use the secure verification token below to complete your candidate registration. This token is valid for <b>10 minutes</b>.</p>
-
-            <div style="background-color: #f8fafc; border: 2px dashed #0EA5E9; padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center;">
-              <span style="font-size: 32px; font-weight: 900; letter-spacing: 4px; color: #0EA5E9;">${token}</span>
-            </div>
-
-            <p style="color: #94a3b8; font-size: 12px;">If you did not request this token, please ignore this email or check your Spam/Junk folder.</p>
-          </div>
-          <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-            <p style="color: #94a3b8; font-size: 10px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">&copy; 2026 VIVI CBT SYSTEMS • EXAMINATION</p>
-          </div>
+    const mailSent = await sendEmailSafely({
+      to: email,
+      subject: "🔒 Verification Token for VIVI CBT Registration",
+      text: `Your VIVI CBT registration token is: ${token}. Valid for 10 minutes.`,
+      html: `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+        <div style="background-color: #0EA5E9; padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px; letter-spacing: -0.5px;">VIVI CBT PORTAL</h1>
         </div>
-      `,
-      });
-      mailSent = true;
-    } catch (mailErr: any) {
-      logger.error("Nodemailer sendMail failed:", mailErr.message);
-    }
+        <div style="padding: 40px; background-color: white;">
+          <h2 style="color: #1e293b; margin-top: 0;">Registration Verification</h2>
+          <p style="color: #64748b; line-height: 1.6;">Hello,</p>
+          <p style="color: #64748b; line-height: 1.6;">Use the secure verification token below to complete your candidate registration. This token is valid for <b>10 minutes</b>.</p>
+
+          <div style="background-color: #f8fafc; border: 2px dashed #0EA5E9; padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center;">
+            <span style="font-size: 32px; font-weight: 900; letter-spacing: 4px; color: #0EA5E9;">${token}</span>
+          </div>
+
+          <p style="color: #94a3b8; font-size: 12px;">If you did not request this token, please ignore this email or check your Spam/Junk folder.</p>
+        </div>
+        <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+          <p style="color: #94a3b8; font-size: 10px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">&copy; 2026 VIVI CBT SYSTEMS • EXAMINATION</p>
+        </div>
+      </div>
+    `,
+    });
 
     res.json({
       message: mailSent
         ? "Verification token sent to your email. Check your inbox or Spam folder."
-        : "Verification token generated. Please use the token below.",
+        : "Verification token generated. If email delivery is unavailable, please use the token provided below.",
       token: (config.NODE_ENV !== "production" || !mailSent) ? token : undefined,
     });
   } catch (error: any) {
@@ -629,40 +622,33 @@ router.post("/forgot-password", async (req, res) => {
 
     console.log(`🔑 [PASSWORD RESET TOKEN] Email: ${cleanEmail} | Token: ${token}`);
 
-    let mailSent = false;
-    try {
-      await transporter.sendMail({
-        from: `"VIVI CBT Support" <${config.mail.user || "noreply@vivicbt.com"}>`,
-        to: cleanEmail,
-        subject: "🔑 Password Reset Request",
-        text: `Your VIVI CBT password reset token is: ${token}. Valid for 30 minutes.`,
-        html: `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
-          <div style="background-color: #f43f5e; padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 24px;">PASSWORD RESET</h1>
-          </div>
-          <div style="padding: 40px; background-color: white;">
-            <p style="color: #64748b; line-height: 1.6;">Dear <b>${name}</b>,</p>
-            <p style="color: #64748b; line-height: 1.6;">We received a request to reset your password. Use the verification token below to proceed:</p>
-
-            <div style="background-color: #fff1f2; border: 2px dashed #f43f5e; padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center;">
-              <span style="font-size: 32px; font-weight: 900; letter-spacing: 4px; color: #f43f5e;">${token}</span>
-            </div>
-
-            <p style="color: #64748b; line-height: 1.6;">This token is valid for <b>30 minutes</b>. If you did not request this, please secure your account immediately.</p>
-          </div>
+    const mailSent = await sendEmailSafely({
+      to: cleanEmail,
+      subject: "🔑 Password Reset Request",
+      text: `Your VIVI CBT password reset token is: ${token}. Valid for 30 minutes.`,
+      html: `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+        <div style="background-color: #f43f5e; padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">PASSWORD RESET</h1>
         </div>
-      `,
-      });
-      mailSent = true;
-    } catch (mailErr: any) {
-      logger.error("Reset password mail failed:", mailErr.message);
-    }
+        <div style="padding: 40px; background-color: white;">
+          <p style="color: #64748b; line-height: 1.6;">Dear <b>${name}</b>,</p>
+          <p style="color: #64748b; line-height: 1.6;">We received a request to reset your password. Use the verification token below to proceed:</p>
+
+          <div style="background-color: #fff1f2; border: 2px dashed #f43f5e; padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center;">
+            <span style="font-size: 32px; font-weight: 900; letter-spacing: 4px; color: #f43f5e;">${token}</span>
+          </div>
+
+          <p style="color: #64748b; line-height: 1.6;">This token is valid for <b>30 minutes</b>. If you did not request this, please secure your account immediately.</p>
+        </div>
+      </div>
+    `,
+    });
 
     res.json({
       message: mailSent
         ? "Reset token sent to your email. Check your inbox or Spam folder."
-        : "Reset token generated. Please use the token below.",
+        : "Reset token generated. If email delivery is unavailable, please use the token provided below.",
       token: (config.NODE_ENV !== "production" || !mailSent) ? token : undefined,
     });
   } catch (error) {
