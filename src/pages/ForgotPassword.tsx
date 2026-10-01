@@ -7,7 +7,7 @@ import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
 import { Mail, Key, ArrowRight, Monitor, User, ArrowLeft, Shield } from 'lucide-react';
 import { toast } from 'sonner';
-import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
 import { cn } from '@/src/lib/utils/utils';
 
 export default function ForgotPassword() {
@@ -35,7 +35,7 @@ export default function ForgotPassword() {
         toast.error(data.message || "Request failed");
       }
     } catch (e) {
-      toast.error("Network error");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }

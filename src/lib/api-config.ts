@@ -3,10 +3,27 @@ export const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || (isProd 
 export const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL as string) || (isProd ? "/" : "http://localhost:10000");
 
 export const getApiUrl = (path: string) => {
-  const baseUrl = API_BASE_URL;
+  const baseUrl = API_BASE_URL.replace(/\/+$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${baseUrl}${normalizedPath}`;
 };
+
+export function getFriendlyErrorMessage(err: any): string {
+  if (!err) return "An unexpected error occurred. Please try again.";
+  const msg = typeof err === "string" ? err : err.message || String(err);
+
+  if (
+    msg === "Failed to fetch" ||
+    msg.includes("Failed to fetch") ||
+    msg.includes("NetworkError") ||
+    msg.includes("Load failed") ||
+    msg.includes("TypeError: Failed to fetch")
+  ) {
+    return "Unable to connect to the server. Please check your internet connection or try again later.";
+  }
+
+  return msg;
+}
 
 export async function safeJsonResponse<T = any>(res: Response): Promise<T> {
   const rawText = await res.text();
@@ -28,10 +45,10 @@ export async function safeJsonResponse<T = any>(res: Response): Promise<T> {
   }
 
   if (!res.ok) {
-    const errorMsg =
+    const rawError =
       (parsed && typeof parsed === "object" && (parsed.message || parsed.error)) ||
       `HTTP Error ${res.status}: ${res.statusText || "Server error"}`;
-    throw new Error(errorMsg);
+    throw new Error(getFriendlyErrorMessage(rawError));
   }
 
   return (parsed !== null ? parsed : {}) as T;
@@ -47,4 +64,5 @@ export const config = {
 
   // Helper
   getApiUrl,
+  getFriendlyErrorMessage,
 };

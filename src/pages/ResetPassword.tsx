@@ -7,7 +7,7 @@ import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
 import { Key, Lock, ArrowRight, Monitor, User, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -43,7 +43,7 @@ export default function ResetPassword() {
         toast.error(data.message || "Reset failed");
       }
     } catch (e) {
-      toast.error("Network error");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }

@@ -25,7 +25,7 @@ import { Badge } from '@/lib/ui/badge';
 import { Input } from '@/lib/ui/input';
 import { Label } from '@/lib/ui/label';
 import { toast } from 'sonner';
-import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
 import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
 
 export default function CandidateDashboard() {
@@ -81,7 +81,7 @@ export default function CandidateDashboard() {
       setIsEditing(false);
       fetchData();
     } catch (err) {
-      toast.error("Network error");
+      toast.error(getFriendlyErrorMessage(err));
     } finally {
       setLoading(false);
     }

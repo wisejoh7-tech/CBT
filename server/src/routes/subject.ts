@@ -25,7 +25,7 @@ router.get("/", async (req, res) => {
     res.json(subjects);
   } catch (error: any) {
     logger.error("Fetch subjects critical error:", error.message);
-    res.status(500).json({ message: "Failed to fetch subjects" });
+    res.status(500).json({ message: "Unable to retrieve subjects" });
   }
 });
 

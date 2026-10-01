@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/lib/ui/card';
 import { ShieldCheck, Mail, Lock, Eye, EyeOff, Shield, User, Terminal, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 import { Separator } from '@/lib/ui/separator';
+import { getFriendlyErrorMessage } from '@/src/lib/api-config';
 import { cn } from '@/src/lib/utils/utils';
 
 export default function AdminAuth() {
@@ -192,7 +193,7 @@ export default function AdminAuth() {
                             navigate('/admin');
                           } catch (e: any) {
                             toast.dismiss();
-                            toast.error("Rescue Denied.");
+                            toast.error(getFriendlyErrorMessage(e) || "Rescue Denied.");
                           }
                         }}
                         className="w-full h-9 rounded-lg border border-dashed border-white/10 text-slate-500 font-black text-[8px] hover:border-primary hover:text-white transition-all gap-2 bg-transparent uppercase"

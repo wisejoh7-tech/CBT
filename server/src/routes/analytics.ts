@@ -167,7 +167,7 @@ router.get("/detailed-performance", authenticateJWT, authorizeRoles("admin", "su
       }))
     });
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch detailed analytics" });
+    res.status(500).json({ message: "Unable to retrieve detailed analytics" });
   }
 });
 

@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/src/context/AuthContext';
 import { cn } from '@/src/lib/utils/utils';
-import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
 import { useAdminData } from './useAdminData';
 import { Candidate } from '@/src/types';
 
@@ -64,7 +64,7 @@ export default function Admin() {
       toast.success("Log entry removed");
       setLogs((prev: any[]) => prev.filter(l => l.id !== id));
     } catch (e) {
-      toast.error("Network error");
+      toast.error(getFriendlyErrorMessage(e));
     }
   };
 
@@ -79,7 +79,7 @@ export default function Admin() {
       toast.success("All logs cleared");
       setLogs([]);
     } catch (e) {
-      toast.error("Network error");
+      toast.error(getFriendlyErrorMessage(e));
     }
   };
 
@@ -203,7 +203,7 @@ export default function Admin() {
       fetchData();
     } catch (e) {
       console.error(e);
-      toast.error("Network error during initialization");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -274,7 +274,7 @@ export default function Admin() {
       setNewOfferedSubject('');
       fetchData();
     } catch (err) {
-      toast.error("Network error while adding subject");
+      toast.error(getFriendlyErrorMessage(err));
     }
   };
 
@@ -328,7 +328,7 @@ export default function Admin() {
       setNewCandidate(initialCandidateState);
       fetchData();
     } catch (e) {
-      toast.error("Network error during registration");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -359,7 +359,7 @@ export default function Admin() {
       setNewStaff({ displayName: '', email: '', password: '', confirmPassword: '', role: 'admin' });
       fetchData();
     } catch (e) {
-      toast.error("Network error during registration");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -381,7 +381,7 @@ export default function Admin() {
       setShowBulkAssign(false);
       fetchData();
     } catch (e) {
-      toast.error("Critical communication failure");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -400,7 +400,7 @@ export default function Admin() {
       toast.success("Exam pushed successfully");
       fetchData();
     } catch (e) {
-      toast.error("Network error");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -476,7 +476,7 @@ export default function Admin() {
       toast.success("Result published and notifications sent");
       fetchData();
     } catch (e) {
-      toast.error("Protocol failure");
+      toast.error(getFriendlyErrorMessage(e));
     }
   };
 

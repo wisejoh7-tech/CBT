@@ -5,7 +5,7 @@ import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
 import { Search, GraduationCap, Lock, AlertCircle, User, Shield, Monitor, ArrowLeft, Menu, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
 import { useAuth } from '@/src/context/AuthContext';
 import { Separator } from '@/lib/ui/separator';
 import { AnimatePresence } from 'framer-motion';
@@ -43,7 +43,7 @@ export default function ResultChecker() {
       toast.success("Result found. Accessing Transcript...");
       navigate(`/result-slip/${cleanId}`);
     } catch (error: any) {
-      toast.error(error.message || "System error. Please try again later.");
+      toast.error(getFriendlyErrorMessage(error) || "System error. Please try again later.");
     } finally {
       setCheckingResult(false);
     }

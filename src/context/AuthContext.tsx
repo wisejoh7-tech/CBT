@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { UserProfile, Candidate } from '@/src/types';
 import { toast } from 'sonner';
-import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
 
 interface AuthContextType {
   user: any | null;
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser({ uid: data.user.id });
       toast.success("Welcome back, " + data.user.displayName);
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(getFriendlyErrorMessage(e));
       throw e;
     } finally {
       setLoading(false);
@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       toast.success("Account created successfully. Please login.");
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(getFriendlyErrorMessage(e));
       throw e;
     } finally {
       setLoading(false);
@@ -131,7 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     } catch (e: any) {
       console.error("Login Sequence Failure:", e);
-      throw e;
+      throw new Error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -164,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser({ uid: data.profile.examNumber });
 
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(getFriendlyErrorMessage(e));
       throw e;
     } finally {
       setLoading(false);
