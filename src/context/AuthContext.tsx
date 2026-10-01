@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const userObj = data?.user || data?.profile;
       if (!data || !userObj) {
-        throw new Error("Invalid response received from server");
+        throw new Error("User not found or invalid credentials provided. Click to register if you don't have an account.");
       }
 
       const userId = userObj?.id || userObj?.uid || userObj?.email;
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const profileObj = data?.profile || data?.user;
       if (!data || !profileObj) {
-        throw new Error("Invalid response received from server");
+        throw new Error("User not found or invalid examination number provided. Click to register if you don't have an account.");
       }
 
       const profileData: UserProfile = {
@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const profileObj = data?.profile || data?.user;
       if (!data || !profileObj) {
-        throw new Error("Invalid response received from server");
+        throw new Error("User not found or invalid credentials provided. Click to register if you don't have an account.");
       }
 
       const profileData: UserProfile = {
