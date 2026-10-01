@@ -12,6 +12,52 @@ import { config } from "../lib/config";
 
 const router = Router();
 
+// Diagnostic endpoint to check current database target and record counts
+router.get("/db-info", async (req, res) => {
+  try {
+    const isConnected = AppDataSource.isInitialized;
+    let rawHost = config.dbUrl ? config.dbUrl.split("@")[1]?.split("/")[0] : config.db.host;
+    if (!rawHost) rawHost = "unknown";
+
+    const dbHost = rawHost.length > 8
+      ? `${rawHost.slice(0, 4)}...${rawHost.slice(-8)}`
+      : rawHost;
+
+    const dbName = config.dbUrl
+      ? config.dbUrl.split("/").pop()?.split("?")[0] || "unknown"
+      : config.db.name || "unknown";
+
+    let candidateCount = 0;
+    let userCount = 0;
+
+    if (isConnected) {
+      candidateCount = await AppDataSource.getRepository(Candidate).count();
+      userCount = await AppDataSource.getRepository(User).count();
+    }
+
+    res.json({
+      status: "online",
+      connected: isConnected,
+      database: {
+        host: dbHost,
+        name: dbName,
+      },
+      counts: {
+        candidates: candidateCount,
+        users: userCount,
+      },
+      serverUptimeSeconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to query database diagnostics",
+      error: error.message,
+    });
+  }
+});
+
 // Candidate Pre-registration: Send Token
 router.post("/candidate/send-token", async (req, res) => {
   const { email } = req.body;
