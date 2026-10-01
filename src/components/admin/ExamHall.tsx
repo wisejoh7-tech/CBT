@@ -6,6 +6,7 @@ import { MapPin, Calendar, Clock, Users, Send, Monitor, Info } from 'lucide-reac
 import { cn } from '@/src/lib/utils/utils';
 import { ScrollArea } from '@/lib/ui/scroll-area';
 import { Candidate, Exam } from '@/src/types';
+import { getApiUrl } from '@/src/lib/api-config';
 
 interface ExamHallProps {
   seats: any[];

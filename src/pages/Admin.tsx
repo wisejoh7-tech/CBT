@@ -13,6 +13,7 @@ import { useAuth } from '@/src/context/AuthContext';
 import { cn } from '@/src/lib/utils/utils';
 import { getApiUrl } from '@/src/lib/api-config';
 import { useAdminData } from './useAdminData';
+import { Candidate } from '@/src/types';
 
 // Sub-components
 import { Overview } from '../components/admin/Overview';
@@ -100,7 +101,7 @@ export default function Admin() {
 
   // Biometrics logic for Admin side
   const [isCapturing, setIsCapturing] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const startCapture = async () => {
     setIsCapturing(true);
@@ -169,7 +170,9 @@ export default function Admin() {
     schoolAttended: '',
     waecResultUrl: '',
     subjectCombination: [] as string[],
-    faceUrl: ''
+    faceUrl: '',
+    examDate: '',
+    examTime: ''
   };
 
   const [newCandidate, setNewCandidate] = useState(initialCandidateState);

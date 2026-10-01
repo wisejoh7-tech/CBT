@@ -1,20 +1,37 @@
 # Deployment Guide - VIVI CBT Portal
 
+## Deploying to Render (Static Site)
+
+1. Connect your repository on [Render](https://render.com).
+2. Choose **Static Site** when creating the service (or Blueprint deployment via `render.yaml`).
+3. Set the following Build and Publish settings:
+   - **Build Command**: `pnpm run build` (or `npm run build`)
+   - **Publish Directory**: `dist`
+4. Add any required environment variables (such as `VITE_FIREBASE_API_KEY`, etc.).
+5. Deploy!
+
+> **Troubleshooting "Publish directory dist does not exist!":**
+> If Render shows `Empty build command; skipping build`, ensure the **Build Command** field in Render settings is explicitly set to `pnpm run build` or `npm run build` so that the `dist` directory is generated before publishing.
+
+---
+
+## Deploying to Live VPS (Docker Setup)
+
 Follow these steps to deploy the project to a live VPS (Ubuntu/Debian recommended).
 
-## 1. Prerequisites
+### 1. Prerequisites
 * A VPS with at least 2GB RAM.
 * A Domain Name (e.g., `cbt.yourdomain.com`) pointing to your VPS IP.
 * Docker and Docker Compose installed.
 
-## 2. Server Setup
+### 2. Server Setup
 SSH into your server and clone your repository:
 ```bash
 git clone <your-repo-url>
 cd cbt
 ```
 
-## 3. Configure Environment Variables
+### 3. Configure Environment Variables
 Create a `.env` file in the root directory:
 ```env
 # Database
@@ -39,7 +56,7 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=your_id
 VITE_FIREBASE_APP_ID=your_app_id
 ```
 
-## 4. SSL Setup (HTTPS)
+### 4. SSL Setup (HTTPS)
 1. Edit `nginx.conf` and replace `yourdomain.com` with your actual domain.
 2. Run the temporary Nginx container to verify the domain:
    ```bash
@@ -55,19 +72,19 @@ VITE_FIREBASE_APP_ID=your_app_id
    ```
 4. Follow the prompts. Once successful, restart the full stack.
 
-## 5. Launch
+### 5. Launch
 ```bash
 docker-compose down
 docker-compose up -d --build
 ```
 
-## 6. Firestore Rules
+### 6. Firestore Rules
 Go to the Firebase Console -> Firestore -> Rules and paste the content of `firestore.rules`.
 
-## 7. Database Initialization
+### 7. Database Initialization
 The system uses TypeORM and will automatically create the Postgres tables on the first run.
 
-## Maintenance
+### Maintenance
 * **Logs:** `docker-compose logs -f backend`
 * **Restart:** `docker-compose restart`
 * **Update Code:** `git pull && docker-compose up -d --build`

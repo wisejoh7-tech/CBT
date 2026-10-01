@@ -55,6 +55,8 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
             <tbody className="divide-y divide-primary/5 font-bold uppercase">
               {completedAttempts.map(a => {
                 const candidate = candidates.find(c => c.examNumber === a.userId);
+                const trustScore = a.trustScore ?? 100;
+                const isReleased = a.released || a.isReleased;
                 return (
                   <tr key={a.id} className="hover:bg-slate-50/30 transition-all group">
                     <td className="px-6 py-4">
@@ -79,15 +81,15 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                         onClick={() => setViewingSnaps(a.id)}
                         className={cn(
                           "px-3 py-1 rounded-full text-[8px] font-black flex items-center gap-1.5 mx-auto transition-all",
-                          a.trustScore < 80 ? "bg-rose-50 text-rose-500 hover:bg-rose-100" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                          trustScore < 80 ? "bg-rose-50 text-rose-500 hover:bg-rose-100" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
                         )}
                        >
                          <Eye className="w-3 h-3" />
-                         {Math.round(a.trustScore)}% TRUST
+                         {Math.round(trustScore)}% TRUST
                        </button>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {a.isReleased ? (
+                      {isReleased ? (
                         <div className="inline-flex items-center gap-2 text-emerald-500 bg-emerald-50 px-4 py-1.5 rounded-xl border border-emerald-100">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span className="text-[9px] font-black tracking-widest uppercase">PUBLISHED</span>

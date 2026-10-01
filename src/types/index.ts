@@ -1,12 +1,16 @@
 export interface UserProfile {
+  id?: string;
   uid: string;
   email: string;
   displayName: string;
+  fullName?: string;
   photoURL?: string;
   faceUrl?: string;
+  waecResultUrl?: string;
   examNumber?: string;
   dateOfBirth?: string;
   role: 'student' | 'super_admin' | 'reg_admin' | 'admin';
+  loginMethod?: string;
   thumbprinted?: boolean;
   subjectCombination?: string[];
   stateOfOrigin?: string;
@@ -66,6 +70,7 @@ export interface Question {
   explanation?: string;
   imageUrl?: string;
   audioUrl?: string;
+  topic?: string;
 }
 
 export interface Attempt {
@@ -87,5 +92,6 @@ export interface Attempt {
   violationLogs?: any[];
   results?: any;
   released?: boolean;
+  isReleased?: boolean;
   releasedAt?: any;
 }

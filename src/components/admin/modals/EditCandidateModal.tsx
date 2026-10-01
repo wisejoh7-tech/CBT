@@ -20,6 +20,8 @@ export const EditCandidateModal: React.FC<EditCandidateModalProps> = ({
   handleUpdateCandidate,
   setEditingCandidate,
 }) => {
+  if (!isOpen || !candidate) return null;
+
   return (
     <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6 text-base overflow-hidden">
       <div className="cbt-background" />
