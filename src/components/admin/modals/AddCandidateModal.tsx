@@ -16,7 +16,7 @@ interface AddCandidateModalProps {
   offeredSubjects: any[];
   toggleCandidateSubject: (s: string) => void;
   isCapturing: boolean;
-  videoRef: React.RefObject<HTMLVideoElement>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   startCapture: () => void;
   capturePhoto: () => void;
   handleCreateCandidate: (e: React.FormEvent) => void;

@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/lib/ui/button';
+import { Card } from '@/lib/ui/card';
 import { Input } from '@/lib/ui/input';
 import { Label } from '@/lib/ui/label';
 import { ArrowLeft, Mail, Phone, MapPin, Send } from 'lucide-react';

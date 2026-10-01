@@ -18,7 +18,7 @@ interface ProctoringSecurityProps {
   setActiveChatId: (id: string | null) => void;
   setViewingSnaps: (id: string | null) => void;
   sendChatMessage: (e: React.FormEvent) => void;
-  chatEndRef: React.RefObject<HTMLDivElement>;
+  chatEndRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const ProctoringSecurity: React.FC<ProctoringSecurityProps> = ({

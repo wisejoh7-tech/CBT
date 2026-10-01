@@ -51,7 +51,7 @@ export default function ExamPlayer() {
   const { profile, user, logOut } = useAuth();
   const { socket } = useSocket();
   const navigate = useNavigate();
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<any>(null);
   const videoRefProctor = useRef<HTMLVideoElement>(null);
 
   const getHeaders = useCallback(() => ({
@@ -135,7 +135,7 @@ export default function ExamPlayer() {
     const msg = {
       to: 'admin',
       from: profile.examNumber,
-      fromName: profile.fullName,
+      fromName: profile.fullName || profile.displayName,
       message: newMessage
     };
     socket.emit('send-message', msg);
@@ -147,7 +147,7 @@ export default function ExamPlayer() {
   useEffect(() => {
     if (!hasStarted || isCompleted || !user || !currentAttemptId) return;
 
-    let proctorInterval: NodeJS.Timeout;
+    let proctorInterval: any;
 
     const setupProctoring = async () => {
       try {
@@ -272,7 +272,7 @@ export default function ExamPlayer() {
           if (qRes.ok) {
             const examData = await qRes.json();
             // Randomization: Shuffle questions for each student
-            const randomizedQuestions = shuffleArray(examData.questions || []);
+            const randomizedQuestions = shuffleArray<Question>(examData.questions || []);
             qMap[exam.id] = randomizedQuestions;
           }
         }

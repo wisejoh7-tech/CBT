@@ -13,7 +13,7 @@ export default function ExamInstructions() {
   const { examId } = useParams<{ examId: string }>();
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
-  const { profile } = useAuth();
+  const { profile, logOut } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {

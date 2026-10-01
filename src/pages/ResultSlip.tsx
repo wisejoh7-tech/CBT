@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Candidate, Attempt } from '@/src/types';
 import { Button } from '@/lib/ui/button';
+import { Badge } from '@/lib/ui/badge';
 import { Printer, ArrowLeft, ShieldCheck, BadgeCheck, Download, Award, Monitor, User } from 'lucide-react';
 import { getApiUrl } from '@/src/lib/api-config';
 import { toast } from 'sonner';
