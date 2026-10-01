@@ -176,8 +176,7 @@ router.post("/candidate/register", async (req, res) => {
     // Send Welcome Email
     try {
       const downloadLink = `${req.protocol}://${req.get('host')}/auth/public/download-slip/${examNumber}`;
-      await transporter.sendMail({
-        from: `"VIVI CBT Support" <${config.mail.user || "noreply@vivicbt.com"}>`,
+      await sendEmailSafely({
         to: email,
         subject: "🎉 Registration Successful - VIVI CBT 2026",
         html: `

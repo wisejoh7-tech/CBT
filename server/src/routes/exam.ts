@@ -12,7 +12,7 @@ import {
   verifyCandidateIdentity,
 } from "../lib/gemini";
 import { createLog, logger } from "../lib/logger";
-import { transporter } from "../lib/services";
+import { sendEmailSafely } from "../lib/services";
 import { config } from "../lib/config";
 
 const router = Router();
@@ -185,8 +185,7 @@ router.post("/attempts/:id/release", authenticateJWT, authorizeRoles("admin", "s
       // Send Email
       if (candidate.email) {
         try {
-          await transporter.sendMail({
-            from: `"VIVI CBT Portal" <${config.mail.user}>`,
+          await sendEmailSafely({
             to: candidate.email,
             subject: "OFFICIAL EXAM RESULT RELEASED",
             html: `
