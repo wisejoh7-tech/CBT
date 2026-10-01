@@ -2,7 +2,7 @@ services:
   - type: web
     name: my-exam
     env: static
-    buildCommand: "pnpm run build"
+    buildCommand: "pnpm install && pnpm run build"
     staticPublishPath: "./dist"
     routes:
       - type: rewrite
