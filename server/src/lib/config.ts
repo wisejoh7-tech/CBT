@@ -21,8 +21,8 @@ const optionalEnv = [
 if (process.env.NODE_ENV === 'production') {
   const missingRequired = requiredEnv.filter(k => !process.env[k]);
   if (missingRequired.length > 0) {
-    console.error(`FATAL ERROR: Missing required production environment variables: ${missingRequired.join(', ')}`);
-    process.exit(1);
+    console.warn(`⚠️ [CONFIG WARN] Missing production environment variables: ${missingRequired.join(', ')}`);
+    console.warn(`👉 Please add these variables in your deployment dashboard (e.g. Render) to ensure full functionality.`);
   }
 
   const missingOptional = optionalEnv.filter(k => !process.env[k]);
@@ -43,7 +43,7 @@ export const config = {
     port: Number(process.env.DB_PORT) || 5432,
   },
   redisUrl: process.env.REDIS_URL,
-  JWT_SECRET: process.env.JWT_SECRET!,
+  JWT_SECRET: process.env.JWT_SECRET || "default_jwt_secret_please_change_in_production",
   mail: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,

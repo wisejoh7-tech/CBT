@@ -50,11 +50,13 @@ httpServer.listen(PORT, "0.0.0.0", () => {
 
 // --- 2. PRIORITY ROUTES (Bypass all middleware) ---
 app.get("/health", (req, res) => {
+  const missingEnv = ['DATABASE_URL', 'JWT_SECRET'].filter(k => !process.env[k]);
   res.status(200).json({
-    status: "alive",
+    status: missingEnv.length > 0 ? "degraded" : "alive",
     port: PORT,
     database: AppDataSource.isInitialized ? "connected" : "connecting",
-    redis: redisClient.isOpen ? "connected" : "fallback_mode"
+    redis: redisClient.isOpen ? "connected" : "fallback_mode",
+    ...(missingEnv.length > 0 ? { warnings: `Missing env vars: ${missingEnv.join(', ')}` } : {})
   });
 });
 
