@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Exam, Attempt } from '@/src/types';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/src/context/AuthContext';
 import { useSocket } from '@/src/context/SocketContext';
 import { Button } from '@/lib/ui/button';

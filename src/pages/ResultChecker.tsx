@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { getApiUrl } from '@/src/lib/api-config';
 import { useAuth } from '@/src/context/AuthContext';
 import { Separator } from '@/lib/ui/separator';
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence } from 'framer-motion';
 
 export default function ResultChecker() {
   const { user, profile } = useAuth();

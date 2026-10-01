@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Attempt } from '@/src/types';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/src/context/AuthContext';
 import { Button } from '@/lib/ui/button';
 import { Card } from '@/lib/ui/card';
