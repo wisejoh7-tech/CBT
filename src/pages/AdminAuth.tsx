@@ -103,6 +103,12 @@ export default function AdminAuth() {
             </div>
 
             <CardContent className="p-6">
+              {isLogin && (
+                <div className="mb-4 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-center">
+                  <p className="text-[8px] font-black text-primary uppercase tracking-widest">Default Admin Login</p>
+                  <p className="text-[10px] font-mono text-slate-300 mt-0.5">admin@vivicbt.com / admin123</p>
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 <AnimatePresence mode="wait">
                   {!isLogin && (
@@ -123,7 +129,7 @@ export default function AdminAuth() {
                     <Input
                       name="email"
                       type="email"
-                      placeholder="admin@access.terminal"
+                      placeholder="admin@vivicbt.com"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       className="h-10 pl-10 rounded-xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white text-[10px]"

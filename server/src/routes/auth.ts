@@ -320,9 +320,12 @@ router.post("/login", async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
     const userRepository = AppDataSource.getRepository(User);
 
-    // Auto-seed default super_admin if no staff users exist in system
-    const userCount = await userRepository.count();
-    if (userCount === 0) {
+    // Ensure default super_admin admin@vivicbt.com exists
+    const defaultAdmin = await userRepository.createQueryBuilder("u")
+      .where("LOWER(u.email) = LOWER(:email)", { email: "admin@vivicbt.com" })
+      .getOne();
+
+    if (!defaultAdmin) {
       const defaultHash = await bcrypt.hash("admin123", 10);
       await userRepository.save(userRepository.create({
         email: "admin@vivicbt.com",
