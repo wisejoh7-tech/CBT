@@ -199,7 +199,7 @@ export default function AdminAuth() {
                 )}
               </form>
 
-              {isLogin && process.env.NODE_ENV !== 'production' && (
+              {isLogin && import.meta.env.MODE !== 'production' && (
                 <div className="mt-5 pt-5 border-t border-white/5">
                    <div className="flex flex-col items-center gap-2">
                       <p className="text-[7px] font-black text-primary/40 tracking-[0.4em] uppercase">Emergency Protocol</p>

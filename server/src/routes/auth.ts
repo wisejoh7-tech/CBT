@@ -247,6 +247,34 @@ router.post("/candidate/login-email", async (req, res) => {
       .getOne();
 
     if (!candidate) {
+      // Fallback: Check staff/admin User repository if candidate account is not found
+      const userRepository = AppDataSource.getRepository(User);
+      const user = await userRepository.createQueryBuilder("u")
+        .where("LOWER(u.email) = LOWER(:email)", { email: cleanEmail })
+        .addSelect("u.password")
+        .getOne();
+
+      if (user && user.password) {
+        const isUserMatch = await bcrypt.compare(password, user.password);
+        if (isUserMatch) {
+          const token = jwt.sign(
+            { id: user.id, role: user.role },
+            config.JWT_SECRET,
+            { expiresIn: "1d" }
+          );
+          const { password: _, ...userWithoutPassword } = user;
+          return res.json({
+            token,
+            profile: {
+              ...userWithoutPassword,
+              uid: user.id,
+              role: user.role,
+              displayName: user.displayName,
+            }
+          });
+        }
+      }
+
       return res.status(404).json({ message: "User not found. Click to register." });
     }
 
@@ -269,7 +297,8 @@ router.post("/candidate/login-email", async (req, res) => {
       { expiresIn: "6h" }
     );
 
-    res.json({ token, profile: candidate });
+    const { password: _, ...candidateWithoutPassword } = candidate;
+    res.json({ token, profile: candidateWithoutPassword });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
@@ -321,8 +350,6 @@ router.post("/login", async (req, res) => {
     const userRepository = AppDataSource.getRepository(User);
 
     // Auto-seed default super_admin if admin@vivicbt.com does not exist
-    const defaultAdmin = await userRepository.findOneBy({ email: "admin@vivicbt.com" });
-    // Ensure default super_admin admin@vivicbt.com exists
     const defaultAdmin = await userRepository.createQueryBuilder("u")
       .where("LOWER(u.email) = LOWER(:email)", { email: "admin@vivicbt.com" })
       .getOne();
