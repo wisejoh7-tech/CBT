@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { UserProfile, Candidate } from '@/src/types';
 import { toast } from 'sonner';
-import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 
 interface AuthContextType {
   user: any | null;
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithEmail = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/auth/login'), {
+      const res = await apiFetch(getApiUrl('/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: pass }),
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUpWithEmail = async (email: string, pass: string, name: string, role: 'admin' | 'reg_admin' | 'super_admin') => {
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/auth/register'), {
+      const res = await apiFetch(getApiUrl('/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: pass, displayName: name, role }),
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithExamNumber = async (examNumber: string) => {
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/auth/candidate-login'), {
+      const res = await apiFetch(getApiUrl('/auth/candidate-login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ examNumber }),
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginCandidateWithEmail = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/auth/candidate/login-email'), {
+      const res = await apiFetch(getApiUrl('/auth/candidate/login-email'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: pass }),
