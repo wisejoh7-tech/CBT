@@ -16,7 +16,7 @@ router.get("/", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_adm
     });
     res.json(candidates);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch candidates" });
+    res.status(500).json({ message: "Unable to retrieve candidates" });
   }
 });
 
@@ -164,7 +164,7 @@ router.get("/dashboard", authenticateJWT, async (req: any, res) => {
       attempts: processedAttempts
     });
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch dashboard data" });
+    res.status(500).json({ message: "Unable to retrieve dashboard data" });
   }
 });
 

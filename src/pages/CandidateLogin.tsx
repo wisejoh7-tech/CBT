@@ -8,6 +8,7 @@ import { Label } from '@/lib/ui/label';
 import { GraduationCap, Shield, User, Monitor, Mail, Lock, Search, ArrowLeft, Menu, X, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/src/lib/utils/utils';
+import { getFriendlyErrorMessage } from '@/src/lib/api-config';
 import { Separator } from '@/lib/ui/separator';
 
 export default function CandidateLogin() {
@@ -51,8 +52,8 @@ export default function CandidateLogin() {
       await loginWithExamNumber(examNumber);
       toast.success("Identity Verified. Opening Terminal...");
       navigate('/instructions/unified');
-    } catch (e) {
-      toast.error("Invalid Exam Number or Session inactive.");
+    } catch (e: any) {
+      toast.error(getFriendlyErrorMessage(e) || "Invalid Exam Number or Session inactive.");
     }
   };
 

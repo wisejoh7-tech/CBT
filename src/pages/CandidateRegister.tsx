@@ -7,7 +7,7 @@ import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
 import { Mail, User, BookOpen, Key, Calendar, ArrowRight, CheckCircle, Monitor, Phone, MapPin, Camera, Trash2, ArrowLeft, Menu, X, Eye, EyeOff, FileCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
 import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
 import { cn } from '@/src/lib/utils/utils';
 
@@ -43,7 +43,7 @@ export default function CandidateRegister() {
     fetch(getApiUrl('/subjects'))
       .then(res => safeJsonResponse(res))
       .then(data => setOfferedSubjects(Array.isArray(data) ? data : []))
-      .catch(err => console.error("Failed to fetch subjects", err));
+      .catch(err => console.warn("Failed to fetch subjects", err));
   }, []);
 
   const [isCapturing, setIsCapturing] = useState(false);
@@ -134,7 +134,7 @@ export default function CandidateRegister() {
         toast.error(data.message || "Failed to send token.");
       }
     } catch (e) {
-      toast.error("Network error.");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -176,7 +176,7 @@ export default function CandidateRegister() {
         toast.error(data.message || "Registration failed.");
       }
     } catch (e) {
-      toast.error("Network error.");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }

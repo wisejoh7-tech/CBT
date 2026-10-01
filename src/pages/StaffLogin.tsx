@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/lib/ui/card';
 import { ShieldCheck, Mail, Lock, Eye, EyeOff, Shield, User, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 import { Separator } from '@/lib/ui/separator';
+import { getFriendlyErrorMessage } from '@/src/lib/api-config';
 
 export default function StaffLogin() {
   const [email, setEmail] = useState('');
@@ -37,7 +38,7 @@ export default function StaffLogin() {
       toast.success("Identity Verified. Staff Session Active.");
       navigate('/admin');
     } catch (error: any) {
-      toast.error(error.message || "Authentication failed.");
+      toast.error(getFriendlyErrorMessage(error?.message || error) || "Authentication failed.");
     }
   };
 
