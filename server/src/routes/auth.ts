@@ -246,13 +246,17 @@ router.post("/candidate/login-email", async (req, res) => {
       .addSelect("c.password")
       .getOne();
 
-    if (!candidate || !candidate.password) {
-      return res.status(401).json({ message: "User not found or password and email do not match" });
+    if (!candidate) {
+      return res.status(404).json({ message: "User not found. Click to register." });
+    }
+
+    if (!candidate.password) {
+      return res.status(401).json({ message: "Invalid credentials. Password not set." });
     }
 
     const isMatch = await bcrypt.compare(password, candidate.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "User not found or password and email do not match" });
+      return res.status(401).json({ message: "Invalid email or password." });
     }
 
     if (candidate.status !== "active") {
@@ -334,13 +338,17 @@ router.post("/login", async (req, res) => {
       .addSelect("u.password")
       .getOne();
 
-    if (!user || !user.password) {
-      return res.status(401).json({ message: "User not found or password and email do not match" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found. Click to register." });
+    }
+
+    if (!user.password) {
+      return res.status(401).json({ message: "Invalid credentials." });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "User not found or password and email do not match" });
+      return res.status(401).json({ message: "Invalid email or password." });
     }
 
     const token = jwt.sign(
@@ -360,15 +368,20 @@ router.post("/login", async (req, res) => {
 router.post("/candidate-login", async (req, res) => {
   try {
     const { examNumber } = req.body;
+    if (!examNumber || typeof examNumber !== 'string' || !examNumber.trim()) {
+      return res.status(400).json({ message: "Invalid examination number provided" });
+    }
+
+    const cleanExamNumber = examNumber.trim();
     const candidateRepository = AppDataSource.getRepository(Candidate);
 
     // Case-insensitive search for exam number
     const candidate = await candidateRepository.createQueryBuilder("candidate")
-      .where("LOWER(candidate.examNumber) = LOWER(:examNumber)", { examNumber })
+      .where("LOWER(candidate.examNumber) = LOWER(:examNumber)", { examNumber: cleanExamNumber })
       .getOne();
 
     if (!candidate) {
-      return res.status(404).json({ message: "User not found or exam number is incorrect" });
+      return res.status(404).json({ message: "User not found or exam number is incorrect. Click to register." });
     }
 
     if (candidate.status !== "active") {

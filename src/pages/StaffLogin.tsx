@@ -28,17 +28,23 @@ export default function StaffLogin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error("Credentials required.");
+    if (!email.trim() || !password) {
+      toast.error("Invalid input. Email and password are required.");
       return;
     }
 
     try {
-      await signInWithEmail(email, password);
+      await signInWithEmail(email.trim(), password);
       toast.success("Identity Verified. Staff Session Active.");
       navigate('/admin');
     } catch (error: any) {
-      toast.error(getFriendlyErrorMessage(error?.message || error) || "Authentication failed.");
+      const msg = getFriendlyErrorMessage(error?.message || error);
+      toast.error(msg, {
+        action: msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('register') ? {
+          label: 'Enroll',
+          onClick: () => navigate('/admin/auth')
+        } : undefined
+      });
     }
   };
 
@@ -140,6 +146,14 @@ export default function StaffLogin() {
                 >
                   {loading ? "VERIFYING..." : "LOGIN"}
                 </Button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/auth')}
+                  className="w-full py-2.5 px-4 rounded-xl bg-primary/5 hover:bg-primary/10 border border-primary/20 text-[11px] font-black text-primary transition-all tracking-widest uppercase shadow-sm mt-3"
+                >
+                  USER NOT FOUND? CLICK HERE TO REGISTER
+                </button>
               </form>
             </CardContent>
           </Card>

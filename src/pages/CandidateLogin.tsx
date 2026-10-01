@@ -28,7 +28,7 @@ export default function CandidateLogin() {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Credentials required.");
+      toast.error("Invalid input. Email and password are required.");
       return;
     }
 
@@ -36,24 +36,36 @@ export default function CandidateLogin() {
       await loginCandidateWithEmail(email, password);
       toast.success("Identity Verified. Accessing Portal...");
       navigate('/dashboard');
-    } catch (e) {
-      // Error handled in context
+    } catch (e: any) {
+      const msg = getFriendlyErrorMessage(e);
+      toast.error(msg, {
+        action: msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('register') ? {
+          label: 'Register',
+          onClick: () => navigate('/candidate-register')
+        } : undefined
+      });
     }
   };
 
   const handleExamNumberLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!examNumber) {
-      toast.error("Exam Number required.");
+    if (!examNumber.trim()) {
+      toast.error("Invalid input. Exam Number is required.");
       return;
     }
 
     try {
-      await loginWithExamNumber(examNumber);
+      await loginWithExamNumber(examNumber.trim());
       toast.success("Identity Verified. Opening Terminal...");
       navigate('/instructions/unified');
     } catch (e: any) {
-      toast.error(getFriendlyErrorMessage(e) || "Invalid Exam Number or Session inactive.");
+      const msg = getFriendlyErrorMessage(e);
+      toast.error(msg, {
+        action: msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('register') ? {
+          label: 'Register',
+          onClick: () => navigate('/candidate-register')
+        } : undefined
+      });
     }
   };
 
@@ -248,9 +260,9 @@ export default function CandidateLogin() {
                 <Separator className="bg-primary/5" />
                 <button
                   onClick={() => navigate('/candidate-register')}
-                  className="w-full text-[10px] font-black text-primary/60 hover:text-primary transition-colors tracking-widest"
+                  className="w-full py-2 px-4 rounded-xl bg-primary/5 hover:bg-primary/10 border border-primary/20 text-[11px] font-black text-primary transition-all tracking-widest uppercase shadow-sm"
                 >
-                  NOT REGISTERED? CLICK HERE TO START
+                  USER NOT FOUND? CLICK HERE TO REGISTER
                 </button>
               </div>
             </div>
