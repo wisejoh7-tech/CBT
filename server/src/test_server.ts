@@ -1,5 +1,7 @@
 import express from "express";
 const app = express();
-const PORT = 5001;
+const PORT = Number(process.env.PORT) || 10000;
 app.get("/", (req, res) => res.send("OK"));
-app.listen(PORT, () => console.log(`Test server on ${PORT}`));
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
+});
