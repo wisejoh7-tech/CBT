@@ -12,6 +12,7 @@ process.on('uncaughtException', (err: any) => {
 
 import express from "express";
 import { createServer } from "http";
+import fs from "fs";
 import path from "path";
 import { Server } from "socket.io";
 import cors from "cors";
@@ -102,7 +103,13 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.get("/", (req, res) => res.send("VIVI CBT API - ONLINE"));
+app.get("/", (req, res, next) => {
+  const indexPath = path.resolve(__dirname, "../../dist/index.html");
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  res.send("VIVI CBT API - ONLINE");
+});
 app.use(express.json());
 app.use(ipBlocker);
 
@@ -127,8 +134,14 @@ app.use("/candidates", candidateRoutes);
 app.use("/subjects", subjectRoutes);
 
 // --- STATIC FRONTEND ASSETS & SPA FALLBACK ---
-const distPath = path.join(__dirname, "../../dist");
-app.use(express.static(distPath));
+const distPath = path.resolve(__dirname, "../../dist");
+
+if (fs.existsSync(distPath)) {
+  console.log(`[BOOT] Serving static frontend from: ${distPath}`);
+  app.use(express.static(distPath));
+} else {
+  console.warn(`[BOOT WARN] Static frontend path not found at: ${distPath}`);
+}
 
 // Fallback to index.html for SPA client-side routes
 app.get("*", (req, res, next) => {
@@ -137,9 +150,10 @@ app.get("*", (req, res, next) => {
     return next();
   }
   const indexPath = path.join(distPath, "index.html");
-  res.sendFile(indexPath, (err) => {
-    if (err) next();
-  });
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  res.status(404).send("Page not found");
 });
 
 // --- 5. BACKGROUND SERVICE INITIALIZATION ---
