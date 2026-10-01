@@ -5,13 +5,13 @@
 1. Connect your repository on [Render](https://render.com).
 2. Choose **Static Site** when creating the service (or Blueprint deployment via `render.yaml`).
 3. Set the following Build and Publish settings:
-   - **Build Command**: `pnpm run build` (or `npm run build`)
+   - **Build Command**: `pnpm install && pnpm run build` (or `npm install && npm run build`)
    - **Publish Directory**: `dist`
 4. Add any required environment variables (such as `VITE_FIREBASE_API_KEY`, etc.).
 5. Deploy!
 
 > **Troubleshooting "Publish directory dist does not exist!":**
-> If Render shows `Empty build command; skipping build`, ensure the **Build Command** field in Render settings is explicitly set to `pnpm run build` or `npm run build` so that the `dist` directory is generated before publishing.
+> If Render shows `Empty build command; skipping build`, or fails to create `dist`, ensure the **Build Command** field in Render settings is explicitly set to `pnpm install && pnpm run build` (or `npm install && npm run build`) so that dependencies are installed and the `dist` directory is generated before publishing.
 
 ---
 
