@@ -4,7 +4,7 @@ import { Button } from '@/lib/ui/button';
 import { Card } from '@/lib/ui/card';
 import { Shield, Clock, BookOpen, CheckCircle, AlertCircle, PlayCircle, Monitor, User, ArrowLeft } from 'lucide-react';
 import { Exam } from '@/src/types';
-import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 import { useAuth } from '@/src/context/AuthContext';
 import { toast } from 'sonner';
 import { Badge } from '@/lib/ui/badge';
@@ -21,7 +21,7 @@ export default function ExamInstructions() {
       if (examId === 'unified' && !profile) return;
 
       try {
-        const res = await fetch(getApiUrl('/exams'), {
+        const res = await apiFetch(getApiUrl('/exams'), {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         const allExams: Exam[] = await safeJsonResponse(res);

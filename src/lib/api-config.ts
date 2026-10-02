@@ -102,23 +102,25 @@ export async function safeJsonResponse<T = any>(res: Response): Promise<T> {
 export async function apiFetch(
   url: string,
   options: RequestInit = {},
-  retries = 2,
+  retries = 4,
   delayMs = 1500
 ): Promise<Response> {
   let lastErr: any;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const response = await fetch(url, options);
-      if (response.status === 503 && attempt < retries) {
-        // Backend DB is initializing / server spinning up
-        await new Promise((r) => setTimeout(r, delayMs));
+      if ((response.status === 503 || response.status === 502 || response.status === 504) && attempt < retries) {
+        // Backend DB is initializing / server spinning up on free hosting
+        const currentDelay = delayMs * Math.pow(1.5, attempt);
+        await new Promise((r) => setTimeout(r, currentDelay));
         continue;
       }
       return response;
     } catch (err: any) {
       lastErr = err;
       if (attempt < retries) {
-        await new Promise((r) => setTimeout(r, delayMs));
+        const currentDelay = delayMs * Math.pow(1.5, attempt);
+        await new Promise((r) => setTimeout(r, currentDelay));
       }
     }
   }

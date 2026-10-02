@@ -5,7 +5,7 @@ import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
 import { Search, GraduationCap, Lock, AlertCircle, User, Shield, Monitor, ArrowLeft, Menu, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 import { useAuth } from '@/src/context/AuthContext';
 import { Separator } from '@/lib/ui/separator';
 import { AnimatePresence } from 'framer-motion';
@@ -32,7 +32,7 @@ export default function ResultChecker() {
     setCheckingResult(true);
 
     try {
-      const res = await fetch(getApiUrl('/exams/public/check-result'), {
+      const res = await apiFetch(getApiUrl('/exams/public/check-result'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ examNumber: cleanId })

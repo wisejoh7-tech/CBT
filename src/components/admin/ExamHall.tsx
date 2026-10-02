@@ -6,7 +6,7 @@ import { MapPin, Calendar, Clock, Users, Send, Monitor, Info } from 'lucide-reac
 import { cn } from '@/src/lib/utils/utils';
 import { ScrollArea } from '@/lib/ui/scroll-area';
 import { Candidate, Exam } from '@/src/types';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, apiFetch } from '@/src/lib/api-config';
 
 interface ExamHallProps {
   seats: any[];
@@ -107,7 +107,7 @@ export const ExamHall: React.FC<ExamHallProps> = ({
                 <Button
                   onClick={async () => {
                     if(!confirm("Clear all terminals from map?")) return;
-                    await fetch(getApiUrl('/center/seats/bulk'), {
+                    await apiFetch(getApiUrl('/center/seats/bulk'), {
                       method: 'POST',
                       headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}`},
                       body: JSON.stringify({ count: 0 })

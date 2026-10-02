@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Candidate } from '@/src/types';
 import { Button } from '@/lib/ui/button';
 import { Printer, ArrowLeft, ShieldCheck, User, MapPin, Calendar, Monitor } from 'lucide-react';
-import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, apiFetch } from '@/src/lib/api-config';
 
 export default function ExamSlip() {
   const { examNumber } = useParams<{ examNumber: string }>();
@@ -15,7 +15,7 @@ export default function ExamSlip() {
     async function fetchCandidate() {
       if (!examNumber) return;
       try {
-        const res = await fetch(getApiUrl(`/candidates/${examNumber}`), {
+        const res = await apiFetch(getApiUrl(`/candidates/${examNumber}`), {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (res.ok) setCandidate(await safeJsonResponse(res));

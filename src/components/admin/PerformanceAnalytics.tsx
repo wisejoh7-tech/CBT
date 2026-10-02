@@ -3,14 +3,14 @@ import { Card } from '@/lib/ui/card';
 import { ScrollArea } from '@/lib/ui/scroll-area';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { TrendingUp, Users, BookOpen, AlertCircle } from 'lucide-react';
-import { getApiUrl, safeJsonResponse } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, apiFetch } from '@/src/lib/api-config';
 
 export const PerformanceAnalytics: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(getApiUrl('/analytics/detailed-performance'), {
+    apiFetch(getApiUrl('/analytics/detailed-performance'), {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     })
       .then(res => safeJsonResponse(res))
