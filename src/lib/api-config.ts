@@ -1,27 +1,45 @@
 const isProd = import.meta.env.PROD;
 
+const cleanUrlString = (rawUrl?: string): string | null => {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+  const str = rawUrl.trim();
+  const httpMatch = str.match(/(https?:\/\/[^\s"'<]+)/i);
+  if (httpMatch) {
+    return httpMatch[1].replace(/\/+$/, "");
+  }
+  if (str.startsWith("http://") || str.startsWith("https://")) {
+    return str.replace(/\/+$/, "");
+  }
+  return null;
+};
+
 // Determine API Base URL with fallback logic
 const resolveApiBaseUrl = (): string => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL as string;
+  const envUrl = cleanUrlString(import.meta.env.VITE_API_URL as string);
+  if (envUrl) {
+    return envUrl;
   }
   if (!isProd) {
     return "http://localhost:10000";
   }
-  // In production if VITE_API_URL is missing, default to relative "/api" or current origin
-  return "/api";
+  return typeof window !== 'undefined' ? window.location.origin : "";
 };
 
 export const API_BASE_URL = resolveApiBaseUrl();
 
 const resolveSocketUrl = (): string => {
-  if (import.meta.env.VITE_SOCKET_URL) {
-    return import.meta.env.VITE_SOCKET_URL as string;
+  const envSocketUrl = cleanUrlString(import.meta.env.VITE_SOCKET_URL as string);
+  if (envSocketUrl) {
+    return envSocketUrl;
   }
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL as string;
+  const envApiUrl = cleanUrlString(import.meta.env.VITE_API_URL as string);
+  if (envApiUrl) {
+    return envApiUrl;
   }
-  return isProd ? "/" : "http://localhost:10000";
+  if (!isProd) {
+    return "http://localhost:10000";
+  }
+  return typeof window !== 'undefined' ? window.location.origin : "";
 };
 
 export const SOCKET_URL = resolveSocketUrl();
