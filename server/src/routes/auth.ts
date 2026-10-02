@@ -283,7 +283,7 @@ router.post("/candidate/login-email", async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, candidate.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid email or password." });
+      return res.status(401).json({ message: "User not found or invalid credentials provided. Click to register if you don't have an account." });
     }
 
     if (candidate.status !== "active") {
@@ -348,6 +348,27 @@ router.post("/login", async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
     const userRepository = AppDataSource.getRepository(User);
 
+    // Auto-seed default super_admin if admin@vivicbt.com does not exist
+    try {
+      const defaultAdmin = await userRepository.createQueryBuilder("u")
+        .where("LOWER(u.email) = LOWER(:email)", { email: "admin@vivicbt.com" })
+        .getOne();
+
+      if (!defaultAdmin) {
+        const defaultHash = await bcrypt.hash("admin123", 10);
+        await userRepository.save(userRepository.create({
+          email: "admin@vivicbt.com",
+          password: defaultHash,
+          displayName: "System Master",
+          role: "super_admin"
+        }));
+        console.log("🌱 Auto-seeded default admin: admin@vivicbt.com / admin123");
+      }
+    } catch (seedErr) {
+      console.error("Auto-seed error for default admin:", seedErr);
+    }
+
+    const user = await userRepository.createQueryBuilder("u")
     // Ensure default super_admin admin@vivicbt.com exists
     let user = await userRepository.createQueryBuilder("u")
       .where("LOWER(u.email) = LOWER(:email)", { email: cleanEmail })
@@ -427,7 +448,7 @@ router.post("/login", async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid email or password." });
+      return res.status(401).json({ message: "User not found or invalid credentials provided. Click to register if you don't have an account." });
     }
 
     const token = jwt.sign(

@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser({ uid: userId });
       toast.success("Welcome back, " + (userObj.displayName || userObj.fullName || "User"));
     } catch (e: any) {
-      throw e;
+      throw new Error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -168,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...profileObj,
         uid: profileObj?.examNumber || profileObj?.id,
         displayName: profileObj?.fullName || profileObj?.displayName,
-        role: 'student',
+        role: profileObj?.role || 'student',
         loginMethod: 'email'
       };
 
@@ -180,7 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser({ uid: profileData.uid });
 
     } catch (e: any) {
-      throw e;
+      throw new Error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }

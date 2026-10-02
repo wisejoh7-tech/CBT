@@ -146,9 +146,8 @@ export default function CandidateRegister() {
       toast.error("Passwords do not match.");
       return;
     }
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
-    if (!passwordRegex.test(formData.password)) {
-      toast.error("Password must include uppercase, lowercase, number and symbol.");
+    if (!formData.password || formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters long.");
       return;
     }
     if (!formData.faceUrl) {
