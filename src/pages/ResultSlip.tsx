@@ -4,7 +4,7 @@ import { Candidate, Attempt } from '@/src/types';
 import { Button } from '@/lib/ui/button';
 import { Badge } from '@/lib/ui/badge';
 import { Printer, ArrowLeft, ShieldCheck, BadgeCheck, Download, Award, Monitor, User } from 'lucide-react';
-import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import jsPDF from 'jspdf';
@@ -24,7 +24,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
     if (!unifiedAttempt?.id) return;
     setGeneratingGuide(true);
     try {
-      const res = await fetch(getApiUrl(`/exams/attempt/${unifiedAttempt.id}/study-guide`), {
+      const res = await apiFetch(getApiUrl(`/exams/attempt/${unifiedAttempt.id}/study-guide`), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) setStudyGuide(await safeJsonResponse(res));
@@ -46,7 +46,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
       try {
         setLoading(true);
         // We'll use a specific endpoint for the result slip or reuse the public one if no token
-        const res = await fetch(getApiUrl('/exams/public/check-result'), {
+        const res = await apiFetch(getApiUrl('/exams/public/check-result'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ examNumber: examNumber })

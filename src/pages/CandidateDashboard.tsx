@@ -25,7 +25,7 @@ import { Badge } from '@/lib/ui/badge';
 import { Input } from '@/lib/ui/input';
 import { Label } from '@/lib/ui/label';
 import { toast } from 'sonner';
-import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
 
 export default function CandidateDashboard() {
@@ -43,7 +43,7 @@ export default function CandidateDashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(getApiUrl('/candidates/dashboard'), { headers: getHeaders() });
+      const res = await apiFetch(getApiUrl('/candidates/dashboard'), { headers: getHeaders() });
       const data = await safeJsonResponse(res);
       if (data && data.candidate) {
         setDashboardData(data.candidate);
@@ -68,7 +68,7 @@ export default function CandidateDashboard() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/candidates/profile'), {
+      const res = await apiFetch(getApiUrl('/candidates/profile'), {
         method: 'PUT',
         headers: {
           ...getHeaders(),
