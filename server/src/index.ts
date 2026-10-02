@@ -51,22 +51,11 @@ httpServer.listen(PORT, "0.0.0.0", () => {
 });
 
 // --- 2. CORS & SECURITY CONFIGURATION ---
-const getCorsOrigins = (): cors.CorsOptions['origin'] => {
-  const envOrigins = process.env.CORS_ORIGIN;
-  if (!envOrigins || envOrigins === '*') return true;
-  const origins = envOrigins.split(',').map(o => o.trim()).filter(Boolean);
-  return (origin, callback) => {
-    if (!origin || origins.includes(origin) || origins.includes('*')) {
-      callback(null, true);
-    } else {
-      console.warn(`[CORS Warn] Allowing request from origin: ${origin}`);
-      callback(null, true);
-    }
-  };
-};
-
 const corsOptions: cors.CorsOptions = {
-  origin: getCorsOrigins(),
+  origin: (origin, callback) => {
+    // Dynamically echo back the requesting origin to allow credentials
+    callback(null, true);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,
@@ -75,6 +64,21 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+
+// Fail-safe CORS Header Injector for all preflight & API requests
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin");
+  }
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -212,7 +216,14 @@ async function initializeServices() {
     }
 
     // Socket.io Setup
-    const io = new Server(httpServer, { cors: corsOptions });
+    const io = new Server(httpServer, {
+      cors: {
+        origin: (requestOrigin, callback) => callback(null, true),
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+        credentials: true
+      }
+    });
 
     const adapter = redisClient.getAdapter();
     if (adapter) {
