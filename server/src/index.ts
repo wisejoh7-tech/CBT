@@ -42,21 +42,46 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 const isOriginAllowed = (origin: string | undefined): boolean => {
   if (!origin) return true; // Allow non-browser / mobile / curl requests
-  if (allowedOrigins.includes(origin)) return true;
-  if (origin.endsWith(".onrender.com")) return true; // Allow all onrender frontend deployment previews
+  const cleanOrigin = origin.trim().replace(/\/+$/, "").toLowerCase();
+  if (allowedOrigins.some(o => o.trim().replace(/\/+$/, "").toLowerCase() === cleanOrigin)) {
+    return true;
+  }
+  if (cleanOrigin.endsWith(".onrender.com") || cleanOrigin.includes(".onrender.com")) {
+    return true; // Allow all onrender deployment previews / services
+  }
+  if (
+    cleanOrigin.startsWith("http://localhost:") ||
+    cleanOrigin.startsWith("https://localhost:") ||
+    cleanOrigin.startsWith("http://127.0.0.1:") ||
+    cleanOrigin.startsWith("https://127.0.0.1:")
+  ) {
+    return true;
+  }
   return false;
 };
 
 const corsOptions: cors.CorsOptions = {
-  origin: (origin, callback) => {
-    if (isOriginAllowed(origin)) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Fallback to allow connection
+  origin: (origin: string | undefined, callback: (err: Error | null, origin?: any) => void) => {
+    if (!origin) {
+      return callback(null, true);
     }
+    if (isOriginAllowed(origin)) {
+      return callback(null, origin);
+    }
+    return callback(null, origin);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Allow-Headers',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -64,17 +89,15 @@ const corsOptions: cors.CorsOptions = {
 // --- 1. FIRST-PRIORITY CORS & HEADERS CONFIGURATION ---
 app.use((req, res, next) => {
   const requestingOrigin = req.headers.origin;
-  if (requestingOrigin && isOriginAllowed(requestingOrigin)) {
+  if (requestingOrigin) {
     res.setHeader("Access-Control-Allow-Origin", requestingOrigin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
-  } else if (!requestingOrigin) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
   } else {
-    res.setHeader("Access-Control-Allow-Origin", requestingOrigin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Origin", "*");
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Allow-Headers, Access-Control-Request-Method, Access-Control-Request-Headers");
+  res.setHeader("Access-Control-Max-Age", "86400");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
@@ -83,7 +106,6 @@ app.use((req, res, next) => {
 });
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
 const httpServer = createServer(app);
 const PORT = Number(process.env.PORT) || 10000;
@@ -91,15 +113,26 @@ const PORT = Number(process.env.PORT) || 10000;
 // Synchronously initialize Socket.io so Engine.IO attaches listeners immediately upon server creation
 const io = new Server(httpServer, {
   cors: {
-    origin: (requestOrigin, callback) => {
-      if (isOriginAllowed(requestOrigin)) {
-        callback(null, true);
-      } else {
-        callback(null, true);
+    origin: (requestOrigin: string | undefined, callback: (err: Error | null, origin?: any) => void) => {
+      if (!requestOrigin) {
+        return callback(null, true);
       }
+      if (isOriginAllowed(requestOrigin)) {
+        return callback(null, requestOrigin);
+      }
+      return callback(null, requestOrigin);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'Access-Control-Allow-Headers',
+      'Access-Control-Request-Method',
+      'Access-Control-Request-Headers'
+    ],
     credentials: true
   }
 });
@@ -107,7 +140,7 @@ const io = new Server(httpServer, {
 app.set("io", io);
 automationEngine.setSocketIO(io);
 
-io.on("connection", (socket) => {
+io.on("connection", (socket: any) => {
   socket.on("disconnect", () => {});
 });
 
