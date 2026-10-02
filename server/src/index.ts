@@ -51,11 +51,26 @@ httpServer.listen(PORT, "0.0.0.0", () => {
 });
 
 // --- 2. CORS & SECURITY CONFIGURATION ---
+// Fail-safe CORS Header Injector for all requests & preflight OPTIONS
+app.use((req, res, next) => {
+  const requestingOrigin = req.headers.origin;
+  if (requestingOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", requestingOrigin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Allow-Headers, Access-Control-Request-Method, Access-Control-Request-Headers");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  next();
+});
+
 const corsOptions: cors.CorsOptions = {
-  origin: (origin, callback) => {
-    // Dynamically echo back the requesting origin to allow credentials
-    callback(null, true);
-  },
+  origin: (origin, callback) => callback(null, true),
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,
@@ -64,21 +79,6 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
-
-// Fail-safe CORS Header Injector for all preflight & API requests
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin");
-  }
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-  next();
-});
 
 app.use(helmet({
   contentSecurityPolicy: {
