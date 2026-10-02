@@ -46,10 +46,6 @@ export function getFriendlyErrorMessage(err: any): string {
     return "Unable to connect to the server. Please check your internet connection or try again later.";
   }
 
-  if (msg.includes("Cannot read properties of undefined")) {
-    return "User not found or invalid credentials provided. Click to register if you don't have an account.";
-  }
-
   return msg;
 }
 
