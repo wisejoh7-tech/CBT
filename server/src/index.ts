@@ -106,6 +106,7 @@ app.use((req, res, next) => {
 });
 
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 const httpServer = createServer(app);
 const PORT = Number(process.env.PORT) || 10000;
