@@ -24,17 +24,18 @@ export default function Home() {
           <span className="font-black text-xl tracking-tighter text-primary">VIVI CBT</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-8  ">
+        <div className="hidden md:flex items-center gap-4 flex-wrap justify-end">
           {[
             { label: 'HOME', path: '/' },
             { label: 'LOGIN', path: '/candidate-login' },
             { label: 'REGISTER', path: '/candidate-register' },
+            { label: 'ADMIN REGISTER', path: '/admin/auth' },
             { label: 'RESULTS', path: '/results' }
           ].map((item) => (
             <button
               key={item.label}
               onClick={() => navigate(item.path)}
-              className="text-[11px] font-black tracking-widest w-28 h-9 text-primary/60 hover:text-white active:bg-green-500 transition-colors bg-primary text-white rounded-3xl "
+              className="text-[10px] font-black tracking-widest px-4 h-9 text-white hover:bg-primary/90 active:bg-green-600 transition-colors bg-primary rounded-3xl uppercase"
             >
               {item.label}
             </button>
@@ -42,9 +43,9 @@ export default function Home() {
           {user && (
             <Button
               onClick={() => navigate(isAdmin ? '/admin' : '/dashboard')}
-              className="h-10 px-6 bg-primary text-white rounded-xl font-black text-[14px] tracking-widest shadow-md hover:scale-105 transition-all"
+              className="h-9 px-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-3xl font-black text-[11px] tracking-widest shadow-md hover:scale-105 transition-all uppercase"
             >
-              Go to Portal
+              {isAdmin ? "Admin Portal" : "Candidate Portal"}
             </Button>
           )}
         </div>
@@ -64,13 +65,14 @@ export default function Home() {
               {[
                 { label: 'Home', path: '/' },
                 { label: 'Candidate Login', path: '/candidate-login' },
-                { label: 'Register', path: '/candidate-register' },
+                { label: 'Candidate Register', path: '/candidate-register' },
+                { label: 'Admin Register', path: '/admin/auth' },
                 { label: 'Results', path: '/results' }
               ].map((item) => (
                 <button
                   key={item.label}
                   onClick={() => { navigate(item.path); setIsMenuOpen(false); }}
-                  className="text-left text-[12px] font-black tracking-widest text-primary/60"
+                  className="text-left text-[12px] font-black tracking-widest text-primary/80 uppercase"
                 >
                   {item.label}
                 </button>
@@ -102,11 +104,14 @@ export default function Home() {
             Welcome to VIVI CBT Systems, where cutting-edge technology meets academic excellence. Experience a secure, fair, and seamless examination environment.
           </motion.p>
 
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-col sm:flex-row justify-center gap-6">
-            <Button onClick={() => navigate('/candidate-register')} className="h-14 px-10 bg-primary text-white rounded-2xl font-black text-sm tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 active:bg-green-700 active:text-white-700 transition-all flex gap-2 items-center ">
-              Register Now <ArrowRight className="w-5 h-5" />
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-col sm:flex-row justify-center gap-4 flex-wrap">
+            <Button onClick={() => navigate('/candidate-register')} className="h-14 px-8 bg-primary text-white rounded-2xl font-black text-sm tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 active:bg-green-700 transition-all flex gap-2 items-center justify-center">
+              Register Candidate <ArrowRight className="w-5 h-5" />
             </Button>
-            <Button onClick={() => navigate('/candidate-login')} variant="outline" className="h-14 px-10 border-2 border-primary/100 text-primary font-black text-sm tracking-widest bg-white hover:bg-slate-50 active:bg-green-700  active:text-white transition-all">
+            <Button onClick={() => navigate('/admin/auth')} className="h-14 px-8 bg-slate-900 text-white rounded-2xl font-black text-sm tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all flex gap-2 items-center justify-center">
+              Admin Register / Login <Lock className="w-4 h-4" />
+            </Button>
+            <Button onClick={() => navigate('/candidate-login')} variant="outline" className="h-14 px-8 border-2 border-primary text-primary font-black text-sm tracking-widest bg-white hover:bg-slate-50 transition-all">
               Candidate Login
             </Button>
           </motion.div>
@@ -216,6 +221,8 @@ export default function Home() {
             {[
               { label: 'ABOUT', path: '/about' },
               { label: 'CONTACT', path: '/contact' },
+              { label: 'ADMIN REGISTER', path: '/admin/auth' },
+              { label: 'STAFF PORTAL', path: '/staff' },
               { label: 'TERMS', path: '/terms' },
               { label: 'PRIVACY', path: '/privacy' }
             ].map((link) => (
