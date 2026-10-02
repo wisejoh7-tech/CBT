@@ -35,13 +35,69 @@ import { config } from "./lib/config";
 import { redisClient } from "./lib/services";
 
 const app = express();
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map(s => s.trim())
+  : ["https://my-exam-hvy7.onrender.com", "http://localhost:5173", "http://localhost:3000"];
+
+const isOriginAllowed = (origin: string | undefined): boolean => {
+  if (!origin) return true; // Allow non-browser / mobile / curl requests
+  if (allowedOrigins.includes(origin)) return true;
+  if (origin.endsWith(".onrender.com")) return true; // Allow all onrender frontend deployment previews
+  return false;
+};
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Fallback to allow connection
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+// --- 1. FIRST-PRIORITY CORS & HEADERS CONFIGURATION ---
+app.use((req, res, next) => {
+  const requestingOrigin = req.headers.origin;
+  if (requestingOrigin && isOriginAllowed(requestingOrigin)) {
+    res.setHeader("Access-Control-Allow-Origin", requestingOrigin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  } else if (!requestingOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", requestingOrigin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Allow-Headers, Access-Control-Request-Method, Access-Control-Request-Headers");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  next();
+});
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 const httpServer = createServer(app);
 const PORT = Number(process.env.PORT) || 10000;
 
 // Synchronously initialize Socket.io so Engine.IO attaches listeners immediately upon server creation
 const io = new Server(httpServer, {
   cors: {
-    origin: (requestOrigin, callback) => callback(null, true),
+    origin: (requestOrigin, callback) => {
+      if (isOriginAllowed(requestOrigin)) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     credentials: true
@@ -55,7 +111,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {});
 });
 
-// --- 1. IMMEDIATE PORT BINDING (Render Requirement) ---
+// --- 2. IMMEDIATE PORT BINDING (Render Requirement) ---
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`[BOOT] Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -66,36 +122,6 @@ httpServer.listen(PORT, "0.0.0.0", () => {
     process.exit(1);
   }
 });
-
-// --- 2. CORS & SECURITY CONFIGURATION ---
-// Fail-safe CORS Header Injector for all requests & preflight OPTIONS
-app.use((req, res, next) => {
-  const requestingOrigin = req.headers.origin;
-  if (requestingOrigin) {
-    res.setHeader("Access-Control-Allow-Origin", requestingOrigin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-  } else {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-  }
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Allow-Headers, Access-Control-Request-Method, Access-Control-Request-Headers");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-  next();
-});
-
-const corsOptions: cors.CorsOptions = {
-  origin: (origin, callback) => callback(null, true),
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  credentials: true,
-  optionsSuccessStatus: 200,
-};
-
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
 app.use(helmet({
   contentSecurityPolicy: {
