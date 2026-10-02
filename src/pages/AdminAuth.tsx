@@ -92,14 +92,14 @@ export default function AdminAuth() {
             <div className="w-14 h-14 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
               <ShieldCheck className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-xl font-black tracking-tighter leading-none mb-1 uppercase">Control Terminal</h1>
+            <h1 className="text-xl font-black tracking-tighter leading-none mb-1 uppercase">Admin Authorization</h1>
             <p className="text-[8px] font-bold uppercase tracking-[0.3em] text-slate-500">Security Authorization Required</p>
           </div>
 
-          <Card className="rounded-[28px] border border-white/10 bg-slate-800/80 backdrop-blur-xl shadow-2xl overflow-hidden">
+          <Card className="rounded-[24px] border border-white/10 bg-slate-800/80 backdrop-blur-xl shadow-2xl overflow-hidden">
             <div className="flex bg-white/5 p-1 m-2 rounded-2xl">
               <button onClick={() => setIsLogin(true)} className={cn("flex-1 py-2.5 rounded-xl font-black tracking-widest text-[8px] transition-all uppercase", isLogin ? "bg-primary text-white shadow-lg" : "text-slate-400 hover:text-slate-200")}>Login</button>
-              <button onClick={() => setIsLogin(false)} className={cn("flex-1 py-2.5 rounded-xl font-black tracking-widest text-[8px] transition-all uppercase", !isLogin ? "bg-primary text-white shadow-lg" : "text-slate-400 hover:text-slate-200")}>Enroll</button>
+              <button onClick={() => setIsLogin(false)} className={cn("flex-1 py-2.5 rounded-xl font-black tracking-widest text-[8px] transition-all uppercase", !isLogin ? "bg-primary text-white shadow-lg" : "text-slate-400 hover:text-slate-200")}>Register</button>
             </div>
 
             <CardContent className="p-6">
@@ -116,7 +116,7 @@ export default function AdminAuth() {
                       <Label className="text-[8px] font-black text-slate-500 tracking-widest uppercase ml-1">Full Name</Label>
                       <div className="relative group">
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600 group-focus-within:text-primary transition-colors" />
-                        <Input placeholder="Full Legal Name" value={name} onChange={e => setName(e.target.value)} className="h-10 pl-10 rounded-xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white text-[10px]" />
+                        <Input placeholder="Full  Name" value={name} onChange={e => setName(e.target.value)} className="h-10 pl-10 rounded-xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white text-[10px]" />
                       </div>
                     </motion.div>
                   )}
@@ -146,7 +146,7 @@ export default function AdminAuth() {
                       name="password"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="current-password"
-                      placeholder="••••••••"
+                      placeholder=""
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       className="h-10 pl-10 pr-10 rounded-xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white text-[10px]"
@@ -163,7 +163,7 @@ export default function AdminAuth() {
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600 group-focus-within:text-primary transition-colors" />
                       <Input
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
+                        placeholder=""
                         value={confirmPassword}
                         onChange={e => setConfirmPassword(e.target.value)}
                         className="h-10 pl-10 rounded-xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white text-[10px]"
@@ -175,7 +175,7 @@ export default function AdminAuth() {
 
                 <div className="pt-2">
                   <Button type="submit" disabled={loading} className="w-full h-11 bg-primary text-white rounded-xl font-black tracking-[0.2em] text-[9px] uppercase shadow-lg transition-all active:scale-95">
-                    {loading ? "Decrypting..." : (isLogin ? "Verify Identity" : "Provision Root")}
+                    {loading ? "Decrypting..." : (isLogin ? "Login" : "Create")}
                   </Button>
                 </div>
 

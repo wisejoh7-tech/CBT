@@ -38,6 +38,23 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = Number(process.env.PORT) || 10000;
 
+// Synchronously initialize Socket.io so Engine.IO attaches listeners immediately upon server creation
+const io = new Server(httpServer, {
+  cors: {
+    origin: (requestOrigin, callback) => callback(null, true),
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    credentials: true
+  }
+});
+
+app.set("io", io);
+automationEngine.setSocketIO(io);
+
+io.on("connection", (socket) => {
+  socket.on("disconnect", () => {});
+});
+
 // --- 1. IMMEDIATE PORT BINDING (Render Requirement) ---
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
@@ -51,22 +68,26 @@ httpServer.listen(PORT, "0.0.0.0", () => {
 });
 
 // --- 2. CORS & SECURITY CONFIGURATION ---
-const getCorsOrigins = (): cors.CorsOptions['origin'] => {
-  const envOrigins = process.env.CORS_ORIGIN;
-  if (!envOrigins || envOrigins === '*') return true;
-  const origins = envOrigins.split(',').map(o => o.trim()).filter(Boolean);
-  return (origin, callback) => {
-    if (!origin || origins.includes(origin) || origins.includes('*')) {
-      callback(null, true);
-    } else {
-      console.warn(`[CORS Warn] Allowing request from origin: ${origin}`);
-      callback(null, true);
-    }
-  };
-};
+// Fail-safe CORS Header Injector for all requests & preflight OPTIONS
+app.use((req, res, next) => {
+  const requestingOrigin = req.headers.origin;
+  if (requestingOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", requestingOrigin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Allow-Headers, Access-Control-Request-Method, Access-Control-Request-Headers");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  next();
+});
 
 const corsOptions: cors.CorsOptions = {
-  origin: getCorsOrigins(),
+  origin: (origin, callback) => callback(null, true),
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,
@@ -211,21 +232,12 @@ async function initializeServices() {
       console.warn("⚠️ Redis unavailable, using Memory Fallback.");
     }
 
-    // Socket.io Setup
-    const io = new Server(httpServer, { cors: corsOptions });
-
+    // Socket.io Redis Adapter Setup
     const adapter = redisClient.getAdapter();
     if (adapter) {
       io.adapter(adapter);
       console.log("✅ Socket.io Redis Adapter Enabled.");
     }
-
-    app.set("io", io);
-    automationEngine.setSocketIO(io);
-
-    io.on("connection", (socket) => {
-      socket.on("disconnect", () => {});
-    });
 
   } catch (criticalError) {
     console.error("FATAL: Background initialization failed", criticalError);
