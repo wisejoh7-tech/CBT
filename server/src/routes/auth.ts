@@ -368,7 +368,6 @@ router.post("/login", async (req, res) => {
       console.error("Auto-seed error for default admin:", seedErr);
     }
 
-    const user = await userRepository.createQueryBuilder("u")
     // Ensure default super_admin admin@vivicbt.com exists
     let user = await userRepository.createQueryBuilder("u")
       .where("LOWER(u.email) = LOWER(:email)", { email: cleanEmail })
