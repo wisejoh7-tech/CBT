@@ -38,6 +38,23 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = Number(process.env.PORT) || 10000;
 
+// Synchronously initialize Socket.io so Engine.IO attaches listeners immediately upon server creation
+const io = new Server(httpServer, {
+  cors: {
+    origin: (requestOrigin, callback) => callback(null, true),
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    credentials: true
+  }
+});
+
+app.set("io", io);
+automationEngine.setSocketIO(io);
+
+io.on("connection", (socket) => {
+  socket.on("disconnect", () => {});
+});
+
 // --- 1. IMMEDIATE PORT BINDING (Render Requirement) ---
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
@@ -215,28 +232,12 @@ async function initializeServices() {
       console.warn("⚠️ Redis unavailable, using Memory Fallback.");
     }
 
-    // Socket.io Setup
-    const io = new Server(httpServer, {
-      cors: {
-        origin: (requestOrigin, callback) => callback(null, true),
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-        credentials: true
-      }
-    });
-
+    // Socket.io Redis Adapter Setup
     const adapter = redisClient.getAdapter();
     if (adapter) {
       io.adapter(adapter);
       console.log("✅ Socket.io Redis Adapter Enabled.");
     }
-
-    app.set("io", io);
-    automationEngine.setSocketIO(io);
-
-    io.on("connection", (socket) => {
-      socket.on("disconnect", () => {});
-    });
 
   } catch (criticalError) {
     console.error("FATAL: Background initialization failed", criticalError);
