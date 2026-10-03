@@ -177,10 +177,8 @@ app.use(helmet({
 // --- 3. PRIORITY ROUTES ---
 app.get("/health", (req, res) => {
   res.status(200).json({
-    status: "alive",
-    port: PORT,
-    database: AppDataSource.isInitialized ? "connected" : "connecting",
-    redis: redisClient.isOpen ? "connected" : "fallback_mode"
+    status: "ok",
+    message: "Server is healthy",
   });
 });
 
