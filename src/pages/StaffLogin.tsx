@@ -65,12 +65,8 @@ export default function StaffLogin() {
 
         <div className="hidden md:flex items-center gap-8">
           <button onClick={() => navigate('/')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">HOME</button>
-          <button onClick={() => navigate('/candidate-login')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CANDIDATE LOGIN</button>
+          <button onClick={() => navigate('/candidate-login')} className="text-[14px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">LOGIN</button>
           <button onClick={() => navigate('/results')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CHECK RESULT</button>
-          <Separator orientation="vertical" className="h-4 bg-primary/10" />
-          <button onClick={() => navigate('/staff')} className="text-[11px] font-black tracking-widest text-primary transition-colors flex items-center gap-2">
-            <User className="w-3 h-3" /> STAFF LOGIN
-          </button>
         </div>
       </nav>
 

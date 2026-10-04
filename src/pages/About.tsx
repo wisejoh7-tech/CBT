@@ -55,7 +55,7 @@ export default function About() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full translate-x-1/2 -translate-y-1/2 blur-3xl" />
           <h4 className="text-2xl font-black tracking-tight leading-none relative z-10">Ready to access your <br/> examination portal?</h4>
           <Button onClick={() => navigate('/candidate-login')} className="h-16 px-12 bg-white text-primary rounded-2xl font-black text-xs tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all relative z-10 uppercase">
-            Candidate Login
+            Login
           </Button>
         </section>
       </main>

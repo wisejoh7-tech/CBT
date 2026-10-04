@@ -11,7 +11,7 @@ interface AuthContextType {
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string, name: string, role: 'admin' | 'reg_admin' | 'super_admin') => Promise<void>;
   loginWithExamNumber: (examNumber: string) => Promise<void>;
-  loginCandidateWithEmail: (email: string, pass: string) => Promise<void>;
+  loginCandidateWithEmail: (email: string, pass: string) => Promise<UserProfile>;
   devAdminLogin: () => Promise<void>;
   logOut: () => Promise<void>;
 }
@@ -148,20 +148,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginCandidateWithEmail = async (email: string, pass: string) => {
+  const loginCandidateWithEmail = async (email: string, pass: string): Promise<UserProfile> => {
     setLoading(true);
     try {
-      const res = await apiFetch(getApiUrl('/auth/candidate/login-email'), {
+      let res = await apiFetch(getApiUrl('/auth/candidate/login-email'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: pass }),
       });
 
+      if (!res.ok) {
+        const staffRes = await apiFetch(getApiUrl('/auth/login'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password: pass }),
+        });
+        if (staffRes.ok) {
+          res = staffRes;
+        }
+      }
+
       const data = await safeJsonResponse(res);
 
       const profileObj = data?.profile || data?.user;
       if (!data || !profileObj) {
-        throw new Error("User not found or invalid credentials provided. Contact staff or admin for account registration.");
+        throw new Error("User not found or invalid credentials provided.");
       }
 
       const profileData: UserProfile = {
@@ -179,6 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCandidate(profileObj);
       setUser({ uid: profileData.uid });
 
+      return profileData;
     } catch (e: any) {
       throw new Error(getFriendlyErrorMessage(e));
     } finally {

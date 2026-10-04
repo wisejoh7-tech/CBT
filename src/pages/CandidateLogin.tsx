@@ -33,9 +33,15 @@ export default function CandidateLogin() {
     }
 
     try {
-      await loginCandidateWithEmail(email, password);
+      const userProfile = await loginCandidateWithEmail(email, password);
       toast.success("Identity Verified. Accessing Portal...");
-      navigate('/dashboard');
+      const role = userProfile?.role;
+      const isAdmin = role === 'admin' || role === 'super_admin' || role === 'reg_admin';
+      if (isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (e: any) {
       const msg = getFriendlyErrorMessage(e);
       toast.error(msg);
@@ -87,7 +93,6 @@ export default function CandidateLogin() {
           <button onClick={() => navigate('/')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-1">
             <ArrowLeft className="w-4 h-4" /> HOME
           </button>
-          <button onClick={() => navigate('/staff')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">STAFF PORTAL</button>
           <button onClick={() => navigate('/results')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CHECK RESULT</button>
         </div>
 
@@ -116,12 +121,6 @@ export default function CandidateLogin() {
                   <ArrowLeft className="w-4 h-4" /> HOME
                 </button>
                 <button
-                  onClick={() => { navigate('/staff'); setIsMenuOpen(false); }}
-                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
-                >
-                  STAFF PORTAL
-                </button>
-                <button
                   onClick={() => { navigate('/results'); setIsMenuOpen(false); }}
                   className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
                 >
@@ -137,12 +136,12 @@ export default function CandidateLogin() {
         <motion.main initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-sm text-center">
           <div className="inline-flex items-center gap-2 mb-8 px-6 py-2.5 rounded-full border-2 border-primary/20 bg-white backdrop-blur-sm shadow-md">
             <GraduationCap className="w-4 h-4 text-primary" />
-            <span className="text-[8px] font-black tracking-[0.2em] text-primary">CANDIDATE PORTAL</span>
+            <span className="text-[8px] font-black tracking-[0.2em] text-primary">LOGIN PORTAL</span>
           </div>
 
           <div className="bg-white rounded-[32px] border-2 border-primary shadow-2xl relative overflow-hidden">
             <div className="p-6 border-b-2 border-primary/5 bg-slate-50">
-               <h2 className="font-black text-[12px] tracking-[0.2em] text-primary">LOGIN PORTAL</h2>
+               <h2 className="font-black text-[12px] tracking-[0.2em] text-primary">LOGIN</h2>
             </div>
 
             <div className="p-10 space-y-8">
