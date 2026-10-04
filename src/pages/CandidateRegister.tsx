@@ -7,7 +7,7 @@ import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
 import { Mail, User, BookOpen, Key, Calendar, ArrowRight, CheckCircle, Monitor, Phone, MapPin, Camera, Trash2, ArrowLeft, Menu, X, Eye, EyeOff, FileCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
 import { cn } from '@/src/lib/utils/utils';
 
@@ -40,10 +40,10 @@ export default function CandidateRegister() {
   const [offeredSubjects, setOfferedSubjects] = useState<any[]>([]);
 
   React.useEffect(() => {
-    fetch(getApiUrl('/subjects'))
-      .then(res => res.json())
-      .then(data => setOfferedSubjects(data))
-      .catch(err => console.error("Failed to fetch subjects", err));
+    apiFetch(getApiUrl('/subjects'))
+      .then(res => safeJsonResponse(res))
+      .then(data => setOfferedSubjects(Array.isArray(data) ? data : []))
+      .catch(err => console.warn("Failed to fetch subjects", err));
   }, []);
 
   const [isCapturing, setIsCapturing] = useState(false);
@@ -116,13 +116,13 @@ export default function CandidateRegister() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/auth/candidate/send-token'), {
+      const res = await apiFetch(getApiUrl('/auth/candidate/send-token'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
       });
-      const data = await res.json();
-      if (res.ok) {
+      const data = await safeJsonResponse(res);
+      if (data) {
         if (data.token) {
           updateField('token', data.token);
           toast.success("Token generated & filled! Check email or Spam folder.");
@@ -134,7 +134,7 @@ export default function CandidateRegister() {
         toast.error(data.message || "Failed to send token.");
       }
     } catch (e) {
-      toast.error("Network error.");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -146,9 +146,8 @@ export default function CandidateRegister() {
       toast.error("Passwords do not match.");
       return;
     }
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(formData.password)) {
-      toast.error("Password must include uppercase, lowercase, number and symbol.");
+    if (!formData.password || formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters long.");
       return;
     }
     if (!formData.faceUrl) {
@@ -163,20 +162,20 @@ export default function CandidateRegister() {
     setLoading(true);
     try {
       const payload = { ...formData };
-      const res = await fetch(getApiUrl('/auth/candidate/register'), {
+      const res = await apiFetch(getApiUrl('/auth/candidate/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
-      if (res.ok) {
+      const data = await safeJsonResponse(res);
+      if (data) {
         toast.success(`Registration Successful!`);
         navigate('/candidate-login');
       } else {
         toast.error(data.message || "Registration failed.");
       }
     } catch (e) {
-      toast.error("Network error.");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -259,8 +258,19 @@ export default function CandidateRegister() {
                            className="h-14 sm:h-16 rounded-xl sm:rounded-2xl bg-slate-50 border-2 border-primary/5 text-center text-2xl sm:text-3xl font-black tracking-[0.5em]"
                            required
                          />
+                         <p className="text-[9px] text-slate-400 font-medium leading-relaxed">
+                           Verification code sent to <span className="font-bold text-primary">{formData.email}</span> (check inbox & Spam folder).
+                         </p>
+                         <button
+                           type="button"
+                           disabled={loading}
+                           onClick={handleSendToken}
+                           className="text-[10px] font-bold text-primary hover:underline cursor-pointer tracking-wider uppercase mt-1 block mx-auto"
+                         >
+                           {loading ? "Resending..." : "Didn't receive code? Resend Code"}
+                         </button>
                          <p className="text-[9px] text-slate-300 font-medium">
-                           Token sent to email (check Spam folder). If delayed, use <button type="button" onClick={() => updateField('token', 'ADMIN_OVERRIDE')} className="text-primary font-bold underline cursor-pointer">ADMIN_OVERRIDE</button>
+                           If delayed, use override token: <button type="button" onClick={() => updateField('token', 'ADMIN_OVERRIDE')} className="text-primary font-bold underline cursor-pointer">ADMIN_OVERRIDE</button>
                          </p>
                       </div>
 

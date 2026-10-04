@@ -7,11 +7,12 @@ import { Label } from '@/lib/ui/label';
 import { Card, CardContent } from '@/lib/ui/card';
 import { Key, Lock, ArrowRight, Monitor, User, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
-  const [token, setToken] = useState('');
+  const savedToken = localStorage.getItem('resetToken') || '';
+  const [token, setToken] = useState(savedToken);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,22 +29,23 @@ export default function ResetPassword() {
 
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/auth/reset-password'), {
+      const res = await apiFetch(getApiUrl('/auth/reset-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, token, newPassword, type })
       });
-      const data = await res.json();
+      const data = await safeJsonResponse(res);
       if (res.ok) {
         toast.success(data.message);
         localStorage.removeItem('resetEmail');
         localStorage.removeItem('resetType');
+        localStorage.removeItem('resetToken');
         navigate('/candidate-login');
       } else {
         toast.error(data.message || "Reset failed");
       }
     } catch (e) {
-      toast.error("Network error");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }

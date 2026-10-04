@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { UserProfile, Candidate } from '@/src/types';
 import { toast } from 'sonner';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 
 interface AuthContextType {
   user: any | null;
@@ -29,25 +29,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem('token');
       const savedProfile = localStorage.getItem('profile');
 
-      if (token && savedProfile) {
+      if (token && savedProfile && savedProfile.trim() !== '' && savedProfile !== 'undefined') {
         try {
           const parsedProfile = JSON.parse(savedProfile);
-          // Standardize profile structure
-          const standardizedProfile = {
-            ...parsedProfile,
-            displayName: parsedProfile.displayName || parsedProfile.fullName,
-            uid: parsedProfile.uid || parsedProfile.id || parsedProfile.examNumber
-          };
-          setProfile(standardizedProfile);
-          setUser({ uid: standardizedProfile.uid });
-          if (standardizedProfile.role === 'student') {
-            setCandidate(standardizedProfile);
+          if (parsedProfile && typeof parsedProfile === 'object') {
+            const standardizedProfile = {
+              ...parsedProfile,
+              displayName: parsedProfile?.displayName || parsedProfile?.fullName,
+              uid: parsedProfile?.uid || parsedProfile?.id || parsedProfile?.examNumber
+            };
+            setProfile(standardizedProfile);
+            setUser({ uid: standardizedProfile.uid });
+            if (standardizedProfile?.role === 'student') {
+              setCandidate(standardizedProfile);
+            }
           }
         } catch (e) {
           console.error("Auth restoration failed", e);
           localStorage.removeItem('token');
           localStorage.removeItem('profile');
         }
+      } else if (savedProfile === 'undefined' || savedProfile === '') {
+        localStorage.removeItem('profile');
       }
       setLoading(false);
     };
@@ -58,24 +61,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithEmail = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/auth/login'), {
+      const res = await apiFetch(getApiUrl('/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: pass }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
+      const data = await safeJsonResponse(res);
 
+      const userObj = data?.user || data?.profile;
+      if (!data || !userObj) {
+        throw new Error("User not found or invalid credentials provided. Click to register if you don't have an account.");
+      }
+
+      const userId = userObj?.id || userObj?.uid || userObj?.email;
       localStorage.setItem('token', data.token);
-      localStorage.setItem('profile', JSON.stringify(data.user));
+      localStorage.setItem('profile', JSON.stringify(userObj));
 
-      setProfile(data.user);
-      setUser({ uid: data.user.id });
-      toast.success("Welcome back, " + data.user.displayName);
+      setProfile(userObj);
+      setUser({ uid: userId });
+      toast.success("Welcome back, " + (userObj.displayName || userObj.fullName || "User"));
     } catch (e: any) {
-      toast.error(e.message);
-      throw e;
+      throw new Error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -84,18 +91,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUpWithEmail = async (email: string, pass: string, name: string, role: 'admin' | 'reg_admin' | 'super_admin') => {
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/auth/register'), {
+      const res = await apiFetch(getApiUrl('/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: pass, displayName: name, role }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Registration failed');
+      await safeJsonResponse(res);
 
-      toast.success("Account created successfully. Please login.");
+      toast.success("Account created successfully. Logging you in...");
+      await signInWithEmail(email, pass);
     } catch (e: any) {
-      toast.error(e.message);
       throw e;
     } finally {
       setLoading(false);
@@ -105,19 +111,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithExamNumber = async (examNumber: string) => {
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/auth/candidate-login'), {
+      const res = await apiFetch(getApiUrl('/auth/candidate-login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ examNumber }),
       });
       
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
+      const data = await safeJsonResponse(res);
+
+      const profileObj = data?.profile || data?.user;
+      if (!data || !profileObj) {
+        throw new Error("User not found or invalid examination number provided. Click to register if you don't have an account.");
+      }
 
       const profileData: UserProfile = {
-        ...data.profile,
-        uid: data.profile.examNumber,
-        displayName: data.profile.fullName,
+        ...profileObj,
+        uid: profileObj?.examNumber || profileObj?.id,
+        displayName: profileObj?.fullName || profileObj?.displayName,
         role: 'student',
         loginMethod: 'examNumber'
       };
@@ -126,12 +136,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('profile', JSON.stringify(profileData));
 
       setProfile(profileData);
-      setCandidate(data.profile);
-      setUser({ uid: data.profile.examNumber });
+      setCandidate(profileObj);
+      setUser({ uid: profileData.uid });
 
     } catch (e: any) {
       console.error("Login Sequence Failure:", e);
-      throw e;
+      toast.error(getFriendlyErrorMessage(e));
+      throw new Error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -140,20 +151,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginCandidateWithEmail = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/auth/candidate/login-email'), {
+      const res = await apiFetch(getApiUrl('/auth/candidate/login-email'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: pass }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
+      const data = await safeJsonResponse(res);
+
+      const profileObj = data?.profile || data?.user;
+      if (!data || !profileObj) {
+        throw new Error("User not found or invalid credentials provided. Click to register if you don't have an account.");
+      }
 
       const profileData: UserProfile = {
-        ...data.profile,
-        uid: data.profile.examNumber,
-        displayName: data.profile.fullName,
-        role: 'student',
+        ...profileObj,
+        uid: profileObj?.examNumber || profileObj?.id,
+        displayName: profileObj?.fullName || profileObj?.displayName,
+        role: profileObj?.role || 'student',
         loginMethod: 'email'
       };
 
@@ -161,12 +176,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('profile', JSON.stringify(profileData));
 
       setProfile(profileData);
-      setCandidate(data.profile);
-      setUser({ uid: data.profile.examNumber });
+      setCandidate(profileObj);
+      setUser({ uid: profileData.uid });
 
     } catch (e: any) {
-      toast.error(e.message);
-      throw e;
+      throw new Error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }

@@ -12,6 +12,8 @@ process.on('uncaughtException', (err: any) => {
 
 import express from "express";
 import { createServer } from "http";
+import fs from "fs";
+import path from "path";
 import { Server } from "socket.io";
 import cors from "cors";
 import helmet from "helmet";
@@ -33,12 +35,119 @@ import { config } from "./lib/config";
 import { redisClient } from "./lib/services";
 
 const app = express();
-const httpServer = createServer(app);
-const PORT = Number(process.env.PORT) || 5001;
 
-// --- 1. IMMEDIATE PORT BINDING (Render Requirement) ---
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map(s => s.trim())
+  : ["https://my-exam-hvy7.onrender.com", "http://localhost:5173", "http://localhost:3000"];
+
+const isOriginAllowed = (origin: string | undefined): boolean => {
+  if (!origin) return true; // Allow non-browser / mobile / curl requests
+  const cleanOrigin = origin.trim().replace(/\/+$/, "").toLowerCase();
+  if (allowedOrigins.some(o => o.trim().replace(/\/+$/, "").toLowerCase() === cleanOrigin)) {
+    return true;
+  }
+  if (cleanOrigin.endsWith(".onrender.com") || cleanOrigin.includes(".onrender.com")) {
+    return true; // Allow all onrender deployment previews / services
+  }
+  if (
+    cleanOrigin.startsWith("http://localhost:") ||
+    cleanOrigin.startsWith("https://localhost:") ||
+    cleanOrigin.startsWith("http://127.0.0.1:") ||
+    cleanOrigin.startsWith("https://127.0.0.1:")
+  ) {
+    return true;
+  }
+  return false;
+};
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, origin?: any) => void) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (isOriginAllowed(origin)) {
+      return callback(null, origin);
+    }
+    return callback(null, origin);
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Allow-Headers',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+// --- 1. FIRST-PRIORITY CORS & HEADERS CONFIGURATION ---
+app.use((req, res, next) => {
+  const requestingOrigin = req.headers.origin;
+  if (requestingOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", requestingOrigin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Allow-Headers, Access-Control-Request-Method, Access-Control-Request-Headers");
+  res.setHeader("Access-Control-Max-Age", "86400");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  next();
+});
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+const httpServer = createServer(app);
+const PORT = Number(process.env.PORT) || 10000;
+
+// Synchronously initialize Socket.io so Engine.IO attaches listeners immediately upon server creation
+const io = new Server(httpServer, {
+  cors: {
+    origin: (requestOrigin: string | undefined, callback: (err: Error | null, origin?: any) => void) => {
+      if (!requestOrigin) {
+        return callback(null, true);
+      }
+      if (isOriginAllowed(requestOrigin)) {
+        return callback(null, requestOrigin);
+      }
+      return callback(null, requestOrigin);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'Access-Control-Allow-Headers',
+      'Access-Control-Request-Method',
+      'Access-Control-Request-Headers'
+    ],
+    credentials: true
+  }
+});
+
+app.set("io", io);
+automationEngine.setSocketIO(io);
+
+io.on("connection", (socket: any) => {
+  socket.on("disconnect", () => {});
+});
+
+// --- 2. IMMEDIATE PORT BINDING (Render Requirement) ---
 httpServer.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 DEPLOYMENT STATUS: Port ${PORT} is now OPEN and listening.`);
+  console.log(`Server running on port ${PORT}`);
   console.log(`[BOOT] Environment: ${process.env.NODE_ENV || 'development'}`);
 }).on('error', (err: any) => {
   if (err.code === 'EADDRINUSE') {
@@ -48,21 +157,6 @@ httpServer.listen(PORT, "0.0.0.0", () => {
   }
 });
 
-// --- 2. PRIORITY ROUTES (Bypass all middleware) ---
-app.get("/health", (req, res) => {
-  const missingEnv = ['DATABASE_URL', 'JWT_SECRET'].filter(k => !process.env[k]);
-  res.status(200).json({
-    status: missingEnv.length > 0 ? "degraded" : "alive",
-    port: PORT,
-    database: AppDataSource.isInitialized ? "connected" : "connecting",
-    redis: redisClient.isOpen ? "connected" : "fallback_mode",
-    ...(missingEnv.length > 0 ? { warnings: `Missing env vars: ${missingEnv.join(', ')}` } : {})
-  });
-});
-
-app.get("/", (req, res) => res.send("VIVI CBT API - ONLINE"));
-
-// --- 3. MIDDLEWARE & SECURITY ---
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -71,20 +165,36 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://*.firebaseio.com", "https://*.googleapis.com", "wss://*.onrender.com"],
+      connectSrc: ["'self'", "https:", "http:", "wss://*.onrender.com", "https://*.onrender.com", "https://*.firebaseio.com", "https://*.googleapis.com"],
       frameSrc: ["'self'", "https://*.firebaseapp.com"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: [],
     },
   },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
-app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
+
+// --- 3. PRIORITY ROUTES ---
+app.get(["/health", "/api/health"], (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    message: "Server is healthy",
+  });
+});
+
+app.get("/", (req, res, next) => {
+  const indexPath = path.resolve(__dirname, "../../dist/index.html");
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  res.send("VIVI CBT API - ONLINE");
+});
 app.use(express.json());
 app.use(ipBlocker);
 
 // Database availability middleware
 app.use((req, res, next) => {
-  const dbIgnoredPaths = ["/health", "/"];
+  const dbIgnoredPaths = ["/health", "/api/health", "/"];
   if (!AppDataSource.isInitialized && !dbIgnoredPaths.includes(req.path)) {
     return res.status(503).json({
       message: "System initializing. Please wait a moment...",
@@ -102,6 +212,29 @@ app.use("/center", centerRoutes);
 app.use("/candidates", candidateRoutes);
 app.use("/subjects", subjectRoutes);
 
+// --- STATIC FRONTEND ASSETS & SPA FALLBACK ---
+const distPath = path.resolve(__dirname, "../../dist");
+
+if (fs.existsSync(distPath)) {
+  console.log(`[BOOT] Serving static frontend from: ${distPath}`);
+  app.use(express.static(distPath));
+} else {
+  console.warn(`[BOOT WARN] Static frontend path not found at: ${distPath}`);
+}
+
+// Fallback to index.html for SPA client-side routes
+app.get("*", (req, res, next) => {
+  const isApiRoute = ["/auth", "/exams", "/analytics", "/center", "/candidates", "/subjects", "/health"].some(route => req.path.startsWith(route));
+  if (isApiRoute) {
+    return next();
+  }
+  const indexPath = path.join(distPath, "index.html");
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  res.status(404).send("Page not found");
+});
+
 // --- 5. BACKGROUND SERVICE INITIALIZATION ---
 async function initializeServices() {
   console.log("[BOOT] Starting background service connections...");
@@ -114,9 +247,10 @@ async function initializeServices() {
         await AppDataSource.initialize();
         console.log("✅ Postgres Connected Successfully.");
 
-        // Seed Default Admin
+        // Seed Default Admin if missing
         const userRepo = AppDataSource.getRepository(User);
-        if (await userRepo.count() === 0) {
+        const adminUser = await userRepo.findOneBy({ email: "admin@vivicbt.com" });
+        if (!adminUser) {
           const hashedPassword = await bcrypt.hash(process.env.INITIAL_ADMIN_PASSWORD || "admin123", 10);
           await userRepo.save(userRepo.create({
             email: "admin@vivicbt.com",
@@ -156,21 +290,12 @@ async function initializeServices() {
       console.warn("⚠️ Redis unavailable, using Memory Fallback.");
     }
 
-    // Socket.io Setup
-    const io = new Server(httpServer, { cors: { origin: process.env.CORS_ORIGIN || "*" } });
-
+    // Socket.io Redis Adapter Setup
     const adapter = redisClient.getAdapter();
     if (adapter) {
       io.adapter(adapter);
       console.log("✅ Socket.io Redis Adapter Enabled.");
     }
-
-    app.set("io", io);
-    automationEngine.setSocketIO(io);
-
-    io.on("connection", (socket) => {
-      socket.on("disconnect", () => {});
-    });
 
   } catch (criticalError) {
     console.error("FATAL: Background initialization failed", criticalError);

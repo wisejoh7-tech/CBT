@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Exam, Question, Attempt, Candidate, UserProfile } from '@/src/types';
 import { toast } from 'sonner';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, apiFetch } from '@/src/lib/api-config';
 import { useAuth } from '@/src/context/AuthContext';
 import { useSocket } from '@/src/context/SocketContext';
 
@@ -37,9 +37,9 @@ export function useAdminData() {
 
     await Promise.all(endpoints.map(async ([url, setter]: any) => {
       try {
-        const res = await fetch(getApiUrl(url), { headers: getHeaders() });
+        const res = await apiFetch(getApiUrl(url), { headers: getHeaders() });
         if (res.ok) {
-          const data = await res.json();
+          const data = await safeJsonResponse(res);
           setter(data);
         } else {
           console.warn(`Failed to fetch ${url}: ${res.status}`);
@@ -54,8 +54,8 @@ export function useAdminData() {
     const isSuperOrAdmin = profile?.role === 'super_admin' || profile?.role === 'admin';
     if (isSuperOrAdmin) {
       try {
-        const res = await fetch(getApiUrl('/auth/staff'), { headers: getHeaders() });
-        if (res.ok) setStaff(await res.json());
+        const res = await apiFetch(getApiUrl('/auth/staff'), { headers: getHeaders() });
+        if (res.ok) setStaff(await safeJsonResponse(res));
       } catch (err) {
         console.warn("Failed to fetch staff:", err);
       }
@@ -63,9 +63,9 @@ export function useAdminData() {
   }, [getHeaders, profile]);
 
   const fetchQuestions = useCallback(async (examId: string) => {
-    const res = await fetch(getApiUrl(`/exams/${examId}`), { headers: getHeaders() });
+    const res = await apiFetch(getApiUrl(`/exams/${examId}`), { headers: getHeaders() });
     if (res.ok) {
-      const data = await res.json();
+      const data = await safeJsonResponse(res);
       setQuestions(data.questions || []);
     }
   }, [getHeaders]);

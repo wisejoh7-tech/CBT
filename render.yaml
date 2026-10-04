@@ -2,8 +2,14 @@ services:
   - type: web
     name: my-exam
     env: static
-    buildCommand: "pnpm install && pnpm run build"
+    buildCommand: "npm install && npm run build"
     staticPublishPath: "./dist"
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: my-exam-backend
+          property: url
     routes:
       - type: rewrite
         source: /*
@@ -17,6 +23,30 @@ services:
     startCommand: npm start
     envVars:
       - key: PORT
-        value: 5001
+        value: 10000
       - key: NODE_ENV
         value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USER
+        sync: false
+      - key: MAIL_PASS
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

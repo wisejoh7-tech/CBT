@@ -1,12 +1,131 @@
 const isProd = import.meta.env.PROD;
-export const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || (isProd ? "/api" : "http://localhost:5001");
-export const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL as string) || (isProd ? "/" : "http://localhost:5001");
+
+const cleanUrlString = (rawUrl?: string): string | null => {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+  const str = rawUrl.trim();
+  const httpMatch = str.match(/(https?:\/\/[^\s"'<]+)/i);
+  if (httpMatch) {
+    return httpMatch[1].replace(/\/+$/, "");
+  }
+  if (str.startsWith("http://") || str.startsWith("https://")) {
+    return str.replace(/\/+$/, "");
+  }
+  return null;
+};
+
+// Determine API Base URL with fallback logic
+const resolveApiBaseUrl = (): string => {
+  const envUrl = cleanUrlString(import.meta.env.VITE_API_URL as string);
+  if (envUrl) {
+    return envUrl;
+  }
+  if (!isProd) {
+    return "http://localhost:10000";
+  }
+  return typeof window !== 'undefined' ? window.location.origin : "";
+};
+
+export const API_BASE_URL = resolveApiBaseUrl();
+
+const resolveSocketUrl = (): string => {
+  const envSocketUrl = cleanUrlString(import.meta.env.VITE_SOCKET_URL as string);
+  if (envSocketUrl) {
+    return envSocketUrl;
+  }
+  const envApiUrl = cleanUrlString(import.meta.env.VITE_API_URL as string);
+  if (envApiUrl) {
+    return envApiUrl;
+  }
+  if (!isProd) {
+    return "http://localhost:10000";
+  }
+  return typeof window !== 'undefined' ? window.location.origin : "";
+};
+
+export const SOCKET_URL = resolveSocketUrl();
 
 export const getApiUrl = (path: string) => {
-  const baseUrl = API_BASE_URL;
+  const baseUrl = API_BASE_URL.replace(/\/+$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${baseUrl}${normalizedPath}`;
 };
+
+export function getFriendlyErrorMessage(err: any): string {
+  if (!err) return "An unexpected error occurred. Please try again.";
+  const msg = typeof err === "string" ? err : err?.message || String(err);
+
+  if (
+    msg === "Failed to fetch" ||
+    msg.includes("Failed to fetch") ||
+    msg.includes("NetworkError") ||
+    msg.includes("Load failed") ||
+    msg.includes("TypeError: Failed to fetch")
+  ) {
+    return "Unable to connect to the server. Please check your internet connection or try again later.";
+  }
+
+  return msg;
+}
+
+export async function safeJsonResponse<T = any>(res: Response): Promise<T> {
+  const rawText = await res.text();
+  const trimmed = rawText ? rawText.trim() : "";
+  let parsed: any = null;
+
+  if (trimmed.length > 0) {
+    if (trimmed.startsWith("<")) {
+      throw new Error(
+        "Backend service unreachable or API URL misconfigured. The server returned an HTML page instead of JSON."
+      );
+    }
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch (e) {
+      console.error("[safeJsonResponse] JSON parse error on response body:", trimmed.slice(0, 200));
+      throw new Error("Invalid response format received from server.");
+    }
+  }
+
+  if (!res.ok) {
+    const rawError =
+      (parsed && typeof parsed === "object" && (parsed.message || parsed.error)) ||
+      `HTTP Error ${res.status}: ${res.statusText || "Server error"}`;
+    throw new Error(typeof rawError === "string" ? rawError : String(rawError));
+  }
+
+  return (parsed !== null && parsed !== undefined ? parsed : {}) as T;
+}
+
+/**
+  Fetch wrapper with retry support for cold starts / network glitches.
+ */
+export async function apiFetch(
+  url: string,
+  options: RequestInit = {},
+  retries = 4,
+  delayMs = 1500
+): Promise<Response> {
+  let lastErr: any;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if ((response.status === 503 || response.status === 502 || response.status === 504) && attempt < retries) {
+        // Backend DB is initializing / server spinning up on free hosting
+        const currentDelay = delayMs * Math.pow(1.5, attempt);
+        await new Promise((r) => setTimeout(r, currentDelay));
+        continue;
+      }
+      return response;
+    } catch (err: any) {
+      lastErr = err;
+      if (attempt < retries) {
+        const currentDelay = delayMs * Math.pow(1.5, attempt);
+        await new Promise((r) => setTimeout(r, currentDelay));
+      }
+    }
+  }
+  throw lastErr;
+}
 
 export const config = {
   // Environment
@@ -18,4 +137,5 @@ export const config = {
 
   // Helper
   getApiUrl,
+  getFriendlyErrorMessage,
 };

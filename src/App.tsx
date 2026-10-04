@@ -31,7 +31,10 @@ const ProtectedRoute = ({ children, adminOnly = false }: { children: React.React
   const { user, profile, loading } = useAuth();
 
   if (loading) return <div className="flex items-center justify-center h-screen bg-slate-50 font-sans text-muted-foreground animate-pulse">Loading VIVI Portal...</div>;
-  if (!user) return <Navigate to="/" />;
+  if (!user) {
+    if (adminOnly) return <Navigate to="/staff" />;
+    return <Navigate to="/candidate-login" />;
+  }
 
   const isAnyAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'reg_admin';
 

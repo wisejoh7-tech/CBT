@@ -4,7 +4,7 @@ if (process.env.NODE_ENV !== "production") {
   dotenv.config();
 }
 
-const PORT = Number(process.env.PORT) || 5001;
+const PORT = Number(process.env.PORT) || 10000;
 console.log(`[BOOT] Initializing on PORT: ${PORT}`);
 console.log(`[BOOT] ENV Check: DB=${!!process.env.DATABASE_URL}, REDIS=${!!process.env.REDIS_URL}, JWT=${!!process.env.JWT_SECRET}`);
 
@@ -21,15 +21,16 @@ const optionalEnv = [
 if (process.env.NODE_ENV === 'production') {
   const missingRequired = requiredEnv.filter(k => !process.env[k]);
   if (missingRequired.length > 0) {
-    console.warn(`⚠️ [CONFIG WARN] Missing production environment variables: ${missingRequired.join(', ')}`);
-    console.warn(`👉 Please add these variables in your deployment dashboard (e.g. Render) to ensure full functionality.`);
+    console.warn(`[BOOT WARN] Missing recommended production environment variables: ${missingRequired.join(', ')}.`);
   }
 
   const missingOptional = optionalEnv.filter(k => !process.env[k]);
   if (missingOptional.length > 0) {
-    console.warn(`[BOOT WARN] Missing optional production environment variables: ${missingOptional.join(', ')}. Optional features may be degraded.`);
+    console.warn(`[BOOT WARN] Missing optional production environment variables: ${missingOptional.join(', ')}.`);
   }
 }
+
+const JWT_SECRET = process.env.JWT_SECRET || "vivi_cbt_default_jwt_secret_key_2026_production_fallback";
 
 export const config = {
   apiUrl: process.env.VITE_API_URL,
@@ -56,5 +57,5 @@ export const config = {
     phoneNumber: process.env.TWILIO_PHONE_NUMBER,
   },
   NODE_ENV: process.env.NODE_ENV || "development",
-  PORT: Number(process.env.PORT) || 5001,
+  PORT: Number(process.env.PORT) || 10000,
 } as const;

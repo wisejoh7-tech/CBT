@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/src/context/AuthContext';
 import { cn } from '@/src/lib/utils/utils';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 import { useAdminData } from './useAdminData';
 import { Candidate } from '@/src/types';
 
@@ -56,38 +56,30 @@ export default function Admin() {
   const handleDeleteLog = async (id: string) => {
     if (!confirm("Are you sure you want to permanently delete this log entry?")) return;
     try {
-      const res = await fetch(getApiUrl(`/analytics/logs/${id}`), {
+      const res = await apiFetch(getApiUrl(`/analytics/logs/${id}`), {
         method: 'DELETE',
         headers: getHeaders()
       });
-      if (res.ok) {
-        toast.success("Log entry removed");
-        setLogs((prev: any[]) => prev.filter(l => l.id !== id));
-      } else {
-        const data = await res.json();
-        toast.error(data.message || "Failed to delete log");
-      }
+      await safeJsonResponse(res);
+      toast.success("Log entry removed");
+      setLogs((prev: any[]) => prev.filter(l => l.id !== id));
     } catch (e) {
-      toast.error("Network error");
+      toast.error(getFriendlyErrorMessage(e));
     }
   };
 
   const handleClearAllLogs = async () => {
     if (!confirm("CRITICAL: This will permanently delete ALL system audit logs. Proceed?")) return;
     try {
-      const res = await fetch(getApiUrl('/analytics/logs'), {
+      const res = await apiFetch(getApiUrl('/analytics/logs'), {
         method: 'DELETE',
         headers: getHeaders()
       });
-      if (res.ok) {
-        toast.success("All logs cleared");
-        setLogs([]);
-      } else {
-        const data = await res.json();
-        toast.error(data.message || "Failed to clear logs");
-      }
+      await safeJsonResponse(res);
+      toast.success("All logs cleared");
+      setLogs([]);
     } catch (e) {
-      toast.error("Network error");
+      toast.error(getFriendlyErrorMessage(e));
     }
   };
 
@@ -197,7 +189,7 @@ export default function Admin() {
     if (!confirm("Initialize 100 seats for the exam hall?")) return;
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/center/seats/bulk'), {
+      const res = await apiFetch(getApiUrl('/center/seats/bulk'), {
         method: 'POST',
         headers: {
           ...getHeaders(),
@@ -206,16 +198,12 @@ export default function Admin() {
         body: JSON.stringify({ count: 100 })
       });
 
-      if (res.ok) {
-        toast.success("Hall initialized with 100 seats");
-        fetchData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || "Initialization failed");
-      }
+      await safeJsonResponse(res);
+      toast.success("Hall initialized with 100 seats");
+      fetchData();
     } catch (e) {
       console.error(e);
-      toast.error("Network error during initialization");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -223,7 +211,7 @@ export default function Admin() {
 
   const handleCreateExam = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch(getApiUrl('/exams'), {
+    const res = await apiFetch(getApiUrl('/exams'), {
       method: 'POST',
       headers: { ...getHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...newExam, createdBy: profile?.uid })
@@ -233,7 +221,7 @@ export default function Admin() {
 
   const handleDeleteExam = async (id: string) => {
     if (!confirm("Are you sure you want to delete this assessment? All associated questions will be removed.")) return;
-    const res = await fetch(getApiUrl(`/exams/${id}`), { method: 'DELETE', headers: getHeaders() });
+    const res = await apiFetch(getApiUrl(`/exams/${id}`), { method: 'DELETE', headers: getHeaders() });
     if (res.ok) {
       toast.success("Assessment deleted");
       fetchData();
@@ -245,7 +233,7 @@ export default function Admin() {
   const handleAddQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedExamId) return;
-    const res = await fetch(getApiUrl(`/exams/${selectedExamId}/questions`), {
+    const res = await apiFetch(getApiUrl(`/exams/${selectedExamId}/questions`), {
       method: 'POST',
       headers: { ...getHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify(newQuestion)
@@ -254,13 +242,13 @@ export default function Admin() {
   };
 
   const toggleSubjectStatus = async (id: string) => {
-    await fetch(getApiUrl(`/subjects/${id}`), { method: 'PUT', headers: getHeaders() });
+    await apiFetch(getApiUrl(`/subjects/${id}`), { method: 'PUT', headers: getHeaders() });
     fetchData();
   };
 
   const handleDeleteSubject = async (id: string) => {
     if (!confirm("Are you sure you want to delete this subject? This might affect existing exams.")) return;
-    const res = await fetch(getApiUrl(`/subjects/${id}`), { method: 'DELETE', headers: getHeaders() });
+    const res = await apiFetch(getApiUrl(`/subjects/${id}`), { method: 'DELETE', headers: getHeaders() });
     if (res.ok) {
       toast.success("Subject deleted");
       fetchData();
@@ -274,24 +262,19 @@ export default function Admin() {
     if (!newOfferedSubject.trim()) return;
 
     try {
-      const res = await fetch(getApiUrl('/subjects'), {
+      const res = await apiFetch(getApiUrl('/subjects'), {
         method: 'POST',
         headers: { ...getHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newOfferedSubject.trim() })
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        toast.success("Subject added");
-        setShowAddSubject(false);
-        setNewOfferedSubject('');
-        fetchData();
-      } else {
-        toast.error(data.message || "Failed to add subject");
-      }
+      await safeJsonResponse(res);
+      toast.success("Subject added");
+      setShowAddSubject(false);
+      setNewOfferedSubject('');
+      fetchData();
     } catch (err) {
-      toast.error("Network error while adding subject");
+      toast.error(getFriendlyErrorMessage(err));
     }
   };
 
@@ -334,22 +317,18 @@ export default function Admin() {
       if (!payload.examDate) delete (payload as any).examDate;
       if (!payload.examTime) delete (payload as any).examTime;
 
-      const res = await fetch(getApiUrl('/auth/candidate/register'), {
+      const res = await apiFetch(getApiUrl('/auth/candidate/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (res.ok) {
-        toast.success("Candidate registered successfully");
-        setShowAddCandidate(false);
-        setNewCandidate(initialCandidateState);
-        fetchData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || "Registration failed");
-      }
+      await safeJsonResponse(res);
+      toast.success("Candidate registered successfully");
+      setShowAddCandidate(false);
+      setNewCandidate(initialCandidateState);
+      fetchData();
     } catch (e) {
-      toast.error("Network error during registration");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -369,22 +348,18 @@ export default function Admin() {
 
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/auth/register'), {
+      const res = await apiFetch(getApiUrl('/auth/register'), {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(newStaff)
       });
-      if (res.ok) {
-        toast.success("Staff provisioned");
-        setShowAddStaff(false);
-        setNewStaff({ displayName: '', email: '', password: '', confirmPassword: '', role: 'admin' });
-        fetchData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || "Staff registration failed");
-      }
+      await safeJsonResponse(res);
+      toast.success("Staff provisioned");
+      setShowAddStaff(false);
+      setNewStaff({ displayName: '', email: '', password: '', confirmPassword: '', role: 'admin' });
+      fetchData();
     } catch (e) {
-      toast.error("Network error during registration");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -393,7 +368,7 @@ export default function Admin() {
   const handleBulkAssign = async (data: any) => {
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/candidates/bulk-assign'), {
+      const res = await apiFetch(getApiUrl('/candidates/bulk-assign'), {
         method: 'POST',
         headers: {
           ...getHeaders(),
@@ -401,16 +376,12 @@ export default function Admin() {
         },
         body: JSON.stringify(data)
       });
-      if (res.ok) {
-        toast.success("Assignment protocol complete");
-        setShowBulkAssign(false);
-        fetchData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || "Protocol failed");
-      }
+      await safeJsonResponse(res);
+      toast.success("Assignment protocol complete");
+      setShowBulkAssign(false);
+      fetchData();
     } catch (e) {
-      toast.error("Critical communication failure");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -420,20 +391,16 @@ export default function Admin() {
     if (!confirm("Push this assessment to all enrolled students?")) return;
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/candidates/push-exam'), {
+      const res = await apiFetch(getApiUrl('/candidates/push-exam'), {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify({ examId })
       });
-      if (res.ok) {
-        toast.success("Exam pushed successfully");
-        fetchData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || "Failed to push exam");
-      }
+      await safeJsonResponse(res);
+      toast.success("Exam pushed successfully");
+      fetchData();
     } catch (e) {
-      toast.error("Network error");
+      toast.error(getFriendlyErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -442,7 +409,7 @@ export default function Admin() {
   const handleUpdateCandidate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCandidate) return;
-    const res = await fetch(getApiUrl(`/candidates/${editingCandidate.examNumber}`), {
+    const res = await apiFetch(getApiUrl(`/candidates/${editingCandidate.examNumber}`), {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(editingCandidate)
@@ -458,7 +425,7 @@ export default function Admin() {
 
   const handleDeleteCandidate = async (examNumber: string) => {
     if (!confirm(`Permanently delete student ${examNumber}?`)) return;
-    const res = await fetch(getApiUrl(`/candidates/${examNumber}`), {
+    const res = await apiFetch(getApiUrl(`/candidates/${examNumber}`), {
       method: 'DELETE',
       headers: getHeaders()
     });
@@ -470,14 +437,14 @@ export default function Admin() {
 
   const handleDeleteStaff = async (id: string) => {
     if (!confirm("Revoke access for this staff?")) return;
-    await fetch(getApiUrl(`/auth/staff/${id}`), { method: 'DELETE', headers: getHeaders() });
+    await apiFetch(getApiUrl(`/auth/staff/${id}`), { method: 'DELETE', headers: getHeaders() });
     fetchData();
   };
 
   const handleDeleteQuestion = async (questionId: string) => {
     if (!selectedExamId) return;
     if (!confirm("Delete this assessment item?")) return;
-    const res = await fetch(getApiUrl(`/exams/${selectedExamId}/questions/${questionId}`), {
+    const res = await apiFetch(getApiUrl(`/exams/${selectedExamId}/questions/${questionId}`), {
       method: 'DELETE',
       headers: getHeaders()
     });
@@ -501,19 +468,15 @@ export default function Admin() {
   const handleReleaseResult = async (id: string) => {
     if (!confirm("Release this result to the student's dashboard and dispatch notifications?")) return;
     try {
-      const res = await fetch(getApiUrl(`/exams/attempts/${id}/release`), {
+      const res = await apiFetch(getApiUrl(`/exams/attempts/${id}/release`), {
         method: 'POST',
         headers: getHeaders()
       });
-      if (res.ok) {
-        toast.success("Result published and notifications sent");
-        fetchData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || "Release failed");
-      }
+      await safeJsonResponse(res);
+      toast.success("Result published and notifications sent");
+      fetchData();
     } catch (e) {
-      toast.error("Protocol failure");
+      toast.error(getFriendlyErrorMessage(e));
     }
   };
 

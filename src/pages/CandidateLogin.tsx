@@ -8,6 +8,7 @@ import { Label } from '@/lib/ui/label';
 import { GraduationCap, Shield, User, Monitor, Mail, Lock, Search, ArrowLeft, Menu, X, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/src/lib/utils/utils';
+import { getFriendlyErrorMessage } from '@/src/lib/api-config';
 import { Separator } from '@/lib/ui/separator';
 
 export default function CandidateLogin() {
@@ -27,7 +28,7 @@ export default function CandidateLogin() {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Credentials required.");
+      toast.error("Invalid input. Email and password are required.");
       return;
     }
 
@@ -35,24 +36,36 @@ export default function CandidateLogin() {
       await loginCandidateWithEmail(email, password);
       toast.success("Identity Verified. Accessing Portal...");
       navigate('/dashboard');
-    } catch (e) {
-      // Error handled in context
+    } catch (e: any) {
+      const msg = getFriendlyErrorMessage(e);
+      toast.error(msg, {
+        action: msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('register') ? {
+          label: 'Register',
+          onClick: () => navigate('/candidate-register')
+        } : undefined
+      });
     }
   };
 
   const handleExamNumberLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!examNumber) {
-      toast.error("Exam Number required.");
+    if (!examNumber.trim()) {
+      toast.error("Invalid input. Exam Number is required.");
       return;
     }
 
     try {
-      await loginWithExamNumber(examNumber);
+      await loginWithExamNumber(examNumber.trim());
       toast.success("Identity Verified. Opening Terminal...");
       navigate('/instructions/unified');
-    } catch (e) {
-      toast.error("Invalid Exam Number or Session inactive.");
+    } catch (e: any) {
+      const msg = getFriendlyErrorMessage(e);
+      toast.error(msg, {
+        action: msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('register') ? {
+          label: 'Register',
+          onClick: () => navigate('/candidate-register')
+        } : undefined
+      });
     }
   };
 
@@ -171,7 +184,7 @@ export default function CandidateLogin() {
                             value={examNumber}
                             onChange={e => setExamNumber(e.target.value)}
                             placeholder="Enter Exam Number."
-                            className="h-10 pl-8 rounded-2xl bg-slate-30 border-1 border-primary/10 focus:border-primary font-bold text-lg text-primary transition-all tracking-widest"
+                            className="h-10 pl-8 rounded-2xl bg-slate-30 border-1 border-primary/10 focus:border-primary font-bold text-lg text-primary transition-all tracking-widest placeholder:text-xs"
                             required
                           />
                         </div>
@@ -194,7 +207,7 @@ export default function CandidateLogin() {
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             placeholder="Enter Email"
-                            className="h-10 pl-6 rounded-2xl bg-slate-20 border-1 border-primary/10 focus:border-primary font-bold text-primary transition-all"
+                            className="h-10 pl-6 rounded-2xl bg-slate-20 border-1 border-primary/10 focus:border-primary font-bold text-primary transition-all placeholder:text-xs"
                             required
                           />
                         </div>
@@ -210,7 +223,7 @@ export default function CandidateLogin() {
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             placeholder="Enter Password"
-                            className="h-10 pl-6 pr-10 rounded-2xl bg-slate-20 border-1 border-primary/10 focus:border-primary font-bold text-primary transition-all"
+                            className="h-10 pl-6 pr-10 rounded-2xl bg-slate-20 border-1 border-primary/10 focus:border-primary font-bold text-primary transition-all placeholder:text-xs"
                             required
                           />
                           <button
@@ -247,9 +260,9 @@ export default function CandidateLogin() {
                 <Separator className="bg-primary/5" />
                 <button
                   onClick={() => navigate('/candidate-register')}
-                  className="w-full text-[10px] font-black text-primary/60 hover:text-primary transition-colors tracking-widest"
+                  className="w-full py-2 px-4 rounded-xl bg-primary/5 hover:bg-primary/10 border border-primary/20 text-[11px] font-black text-primary transition-all tracking-widest uppercase shadow-sm"
                 >
-                  NOT REGISTERED? CLICK HERE TO START
+                  USER NOT FOUND? CLICK HERE TO REGISTER
                 </button>
               </div>
             </div>

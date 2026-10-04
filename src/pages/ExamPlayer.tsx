@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils/utils';
 import { shuffleArray } from '@/src/lib/utils/shuffle';
-import { getApiUrl } from '@/src/lib/api-config';
+import { getApiUrl, safeJsonResponse, apiFetch } from '@/src/lib/api-config';
 
 export default function ExamPlayer() {
   const { examId } = useParams<{ examId: string }>();
@@ -93,7 +93,7 @@ export default function ExamPlayer() {
     setIsSaving(true);
 
     try {
-      await fetch(getApiUrl(`/exams/attempt/${currentAttemptId}`), {
+      await apiFetch(getApiUrl(`/exams/attempt/${currentAttemptId}`), {
         method: 'PUT',
         headers: getHeaders(),
         body: JSON.stringify(state)
@@ -178,7 +178,7 @@ export default function ExamPlayer() {
               ctx.drawImage(videoRefProctor.current, 0, 0, 160, 120);
               const snap = canvas.toDataURL('image/jpeg', 0.5);
 
-              await fetch(getApiUrl(`/exams/attempt/${currentAttemptId}/snapshots`), {
+              await apiFetch(getApiUrl(`/exams/attempt/${currentAttemptId}/snapshots`), {
                 method: 'POST',
                 headers: getHeaders(),
                 body: JSON.stringify({ snapshot: snap })
@@ -209,7 +209,7 @@ export default function ExamPlayer() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(getApiUrl(`/exams/attempt/${currentAttemptId}/submit`), {
+      const res = await apiFetch(getApiUrl(`/exams/attempt/${currentAttemptId}/submit`), {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify({ answers })
@@ -235,9 +235,8 @@ export default function ExamPlayer() {
       if (!user || !profile) return;
       try {
         setLoading(true);
-        const res = await fetch(getApiUrl('/exams'), { headers: getHeaders() });
-        if (!res.ok) throw new Error("Could not fetch examination list");
-        const allExams: any = await res.json();
+        const res = await apiFetch(getApiUrl('/exams'), { headers: getHeaders() });
+        const allExams: any = await safeJsonResponse(res);
 
         if (!Array.isArray(allExams)) {
            throw new Error("Invalid response from server");
@@ -268,9 +267,9 @@ export default function ExamPlayer() {
 
         const qMap: Record<string, Question[]> = {};
         for (const exam of filteredExams) {
-          const qRes = await fetch(getApiUrl(`/exams/${exam.id}`), { headers: getHeaders() });
+          const qRes = await apiFetch(getApiUrl(`/exams/${exam.id}`), { headers: getHeaders() });
           if (qRes.ok) {
-            const examData = await qRes.json();
+            const examData = await safeJsonResponse(qRes);
             // Randomization: Shuffle questions for each student
             const randomizedQuestions = shuffleArray<Question>(examData.questions || []);
             qMap[exam.id] = randomizedQuestions;
@@ -279,17 +278,12 @@ export default function ExamPlayer() {
         setQuestionsByExam(qMap);
 
         // Fetch or create attempt
-        const attRes = await fetch(getApiUrl(`/exams/${examId || 'unified'}/attempt`), {
+        const attRes = await apiFetch(getApiUrl(`/exams/${examId || 'unified'}/attempt`), {
           method: 'POST',
           headers: getHeaders()
         });
 
-        if (!attRes.ok) {
-           const errData = await attRes.json().catch(() => ({}));
-           throw new Error(errData.message || "Failed to initialize examination session");
-        }
-
-        const attempt: Attempt = await attRes.json();
+        const attempt: Attempt = await safeJsonResponse(attRes);
         setCurrentAttemptId(attempt.id);
 
         if (attempt.status === 'completed') {
