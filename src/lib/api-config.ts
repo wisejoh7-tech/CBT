@@ -46,7 +46,13 @@ const resolveApiBaseUrl = (): string => {
   if (!isProd) {
     return "http://localhost:10000";
   }
-  return typeof window !== 'undefined' ? window.location.origin : "";
+  if (typeof window !== 'undefined') {
+    console.warn(
+      `[API Config Warning] VITE_API_URL environment variable is missing or empty. Defaulting API_BASE_URL to '${window.location.origin}'. If your backend is hosted separately (e.g., on Render backend service), set VITE_API_URL in your build environment and rebuild.`
+    );
+    return window.location.origin;
+  }
+  return "";
 };
 
 export const API_BASE_URL = resolveApiBaseUrl();
@@ -106,6 +112,13 @@ export async function safeJsonResponse<T = any>(res: Response): Promise<T> {
       }
       if (res.status === 502 || res.status === 503 || res.status === 504) {
         throw new Error(`Backend service is temporarily unavailable or restarting (HTTP ${res.status}). Please try again in a moment.`);
+      }
+      const isMissingEnvApiUrl = !import.meta.env.VITE_API_URL;
+      const isSameOrigin = typeof window !== 'undefined' && API_BASE_URL === window.location.origin;
+      if (isMissingEnvApiUrl || isSameOrigin) {
+        throw new Error(
+          "Backend service unreachable or API URL misconfigured. VITE_API_URL environment variable is missing on your frontend deployment. Please set VITE_API_URL to your backend service URL on Render and rebuild."
+        );
       }
       throw new Error(
         "Backend service unreachable or API URL misconfigured. The server returned an HTML page instead of JSON."
