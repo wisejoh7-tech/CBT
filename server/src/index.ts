@@ -36,8 +36,13 @@ import { redisClient } from "./lib/services";
 
 const app = express();
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map(s => s.trim())
+const envOrigins = [
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : []),
+  ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : [])
+].map(s => s.trim()).filter(Boolean);
+
+const allowedOrigins = envOrigins.length > 0
+  ? envOrigins
   : ["https://my-exam-hvy7.onrender.com", "http://localhost:5173", "http://localhost:3000"];
 
 const isOriginAllowed = (origin: string | undefined): boolean => {
