@@ -30,6 +30,8 @@ export default function Home() {
             { label: 'CANDIDATE LOGIN', path: '/candidate-login' },
             { label: 'STAFF PORTAL', path: '/staff' },
             { label: 'ADMIN REGISTER', path: '/admin/auth' },
+            { label: 'LOGIN', path: '/candidate-login' },
+            { label: 'REGISTER', path: '/candidate-register' },
             { label: 'RESULTS', path: '/results' }
           ].map((item) => (
             <button
@@ -67,6 +69,7 @@ export default function Home() {
                 { label: 'Candidate Login', path: '/candidate-login' },
                 { label: 'Staff Portal', path: '/staff' },
                 { label: 'Admin Register', path: '/admin/auth' },
+                { label: 'Candidate Register', path: '/candidate-register' },
                 { label: 'Results', path: '/results' }
               ].map((item) => (
                 <button
@@ -110,6 +113,8 @@ export default function Home() {
             </Button>
             <Button onClick={() => navigate('/staff')} className="h-14 px-8 bg-slate-900 text-white rounded-2xl font-black text-sm tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all flex gap-2 items-center justify-center">
               Staff & Admin Portal <Lock className="w-4 h-4" />
+            <Button onClick={() => navigate('/candidate-login')} variant="outline" className="h-14 px-8 border-2 border-primary text-primary font-black text-sm tracking-widest bg-white hover:bg-slate-50 transition-all">
+              Candidate Login
             </Button>
           </motion.div>
         </div>
@@ -218,7 +223,6 @@ export default function Home() {
             {[
               { label: 'ABOUT', path: '/about' },
               { label: 'CONTACT', path: '/contact' },
-              { label: 'ADMIN REGISTER', path: '/admin/auth' },
               { label: 'STAFF PORTAL', path: '/staff' },
               { label: 'TERMS', path: '/terms' },
               { label: 'PRIVACY', path: '/privacy' }

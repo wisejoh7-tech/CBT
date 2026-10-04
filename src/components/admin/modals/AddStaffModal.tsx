@@ -107,6 +107,7 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({
             >
               <option value="admin">Administrator</option>
               <option value="reg_admin">Registry Officer</option>
+              <option value="super_admin">Super Administrator</option>
             </select>
           </div>
           <div className="flex gap-4 pt-4">

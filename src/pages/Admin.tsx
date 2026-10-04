@@ -168,7 +168,7 @@ export default function Admin() {
   };
 
   const [newCandidate, setNewCandidate] = useState(initialCandidateState);
-  const [newStaff, setNewStaff] = useState({ displayName: '', email: '', password: '', confirmPassword: '', role: 'admin' as 'admin' | 'reg_admin' });
+  const [newStaff, setNewStaff] = useState({ displayName: '', email: '', password: '', confirmPassword: '', role: 'admin' as 'admin' | 'reg_admin' | 'super_admin' });
   const [newOfferedSubject, setNewOfferedSubject] = useState('');
 
   useEffect(() => {
