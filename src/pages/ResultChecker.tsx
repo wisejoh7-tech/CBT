@@ -74,7 +74,7 @@ export default function ResultChecker() {
             <ArrowLeft className="w-4 h-4" /> HOME
           </button>
           <button onClick={() => navigate('/candidate-login')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CANDIDATE LOGIN</button>
-          <button onClick={() => navigate('/candidate-register')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">REGISTER</button>
+          <button onClick={() => navigate('/staff')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">STAFF PORTAL</button>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -108,10 +108,10 @@ export default function ResultChecker() {
                   CANDIDATE LOGIN
                 </button>
                 <button
-                  onClick={() => { navigate('/candidate-register'); setIsMenuOpen(false); }}
+                  onClick={() => { navigate('/staff'); setIsMenuOpen(false); }}
                   className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
                 >
-                  REGISTER
+                  STAFF PORTAL
                 </button>
               </div>
             </motion.div>
