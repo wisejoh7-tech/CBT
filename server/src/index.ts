@@ -175,7 +175,7 @@ app.use(helmet({
 }));
 
 // --- 3. PRIORITY ROUTES ---
-app.get("/health", (req, res) => {
+app.get(["/health", "/api/health"], (req, res) => {
   res.status(200).json({
     status: "ok",
     message: "Server is healthy",
@@ -194,7 +194,7 @@ app.use(ipBlocker);
 
 // Database availability middleware
 app.use((req, res, next) => {
-  const dbIgnoredPaths = ["/health", "/"];
+  const dbIgnoredPaths = ["/health", "/api/health", "/"];
   if (!AppDataSource.isInitialized && !dbIgnoredPaths.includes(req.path)) {
     return res.status(503).json({
       message: "System initializing. Please wait a moment...",
