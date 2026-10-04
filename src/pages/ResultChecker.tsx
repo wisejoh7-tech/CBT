@@ -73,8 +73,7 @@ export default function ResultChecker() {
           <button onClick={() => navigate('/')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-1">
             <ArrowLeft className="w-4 h-4" /> HOME
           </button>
-          <button onClick={() => navigate('/candidate-login')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CANDIDATE LOGIN</button>
-          <button onClick={() => navigate('/staff')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">STAFF PORTAL</button>
+          <button onClick={() => navigate('/candidate-login')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">LOGIN</button>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -105,13 +104,7 @@ export default function ResultChecker() {
                   onClick={() => { navigate('/candidate-login'); setIsMenuOpen(false); }}
                   className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
                 >
-                  CANDIDATE LOGIN
-                </button>
-                <button
-                  onClick={() => { navigate('/staff'); setIsMenuOpen(false); }}
-                  className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
-                >
-                  STAFF PORTAL
+                  LOGIN
                 </button>
               </div>
             </motion.div>
