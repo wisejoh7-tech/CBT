@@ -44,7 +44,7 @@ export const config = {
     port: Number(process.env.DB_PORT) || 5432,
   },
   redisUrl: process.env.REDIS_URL,
-  JWT_SECRET,
+  JWT_SECRET: process.env.JWT_SECRET || "default_jwt_secret_please_change_in_production",
   mail: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
