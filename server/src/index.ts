@@ -182,7 +182,8 @@ app.use(ipBlocker);
 // Database availability middleware
 app.use((req, res, next) => {
   const dbIgnoredPaths = ["/health", "/api/health", "/"];
-  if (!AppDataSource.isInitialized && !dbIgnoredPaths.includes(req.path)) {
+  const currentPath = req.path || req.originalUrl || "";
+  if (!AppDataSource.isInitialized && !dbIgnoredPaths.includes(currentPath)) {
     return res.status(503).json({
       message: "System initializing. Please wait a moment...",
       retryAfter: 5
@@ -195,7 +196,8 @@ app.use((req, res, next) => {
 const apiPrefixes = ["/auth", "/exams", "/analytics", "/center", "/candidates", "/subjects", "/api", "/health"];
 const isApiRequest = (req: express.Request): boolean => {
   const reqPath = req.path || "";
-  if (apiPrefixes.some(prefix => reqPath.startsWith(prefix))) {
+  const originalUrl = req.originalUrl || "";
+  if (apiPrefixes.some(prefix => reqPath.startsWith(prefix) || originalUrl.startsWith(prefix))) {
     return true;
   }
   const acceptHeader = req.headers.accept || "";
