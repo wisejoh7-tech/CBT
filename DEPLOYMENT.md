@@ -1,5 +1,65 @@
 # Deployment Guide - VIVI CBT Portal
 
+## Environment Variables Reference
+
+### Backend Web Service Environment Variables (`server/.env` / Render Node Service)
+
+| Variable | Required | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `NODE_ENV` | Yes | `development` | Service runtime environment (`production` or `development`) |
+| `PORT` | Yes | `10000` | Port for Express API server (Render defaults to `10000`) |
+| `DATABASE_URL` | Yes | - | PostgreSQL connection URL (e.g., `postgresql://user:pass@host:5432/dbname`) |
+| `JWT_SECRET` | Yes | - | Secret string used for signing and verifying JWT tokens |
+| `CORS_ORIGIN` | Recommended | - | Allowed frontend origin URL (e.g., `https://my-exam.onrender.com`) |
+| `ALLOWED_ORIGINS` | Optional | - | Comma-separated list of additional allowed origins |
+| `INITIAL_ADMIN_PASSWORD` | Optional | `admin123` | Password for initial seeded super admin account |
+| `MAIL_HOST` | Optional | - | SMTP server hostname (e.g., `smtp.gmail.com`) |
+| `MAIL_PORT` | Optional | `587` | SMTP server port (`587` for TLS/STARTTLS, `465` for SSL) |
+| `MAIL_USER` | Optional | - | SMTP user/email account |
+| `MAIL_PASS` | Optional | - | SMTP password or App Password |
+| `GEMINI_API_KEY` | Optional | - | Gemini API key for AI features |
+| `REDIS_URL` | Optional | - | Redis cache connection string |
+| `TWILIO_ACCOUNT_SID` | Optional | - | Twilio Account SID |
+| `TWILIO_AUTH_TOKEN` | Optional | - | Twilio Auth Token |
+| `TWILIO_PHONE_NUMBER` | Optional | - | Twilio Phone Number |
+
+#### Example Backend `.env`
+```env
+NODE_ENV=production
+PORT=10000
+DATABASE_URL=postgresql://username:password@dpg-xxxxxxxxxxxx-a/cbt_db
+JWT_SECRET=a_secure_jwt_secret_key_string
+CORS_ORIGIN=https://my-exam.onrender.com
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USER=your-email@gmail.com
+MAIL_PASS=your-app-password
+```
+
+---
+
+### Static Site Frontend Environment Variables (`.env` / Render Static Site)
+
+| Variable | Required | Description |
+| :--- | :--- | :--- |
+| `VITE_API_URL` | Yes | Public URL of the backend API service (e.g., `https://my-exam-backend.onrender.com`) |
+| `VITE_SOCKET_URL` | Yes | Public URL for WebSocket connection (e.g., `https://my-exam-backend.onrender.com`) |
+| `VITE_FIREBASE_API_KEY` | Optional | Firebase API Key |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Optional | Firebase Auth Domain |
+| `VITE_FIREBASE_PROJECT_ID` | Optional | Firebase Project ID |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Optional | Firebase Storage Bucket |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Optional | Firebase Messaging Sender ID |
+| `VITE_FIREBASE_APP_ID` | Optional | Firebase App ID |
+| `VITE_FIREBASE_MEASUREMENT_ID` | Optional | Firebase Measurement ID |
+
+#### Example Frontend `.env`
+```env
+VITE_API_URL=https://my-exam-backend.onrender.com
+VITE_SOCKET_URL=https://my-exam-backend.onrender.com
+```
+
+---
+
 ## Deploying to Render (Static Site)
 
 1. Connect your repository on [Render](https://render.com).
