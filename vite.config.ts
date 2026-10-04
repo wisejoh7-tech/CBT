@@ -65,7 +65,30 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: 'http://localhost:10000',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
+        '/auth': {
+          target: 'http://localhost:10000',
+          changeOrigin: true,
+        },
+        '/exams': {
+          target: 'http://localhost:10000',
+          changeOrigin: true,
+        },
+        '/analytics': {
+          target: 'http://localhost:10000',
+          changeOrigin: true,
+        },
+        '/center': {
+          target: 'http://localhost:10000',
+          changeOrigin: true,
+        },
+        '/candidates': {
+          target: 'http://localhost:10000',
+          changeOrigin: true,
+        },
+        '/subjects': {
+          target: 'http://localhost:10000',
+          changeOrigin: true,
         },
         '/socket.io': {
           target: 'http://localhost:10000',

@@ -2,7 +2,23 @@ const isProd = import.meta.env.PROD;
 
 const cleanUrlString = (rawUrl?: string): string | null => {
   if (!rawUrl || typeof rawUrl !== 'string') return null;
-  const str = rawUrl.trim();
+  let str = rawUrl.trim();
+  if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+    str = str.slice(1, -1).trim();
+  }
+  if (!str || str === 'undefined' || str === 'null') return null;
+
+  // Handle relative path (e.g. "/api" or "/backend")
+  if (str.startsWith("/")) {
+    return str.replace(/\/+$/, "");
+  }
+
+  // Handle protocol-relative URLs (e.g. "//my-backend.onrender.com")
+  if (str.startsWith("//")) {
+    return `https:${str.replace(/\/+$/, "")}`;
+  }
+
+  // Handle full HTTP / HTTPS URLs
   const httpMatch = str.match(/(https?:\/\/[^\s"'<]+)/i);
   if (httpMatch) {
     return httpMatch[1].replace(/\/+$/, "");
@@ -10,13 +26,21 @@ const cleanUrlString = (rawUrl?: string): string | null => {
   if (str.startsWith("http://") || str.startsWith("https://")) {
     return str.replace(/\/+$/, "");
   }
+
+  // Handle bare domains (e.g. "my-exam-backend.onrender.com" or "localhost:10000")
+  if (str.includes(".") || str.includes("localhost") || str.includes("127.0.0.1")) {
+    const isLocal = str.includes("localhost") || str.includes("127.0.0.1");
+    const protocol = isLocal ? "http://" : "https://";
+    return `${protocol}${str.replace(/\/+$/, "")}`;
+  }
+
   return null;
 };
 
 // Determine API Base URL with fallback logic
 const resolveApiBaseUrl = (): string => {
   const envUrl = cleanUrlString(import.meta.env.VITE_API_URL as string);
-  if (envUrl) {
+  if (envUrl !== null) {
     return envUrl;
   }
   if (!isProd) {
@@ -29,11 +53,11 @@ export const API_BASE_URL = resolveApiBaseUrl();
 
 const resolveSocketUrl = (): string => {
   const envSocketUrl = cleanUrlString(import.meta.env.VITE_SOCKET_URL as string);
-  if (envSocketUrl) {
+  if (envSocketUrl !== null) {
     return envSocketUrl;
   }
   const envApiUrl = cleanUrlString(import.meta.env.VITE_API_URL as string);
-  if (envApiUrl) {
+  if (envApiUrl !== null && (envApiUrl.startsWith("http") || envApiUrl.startsWith("//"))) {
     return envApiUrl;
   }
   if (!isProd) {
@@ -47,6 +71,9 @@ export const SOCKET_URL = resolveSocketUrl();
 export const getApiUrl = (path: string) => {
   const baseUrl = API_BASE_URL.replace(/\/+$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  if (!baseUrl) {
+    return normalizedPath;
+  }
   return `${baseUrl}${normalizedPath}`;
 };
 

@@ -191,6 +191,20 @@ app.use((req, res, next) => {
   next();
 });
 
+// Helper to identify API / JSON requests
+const apiPrefixes = ["/auth", "/exams", "/analytics", "/center", "/candidates", "/subjects", "/api", "/health"];
+const isApiRequest = (req: express.Request): boolean => {
+  const reqPath = req.path || "";
+  if (apiPrefixes.some(prefix => reqPath.startsWith(prefix))) {
+    return true;
+  }
+  const acceptHeader = req.headers.accept || "";
+  if (acceptHeader.includes("application/json")) {
+    return true;
+  }
+  return false;
+};
+
 // --- 4. APPLICATION ROUTES ---
 app.use("/auth", authRoutes);
 app.use("/exams", examRoutes);
@@ -200,6 +214,7 @@ app.use("/candidates", candidateRoutes);
 app.use("/subjects", subjectRoutes);
 
 // Mount under /api prefix as well for standardized API requests
+// Mount API routes under /api namespace as well
 app.use("/api/auth", authRoutes);
 app.use("/api/exams", examRoutes);
 app.use("/api/analytics", analyticsRoutes);
@@ -208,11 +223,14 @@ app.use("/api/candidates", candidateRoutes);
 app.use("/api/subjects", subjectRoutes);
 
 // API 404 handler: Ensure unmatched API routes return JSON, not HTML
-app.use(["/auth", "/exams", "/analytics", "/center", "/candidates", "/subjects", "/api"], (req, res) => {
-  res.status(404).json({
-    error: "Not Found",
-    message: `API endpoint '${req.originalUrl}' not found`
-  });
+app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (isApiRequest(req)) {
+    return res.status(404).json({
+      error: "Not Found",
+      message: `API endpoint '${req.originalUrl}' not found`
+    });
+  }
+  next();
 });
 
 // --- STATIC FRONTEND ASSETS & SPA FALLBACK ---
@@ -227,9 +245,11 @@ if (fs.existsSync(distPath)) {
 
 // Fallback to index.html for SPA client-side routes
 app.get("*", (req, res, next) => {
-  const isApiRoute = ["/auth", "/exams", "/analytics", "/center", "/candidates", "/subjects", "/health"].some(route => req.path.startsWith(route));
-  if (isApiRoute) {
-    return next();
+  if (isApiRequest(req)) {
+    return res.status(404).json({
+      error: "Not Found",
+      message: `API endpoint '${req.originalUrl}' not found`
+    });
   }
   const indexPath = path.join(distPath, "index.html");
   if (fs.existsSync(indexPath)) {
@@ -310,5 +330,15 @@ initializeServices();
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(`Runtime Error: ${err.message}`);
-  res.status(err.status || 500).json({ message: "Internal Server Error" });
+  const statusCode = err.status || err.statusCode || 500;
+  if (isApiRequest(req)) {
+    return res.status(statusCode).json({
+      error: err.name || "InternalServerError",
+      message: err.message || "Internal Server Error"
+    });
+  }
+  res.status(statusCode).json({
+    error: err.name || "InternalServerError",
+    message: err.message || "Internal Server Error"
+  });
 });
