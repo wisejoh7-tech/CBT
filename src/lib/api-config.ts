@@ -74,6 +74,12 @@ export async function safeJsonResponse<T = any>(res: Response): Promise<T> {
 
   if (trimmed.length > 0) {
     if (trimmed.startsWith("<")) {
+      if (res.status === 404) {
+        throw new Error("API endpoint not found (HTTP 404). Please verify your backend server deployment and route configuration.");
+      }
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        throw new Error(`Backend service is temporarily unavailable or restarting (HTTP ${res.status}). Please try again in a moment.`);
+      }
       throw new Error(
         "Backend service unreachable or API URL misconfigured. The server returned an HTML page instead of JSON."
       );

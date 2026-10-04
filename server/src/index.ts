@@ -199,6 +199,14 @@ app.use("/center", centerRoutes);
 app.use("/candidates", candidateRoutes);
 app.use("/subjects", subjectRoutes);
 
+// API 404 handler: Ensure unmatched API routes return JSON, not HTML
+app.use(["/auth", "/exams", "/analytics", "/center", "/candidates", "/subjects", "/api"], (req, res) => {
+  res.status(404).json({
+    error: "Not Found",
+    message: `API endpoint '${req.originalUrl}' not found`
+  });
+});
+
 // --- STATIC FRONTEND ASSETS & SPA FALLBACK ---
 const distPath = path.resolve(__dirname, "../../dist");
 
