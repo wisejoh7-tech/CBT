@@ -6,21 +6,25 @@ dotenv.config();
 
 async function testEmail() {
   console.log("--- Email Configuration ---");
+  console.log("Resend API Key:", config.resendApiKey ? "****" : "MISSING");
+  console.log("Resend From Email:", config.resendFromEmail || "NOT SET");
   console.log("Host:", config.mail.host);
   console.log("Port:", config.mail.port);
   console.log("User:", config.mail.user);
   console.log("Pass:", config.mail.pass ? "****" : "MISSING");
 
   try {
-    console.log("Verifying transporter...");
-    await transporter.verify();
-    console.log("✅ Transporter is ready to take messages");
+    if (!config.resendApiKey && (config.mail.user && config.mail.pass)) {
+      console.log("Verifying transporter...");
+      await transporter.verify();
+      console.log("✅ Transporter is ready to take messages");
+    }
 
     console.log("Sending test email using sendEmailSafely...");
     const success = await sendEmailSafely({
-      to: config.mail.user || "test@example.com",
-      subject: "Test Email",
-      text: "If you see this, your email configuration is working!",
+      to: config.mail.user || "delivered@resend.dev",
+      subject: "Test Email via Resend / VIVI CBT",
+      text: "If you see this, your Resend/Email configuration is working!",
     });
 
     if (success) {
