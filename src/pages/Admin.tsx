@@ -571,6 +571,14 @@ export default function Admin() {
              <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center font-black text-primary/20 text-xs shadow-inner">
                {profile?.displayName?.charAt(0)}
              </div>
+             <button
+               onClick={() => { logOut?.(); navigate('/'); }}
+               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all font-black text-[10px] tracking-wider ml-2"
+               title="Logout"
+             >
+               <LogOut className="w-3.5 h-3.5" />
+               <span className="hidden sm:inline">LOGOUT</span>
+             </button>
           </div>
         </header>
 

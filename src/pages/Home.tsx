@@ -2,16 +2,53 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/lib/ui/button';
+import { Input } from '@/lib/ui/input';
+import { Label } from '@/lib/ui/label';
 import { Card } from '@/lib/ui/card';
-import { GraduationCap, BookOpen, CheckCircle, ArrowRight, User, Lock, Monitor, Zap, FileCheck, Globe, Menu, X, ShieldCheck } from 'lucide-react';
+import { GraduationCap, BookOpen, CheckCircle, ArrowRight, User, Lock, Monitor, Zap, FileCheck, Globe, Menu, X, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/src/context/AuthContext';
+import { toast } from 'sonner';
+import { getFriendlyErrorMessage } from '@/src/lib/api-config';
 
 export default function Home() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, loginCandidateWithEmail } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'reg_admin';
+
+  const handleHomeLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!identifier.trim()) {
+      toast.error("Please enter your Examination Number or Email Address.");
+      return;
+    }
+    if (!password) {
+      toast.error("Please enter your Password.");
+      return;
+    }
+
+    setLoginLoading(true);
+    try {
+      const userProfile = await loginCandidateWithEmail(identifier.trim(), password);
+      toast.success("Identity Verified. Accessing Portal...");
+      const role = userProfile?.role;
+      const isAdminUser = role === 'admin' || role === 'super_admin' || role === 'reg_admin';
+      if (isAdminUser) {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      toast.error(getFriendlyErrorMessage(err));
+    } finally {
+      setLoginLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50/20 selection:bg-primary/10 font-sans relative antialiased tracking-tight">
@@ -82,34 +119,104 @@ export default function Home() {
 
       {/* Hero Section */}
 
-      <header className="relative pt-24 pb-16 px-8 bg-slate-50/10 overflow-hidden min-h-[60vh] flex items-center">
+      <header className="relative pt-20 pb-16 px-8 bg-slate-50/10 overflow-hidden min-h-[65vh] flex items-center">
 
         <div className="absolute inset-0 z-0 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white/20 to-transparent" />
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:40px_40px] opacity-[0.05]" />
         </div>
-        <div className="container mx-auto text-center max-w-4xl relative z-10">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 mb-8 px-6 py-2 rounded-full border-2  bg-white shadow-md  border-primary/100">
-            <ShieldCheck className="w-4 h-4 text-primary" />
-            <span className="text-[10px] font-black tracking-[0.3em] text-primary border-primary/100 border-2">Standard Examination Portal</span>
-          </motion.div>
+        <div className="container mx-auto max-w-6xl relative z-10">
+          <div className="grid lg:grid-cols-12 gap-12 items-center">
+            <div className="lg:col-span-7 text-center lg:text-left">
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 mb-6 px-5 py-2 rounded-full border-2 bg-white shadow-md border-primary/20">
+                <ShieldCheck className="w-4 h-4 text-primary" />
+                <span className="text-[10px] font-black tracking-[0.2em] text-primary">Standard Examination Portal</span>
+              </motion.div>
 
-          <motion.h4 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-2xl md:text-1xl font-black text-blue/90 tracking-tighter leading-[1.8] mb-8 ">
-            The Gold  Standard <br/> <span className="text-blue/90">In CBT Excellence</span>
-          </motion.h4>
+              <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight mb-6">
+                The Gold Standard <br/> <span className="text-primary">In CBT Excellence</span>
+              </motion.h1>
 
-          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-sm md:text-base text-blue/100 font-large mb-12 max-w-2xl text-bold mx-auto leading-relaxed">
-            Welcome to VIVI CBT Systems, where cutting-edge technology meets academic excellence. Experience a secure, fair, and seamless examination environment.
-          </motion.p>
+              <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-sm md:text-base text-slate-600 font-medium mb-8 max-w-xl leading-relaxed">
+                Welcome to VIVI CBT Systems, where cutting-edge technology meets academic excellence. Experience a secure, fair, and seamless examination environment.
+              </motion.p>
 
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-col sm:flex-row justify-center gap-4 flex-wrap">
-            <Button onClick={() => navigate('/candidate-login')} className="h-14 px-8 bg-primary text-white rounded-2xl font-black text-sm tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 active:bg-green-700 transition-all flex gap-2 items-center justify-center">
-              Login <ArrowRight className="w-5 h-5" />
-            </Button>
-            <Button onClick={() => navigate('/candidate-register')} variant="outline" className="h-14 px-8 border-2 border-primary text-primary font-black text-sm tracking-widest bg-white hover:bg-slate-50 transition-all">
-              Register
-            </Button>
-          </motion.div>
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4 flex-wrap">
+                <Button onClick={() => navigate('/results')} variant="outline" className="h-12 px-8 border-2 border-primary/20 text-primary font-black text-xs tracking-widest bg-white hover:bg-slate-50 transition-all">
+                  CHECK RESULT
+                </Button>
+                <Button onClick={() => navigate('/candidate-login')} variant="ghost" className="h-12 px-6 text-primary font-black text-xs tracking-widest hover:bg-primary/5 transition-all flex items-center gap-2">
+                  FULL LOGIN PAGE <ArrowRight className="w-4 h-4" />
+                </Button>
+              </motion.div>
+            </div>
+
+            {/* Student Login Form Card */}
+            <div className="lg:col-span-5 w-full max-w-md mx-auto">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                <Card className="p-6 md:p-8 bg-white rounded-[28px] border-2 border-primary/20 shadow-2xl relative overflow-hidden">
+                  <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                    <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                      <GraduationCap className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-sm text-slate-900 tracking-wider uppercase">Student Portal Login</h3>
+                      <p className="text-[10px] text-slate-400 font-semibold">Enter your credentials to access examination</p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleHomeLogin} className="space-y-5">
+                    <div className="space-y-2 text-left">
+                      <Label className="text-[10px] font-black text-primary/70 tracking-widest uppercase">
+                        Examination Number or Email
+                      </Label>
+                      <div className="relative group">
+                        <Input
+                          type="text"
+                          value={identifier}
+                          onChange={(e) => setIdentifier(e.target.value)}
+                          placeholder="Exam Number or Email"
+                          className="h-11 px-4 rounded-xl bg-slate-50 border-primary/10 focus:border-primary font-bold text-sm text-slate-800 transition-all placeholder:text-xs placeholder:font-normal"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-left">
+                      <Label className="text-[10px] font-black text-primary/70 tracking-widest uppercase">
+                        Password
+                      </Label>
+                      <div className="relative group">
+                        <Input
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Enter your password"
+                          className="h-11 pl-4 pr-10 rounded-xl bg-slate-50 border-primary/10 focus:border-primary font-bold text-sm text-slate-800 transition-all placeholder:text-xs placeholder:font-normal"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={loginLoading}
+                      className="w-full h-12 bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-xs tracking-widest uppercase shadow-lg shadow-primary/20 transition-all"
+                    >
+                      {loginLoading ? "VERIFYING..." : "LOGIN TO PORTAL"}
+                    </Button>
+                  </form>
+                </Card>
+              </motion.div>
+            </div>
+          </div>
         </div>
       </header>
 
