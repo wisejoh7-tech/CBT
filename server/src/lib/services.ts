@@ -4,6 +4,7 @@ import "reflect-metadata";
 import { createClient } from "redis";
 import { createAdapter } from "@socket.io/redis-adapter";
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { config } from "./config"; // named import (matches src/lib/config.ts)
 import { logger } from "./logger";
 
@@ -88,9 +89,11 @@ export const redisClient = {
 };
 
 // --- Mailer Setup ---
+export const resend = config.resendApiKey ? new Resend(config.resendApiKey) : null;
+
 const mailUser = config.mail?.user;
 const mailPass = config.mail?.pass;
-const mailHost = config.mail?.host || "smtp.gmail.com";
+const mailHost = config.mail?.host || (config.resendApiKey ? "smtp.resend.com" : "smtp.gmail.com");
 const mailPort = Number(config.mail?.port) || 587;
 const isSecure = mailPort === 465;
 
@@ -98,10 +101,10 @@ export const transporter = nodemailer.createTransport({
   host: mailHost,
   port: mailPort,
   secure: isSecure, // true for 465, false for other ports (e.g. 587 with STARTTLS)
-  ...(mailUser && mailPass ? {
+  ...((mailUser || config.resendApiKey) && (mailPass || config.resendApiKey) ? {
     auth: {
-      user: mailUser,
-      pass: mailPass,
+      user: mailUser || "resend",
+      pass: mailPass || config.resendApiKey,
     },
   } : {}),
   tls: {
@@ -111,19 +114,67 @@ export const transporter = nodemailer.createTransport({
 });
 
 export const sendEmailSafely = async (options: nodemailer.SendMailOptions): Promise<boolean> => {
-  if (!config.mail?.user || !config.mail?.pass) {
-    logger.warn(`[Mailer] MAIL_USER or MAIL_PASS not configured. Skipping email to ${options.to}.`);
+  const recipient = Array.isArray(options.to)
+    ? options.to.map((item) => (typeof item === "string" ? item : item.address)).join(", ")
+    : typeof options.to === "string"
+      ? options.to
+      : options.to && typeof options.to === "object" && "address" in options.to
+        ? options.to.address
+        : "";
+
+  // Strategy 1: Resend HTTP API SDK
+  if (resend && config.resendApiKey) {
+    try {
+      const fromAddress =
+        (options.from as string) ||
+        config.resendFromEmail ||
+        "VIVI CBT Support <onboarding@resend.dev>";
+
+      const recipients = recipient ? recipient.split(",").map((s) => s.trim()) : [];
+
+      const { data, error } = await resend.emails.send({
+        from: fromAddress,
+        to: recipients,
+        subject: options.subject || "VIVI CBT Notification",
+        html: (options.html as string) || (options.text as string) || "",
+        text: (options.text as string) || undefined,
+      });
+
+      if (error) {
+        logger.error(`[Mailer/Resend] Failed to send email to ${recipient}:`, error.message || error);
+        return false;
+      }
+
+      logger.info(`[Mailer/Resend] Email sent successfully to ${recipient} (id: ${data?.id})`);
+      return true;
+    } catch (err: any) {
+      logger.error(`[Mailer/Resend] Exception sending email to ${recipient}:`, err.message || err);
+      return false;
+    }
+  }
+
+  // Strategy 2: Nodemailer SMTP Transporter
+  const hasSmtpConfig = (config.mail?.user && config.mail?.pass) || mailHost === "smtp.resend.com";
+  if (!hasSmtpConfig) {
+    logger.warn(`[Mailer] Neither RESEND_API_KEY nor SMTP credentials configured. Skipping email to ${recipient}.`);
     return false;
   }
+
   try {
-    const fromAddress = config.mail.user;
+    const fromAddress =
+      (options.from as string) ||
+      config.resendFromEmail ||
+      config.mail?.user ||
+      "VIVI CBT Support <onboarding@resend.dev>";
+
     await transporter.sendMail({
-      from: `"VIVI CBT Support" <${fromAddress}>`,
+      from: fromAddress,
       ...options,
     });
+    logger.info(`[Mailer/SMTP] Email sent successfully to ${recipient}`);
     return true;
   } catch (err: any) {
-    logger.error(`[Mailer] Failed to send email to ${options.to}:`, err.message || err);
+    logger.error(`[Mailer/SMTP] Failed to send email to ${recipient}:`, err.message || err);
     return false;
   }
 };

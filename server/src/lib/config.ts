@@ -45,6 +45,8 @@ export const config = {
   },
   redisUrl: process.env.REDIS_URL,
   JWT_SECRET: process.env.JWT_SECRET || "default_jwt_secret_please_change_in_production",
+  resendApiKey: process.env.RESEND_API_KEY,
+  resendFromEmail: process.env.RESEND_FROM_EMAIL || process.env.MAIL_USER,
   mail: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,

@@ -13,10 +13,12 @@
 | `CORS_ORIGIN` | Recommended | - | Allowed frontend origin URL (e.g., `https://my-exam.onrender.com`) |
 | `ALLOWED_ORIGINS` | Optional | - | Comma-separated list of additional allowed origins |
 | `INITIAL_ADMIN_PASSWORD` | Optional | `admin123` | Password for initial seeded super admin account |
-| `MAIL_HOST` | Optional | - | SMTP server hostname (e.g., `smtp.gmail.com`) |
+| `RESEND_API_KEY` | Optional | - | Resend API key (e.g., `re_123456789`) |
+| `RESEND_FROM_EMAIL` | Optional | - | Resend sender address (e.g., `VIVI CBT Support <onboarding@resend.dev>`) |
+| `MAIL_HOST` | Optional | - | SMTP server hostname (e.g., `smtp.resend.com` or `smtp.gmail.com`) |
 | `MAIL_PORT` | Optional | `587` | SMTP server port (`587` for TLS/STARTTLS, `465` for SSL) |
-| `MAIL_USER` | Optional | - | SMTP user/email account |
-| `MAIL_PASS` | Optional | - | SMTP password or App Password |
+| `MAIL_USER` | Optional | - | SMTP user/email account (`resend` when using Resend SMTP) |
+| `MAIL_PASS` | Optional | - | SMTP password or App Password (`re_123456789` when using Resend SMTP) |
 | `GEMINI_API_KEY` | Optional | - | Gemini API key for AI features |
 | `REDIS_URL` | Optional | - | Redis cache connection string |
 | `TWILIO_ACCOUNT_SID` | Optional | - | Twilio Account SID |
@@ -30,10 +32,12 @@ PORT=10000
 DATABASE_URL=postgresql://username:password@dpg-xxxxxxxxxxxx-a/cbt_db
 JWT_SECRET=a_secure_jwt_secret_key_string
 CORS_ORIGIN=https://my-exam.onrender.com
-MAIL_HOST=smtp.gmail.com
+RESEND_API_KEY=re_123456789
+RESEND_FROM_EMAIL=VIVI CBT Support <onboarding@resend.dev>
+MAIL_HOST=smtp.resend.com
 MAIL_PORT=587
-MAIL_USER=your-email@gmail.com
-MAIL_PASS=your-app-password
+MAIL_USER=resend
+MAIL_PASS=re_123456789
 ```
 
 ---
