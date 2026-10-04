@@ -66,9 +66,9 @@ const corsOptions: cors.CorsOptions = {
       return callback(null, true);
     }
     if (isOriginAllowed(origin)) {
-      return callback(null, origin);
+      return callback(null, true);
     }
-    return callback(null, origin);
+    return callback(null, false);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
@@ -86,25 +86,7 @@ const corsOptions: cors.CorsOptions = {
   optionsSuccessStatus: 200,
 };
 
-// --- 1. FIRST-PRIORITY CORS & HEADERS CONFIGURATION ---
-app.use((req, res, next) => {
-  const requestingOrigin = req.headers.origin;
-  if (requestingOrigin) {
-    res.setHeader("Access-Control-Allow-Origin", requestingOrigin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-  } else {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-  }
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Allow-Headers, Access-Control-Request-Method, Access-Control-Request-Headers");
-  res.setHeader("Access-Control-Max-Age", "86400");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-  next();
-});
-
+// --- 1. FIRST-PRIORITY CORS CONFIGURATION ---
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
@@ -119,9 +101,9 @@ const io = new Server(httpServer, {
         return callback(null, true);
       }
       if (isOriginAllowed(requestOrigin)) {
-        return callback(null, requestOrigin);
+        return callback(null, true);
       }
-      return callback(null, requestOrigin);
+      return callback(null, false);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: [
