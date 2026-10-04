@@ -38,12 +38,7 @@ export default function CandidateLogin() {
       navigate('/dashboard');
     } catch (e: any) {
       const msg = getFriendlyErrorMessage(e);
-      toast.error(msg, {
-        action: msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('register') ? {
-          label: 'Register',
-          onClick: () => navigate('/candidate-register')
-        } : undefined
-      });
+      toast.error(msg);
     }
   };
 
@@ -60,12 +55,7 @@ export default function CandidateLogin() {
       navigate('/instructions/unified');
     } catch (e: any) {
       const msg = getFriendlyErrorMessage(e);
-      toast.error(msg, {
-        action: msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('register') ? {
-          label: 'Register',
-          onClick: () => navigate('/candidate-register')
-        } : undefined
-      });
+      toast.error(msg);
     }
   };
 
@@ -97,7 +87,7 @@ export default function CandidateLogin() {
           <button onClick={() => navigate('/')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors flex items-center gap-1">
             <ArrowLeft className="w-4 h-4" /> HOME
           </button>
-          <button onClick={() => navigate('/candidate-register')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">REGISTER</button>
+          <button onClick={() => navigate('/staff')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">STAFF PORTAL</button>
           <button onClick={() => navigate('/results')} className="text-[11px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">CHECK RESULT</button>
         </div>
 
@@ -126,10 +116,10 @@ export default function CandidateLogin() {
                   <ArrowLeft className="w-4 h-4" /> HOME
                 </button>
                 <button
-                  onClick={() => { navigate('/candidate-register'); setIsMenuOpen(false); }}
+                  onClick={() => { navigate('/staff'); setIsMenuOpen(false); }}
                   className="text-left text-[14px] font-black tracking-widest text-primary/40 hover:text-primary py-2"
                 >
-                  REGISTER
+                  STAFF PORTAL
                 </button>
                 <button
                   onClick={() => { navigate('/results'); setIsMenuOpen(false); }}
@@ -258,12 +248,10 @@ export default function CandidateLogin() {
                   <Search className="w-4 h-4" /> CHECK MY RESULT (EXAM NUMBER)
                 </button>
                 <Separator className="bg-primary/5" />
-                <button
-                  onClick={() => navigate('/candidate-register')}
-                  className="w-full py-2 px-4 rounded-xl bg-primary/5 hover:bg-primary/10 border border-primary/20 text-[11px] font-black text-primary transition-all tracking-widest uppercase shadow-sm"
-                >
-                  USER NOT FOUND? CLICK HERE TO REGISTER
-                </button>
+                <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-left text-[10px] text-amber-900 font-medium leading-relaxed">
+                  <span className="font-bold block mb-0.5 uppercase tracking-wider text-[9px] text-amber-800">Registration Notice</span>
+                  Student registration must be performed by authorized staff or admin. Please contact your institution administrator to enroll.
+                </div>
               </div>
             </div>
           </div>

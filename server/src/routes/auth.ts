@@ -9,6 +9,7 @@ import { Candidate } from "../entities/Candidate";
 import { createLog, logger } from "../lib/logger";
 import { redisClient, transporter, sendEmailSafely } from "../lib/services";
 import { config } from "../lib/config";
+import { authenticateJWT, authorizeRoles } from "../middleware/auth";
 
 const router = Router();
 
@@ -116,8 +117,8 @@ router.post("/candidate/send-token", async (req, res) => {
   }
 });
 
-// Candidate Final Registration
-router.post("/candidate/register", async (req, res) => {
+// Candidate Final Registration (Staff and Admin only)
+router.post("/candidate/register", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_admin", "staff"), async (req, res) => {
   const registerSchema = z.object({
     email: z.string().email("Invalid email address"),
     token: z.string().min(1, "Token is required"),
@@ -269,11 +270,11 @@ router.post("/candidate/register", async (req, res) => {
   }
 });
 
-// Candidate Login (Email/Password)
+// Candidate Login (Email or Exam Number / Password)
 router.post("/candidate/login-email", async (req, res) => {
   try {
     const loginSchema = z.object({
-      email: z.string().email("Invalid email format"),
+      email: z.string().min(1, "Email or Examination Number is required"),
       password: z.string().min(1, "Password is required"),
     });
 
@@ -283,11 +284,11 @@ router.post("/candidate/login-email", async (req, res) => {
     }
 
     const { email, password } = validation.data;
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanIdentifier = email.trim().toLowerCase();
     const candidateRepository = AppDataSource.getRepository(Candidate);
 
     const candidate = await candidateRepository.createQueryBuilder("c")
-      .where("LOWER(c.email) = LOWER(:email)", { email: cleanEmail })
+      .where("LOWER(c.email) = LOWER(:identifier) OR LOWER(c.examNumber) = LOWER(:identifier)", { identifier: cleanIdentifier })
       .addSelect("c.password")
       .getOne();
 
@@ -295,7 +296,7 @@ router.post("/candidate/login-email", async (req, res) => {
       // Fallback: Check staff/admin User repository if candidate account is not found
       const userRepository = AppDataSource.getRepository(User);
       const user = await userRepository.createQueryBuilder("u")
-        .where("LOWER(u.email) = LOWER(:email)", { email: cleanEmail })
+        .where("LOWER(u.email) = LOWER(:identifier)", { identifier: cleanIdentifier })
         .addSelect("u.password")
         .getOne();
 
@@ -320,7 +321,7 @@ router.post("/candidate/login-email", async (req, res) => {
         }
       }
 
-      return res.status(404).json({ message: "User not found or invalid credentials provided. Click to register if you don't have an account." });
+      return res.status(404).json({ message: "User not found or invalid credentials provided. Contact staff or admin for account registration." });
     }
 
     if (!candidate.password) {
@@ -329,7 +330,7 @@ router.post("/candidate/login-email", async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, candidate.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "User not found or invalid credentials provided. Click to register if you don't have an account." });
+      return res.status(401).json({ message: "User not found or invalid credentials provided." });
     }
 
     if (candidate.status !== "active") {
@@ -509,10 +510,10 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Candidate Login (Exam Number)
+// Candidate Login (Exam Number or Email, optional Password)
 router.post("/candidate-login", async (req, res) => {
   try {
-    const { examNumber } = req.body;
+    const { examNumber, password } = req.body;
     if (!examNumber || typeof examNumber !== 'string' || !examNumber.trim()) {
       return res.status(400).json({ message: "Invalid examination number provided" });
     }
@@ -520,17 +521,28 @@ router.post("/candidate-login", async (req, res) => {
     const cleanExamNumber = examNumber.trim();
     const candidateRepository = AppDataSource.getRepository(Candidate);
 
-    // Case-insensitive search for exam number
+    // Case-insensitive search for exam number or email
     const candidate = await candidateRepository.createQueryBuilder("candidate")
-      .where("LOWER(candidate.examNumber) = LOWER(:examNumber)", { examNumber: cleanExamNumber })
+      .where("LOWER(candidate.examNumber) = LOWER(:identifier) OR LOWER(candidate.email) = LOWER(:identifier)", { identifier: cleanExamNumber })
+      .addSelect("candidate.password")
       .getOne();
 
     if (!candidate) {
-      return res.status(404).json({ message: "User not found or exam number is incorrect. Click to register." });
+      return res.status(404).json({ message: "User not found or exam number is incorrect. Contact staff or admin for account registration." });
     }
 
     if (candidate.status !== "active") {
       return res.status(403).json({ message: "Registration is not active" });
+    }
+
+    if (candidate.password) {
+      if (!password) {
+        return res.status(401).json({ message: "Password is required for this account." });
+      }
+      const isMatch = await bcrypt.compare(password, candidate.password);
+      if (!isMatch) {
+        return res.status(401).json({ message: "Invalid credentials provided." });
+      }
     }
 
     const token = jwt.sign(
@@ -547,7 +559,8 @@ router.post("/candidate-login", async (req, res) => {
       metadata: { examNumber: candidate.examNumber }
     });
 
-    res.json({ token, profile: candidate });
+    const { password: _, ...candidateWithoutPassword } = candidate;
+    res.json({ token, profile: candidateWithoutPassword });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }

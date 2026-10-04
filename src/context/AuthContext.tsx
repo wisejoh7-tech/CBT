@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const userObj = data?.user || data?.profile;
       if (!data || !userObj) {
-        throw new Error("User not found or invalid credentials provided. Click to register if you don't have an account.");
+        throw new Error("User not found or invalid credentials provided.");
       }
 
       const userId = userObj?.id || userObj?.uid || userObj?.email;
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const profileObj = data?.profile || data?.user;
       if (!data || !profileObj) {
-        throw new Error("User not found or invalid examination number provided. Click to register if you don't have an account.");
+        throw new Error("User not found or invalid examination number provided. Contact staff or admin for account registration.");
       }
 
       const profileData: UserProfile = {
@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const profileObj = data?.profile || data?.user;
       if (!data || !profileObj) {
-        throw new Error("User not found or invalid credentials provided. Click to register if you don't have an account.");
+        throw new Error("User not found or invalid credentials provided. Contact staff or admin for account registration.");
       }
 
       const profileData: UserProfile = {

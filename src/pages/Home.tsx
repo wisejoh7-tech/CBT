@@ -27,6 +27,9 @@ export default function Home() {
         <div className="hidden md:flex items-center gap-4 flex-wrap justify-end">
           {[
             { label: 'HOME', path: '/' },
+            { label: 'CANDIDATE LOGIN', path: '/candidate-login' },
+            { label: 'STAFF PORTAL', path: '/staff' },
+            { label: 'ADMIN REGISTER', path: '/admin/auth' },
             { label: 'LOGIN', path: '/candidate-login' },
             { label: 'REGISTER', path: '/candidate-register' },
             { label: 'RESULTS', path: '/results' }
@@ -64,6 +67,8 @@ export default function Home() {
               {[
                 { label: 'Home', path: '/' },
                 { label: 'Candidate Login', path: '/candidate-login' },
+                { label: 'Staff Portal', path: '/staff' },
+                { label: 'Admin Register', path: '/admin/auth' },
                 { label: 'Candidate Register', path: '/candidate-register' },
                 { label: 'Results', path: '/results' }
               ].map((item) => (
@@ -103,9 +108,11 @@ export default function Home() {
           </motion.p>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-col sm:flex-row justify-center gap-4 flex-wrap">
-            <Button onClick={() => navigate('/candidate-register')} className="h-14 px-8 bg-primary text-white rounded-2xl font-black text-sm tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 active:bg-green-700 transition-all flex gap-2 items-center justify-center">
-              Register Candidate <ArrowRight className="w-5 h-5" />
+            <Button onClick={() => navigate('/candidate-login')} className="h-14 px-8 bg-primary text-white rounded-2xl font-black text-sm tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 active:bg-green-700 transition-all flex gap-2 items-center justify-center">
+              Candidate Login <ArrowRight className="w-5 h-5" />
             </Button>
+            <Button onClick={() => navigate('/staff')} className="h-14 px-8 bg-slate-900 text-white rounded-2xl font-black text-sm tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all flex gap-2 items-center justify-center">
+              Staff & Admin Portal <Lock className="w-4 h-4" />
             <Button onClick={() => navigate('/candidate-login')} variant="outline" className="h-14 px-8 border-2 border-primary text-primary font-black text-sm tracking-widest bg-white hover:bg-slate-50 transition-all">
               Candidate Login
             </Button>
