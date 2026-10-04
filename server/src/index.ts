@@ -43,7 +43,7 @@ const envOrigins = [
 
 const allowedOrigins = envOrigins.length > 0
   ? envOrigins
-  : ["https://my-exam-hvy7.onrender.com", "http://localhost:5173", "http://localhost:3000"];
+  : ["https://cbt-sk1s.onrender.com", "https://my-exam-hvy7.onrender.com", "http://localhost:5173", "http://localhost:3000"];
 
 const isOriginAllowed = (origin: string | undefined): boolean => {
   if (!origin) return true; // Allow non-browser / mobile / curl requests
@@ -198,6 +198,14 @@ app.use("/analytics", analyticsRoutes);
 app.use("/center", centerRoutes);
 app.use("/candidates", candidateRoutes);
 app.use("/subjects", subjectRoutes);
+
+// Mount under /api prefix as well for standardized API requests
+app.use("/api/auth", authRoutes);
+app.use("/api/exams", examRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/center", centerRoutes);
+app.use("/api/candidates", candidateRoutes);
+app.use("/api/subjects", subjectRoutes);
 
 // API 404 handler: Ensure unmatched API routes return JSON, not HTML
 app.use(["/auth", "/exams", "/analytics", "/center", "/candidates", "/subjects", "/api"], (req, res) => {
