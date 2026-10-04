@@ -13,13 +13,10 @@ import { getFriendlyErrorMessage } from '@/src/lib/api-config';
 import { cn } from '@/src/lib/utils/utils';
 
 export default function AdminAuth() {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { user, profile, signInWithEmail, signUpWithEmail, loading, devAdminLogin } = useAuth();
+  const { user, profile, signInWithEmail, loading, devAdminLogin } = useAuth();
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -39,27 +36,12 @@ export default function AdminAuth() {
     }
 
     try {
-      if (isLogin) {
-        await signInWithEmail(email.trim(), password);
-        toast.success("Admin Authorization Verified.");
-      } else {
-        if (!name.trim()) { toast.error("Invalid input. Name is required."); return; }
-        if (password !== confirmPassword) {
-          toast.error("Security keys do not match.");
-          return;
-        }
-        await signUpWithEmail(email.trim(), password, name.trim(), 'super_admin');
-        toast.success("System Master Provisioned.");
-      }
+      await signInWithEmail(email.trim(), password);
+      toast.success("Admin Authorization Verified.");
       navigate('/admin');
     } catch (error: any) {
       const msg = getFriendlyErrorMessage(error?.message || error);
-      toast.error(msg, {
-        action: isLogin && (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('register')) ? {
-          label: 'Enroll',
-          onClick: () => setIsLogin(false)
-        } : undefined
-      });
+      toast.error(msg);
     }
   };
 
@@ -97,31 +79,12 @@ export default function AdminAuth() {
           </div>
 
           <Card className="rounded-[24px] border border-white/10 bg-slate-800/80 backdrop-blur-xl shadow-2xl overflow-hidden">
-            <div className="flex bg-white/5 p-1 m-2 rounded-2xl">
-              <button onClick={() => setIsLogin(true)} className={cn("flex-1 py-2.5 rounded-xl font-black tracking-widest text-[8px] transition-all uppercase", isLogin ? "bg-primary text-white shadow-lg" : "text-slate-400 hover:text-slate-200")}>Login</button>
-              <button onClick={() => setIsLogin(false)} className={cn("flex-1 py-2.5 rounded-xl font-black tracking-widest text-[8px] transition-all uppercase", !isLogin ? "bg-primary text-white shadow-lg" : "text-slate-400 hover:text-slate-200")}>Register</button>
-            </div>
-
             <CardContent className="p-6">
-              {isLogin && (
-                <div className="mb-4 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-center">
-                  <p className="text-[8px] font-black text-primary uppercase tracking-widest">Default Admin Login</p>
-                  <p className="text-[10px] font-mono text-slate-300 mt-0.5">admin@vivicbt.com / admin123</p>
-                </div>
-              )}
+              <div className="mb-4 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-center">
+                <p className="text-[8px] font-black text-primary uppercase tracking-widest">Default Admin Login</p>
+                <p className="text-[10px] font-mono text-slate-300 mt-0.5">admin@vivicbt.com / admin123</p>
+              </div>
               <form onSubmit={handleSubmit} className="space-y-3.5">
-                <AnimatePresence mode="wait">
-                  {!isLogin && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-1 overflow-hidden">
-                      <Label className="text-[8px] font-black text-slate-500 tracking-widest uppercase ml-1">Full Name</Label>
-                      <div className="relative group">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600 group-focus-within:text-primary transition-colors" />
-                        <Input placeholder="Full  Name" value={name} onChange={e => setName(e.target.value)} className="h-10 pl-10 rounded-xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white text-[10px]" />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
                 <div className="space-y-1">
                   <Label className="text-[8px] font-black text-slate-500 tracking-widest uppercase ml-1">Admin Email Address</Label>
                   <div className="relative group">
@@ -156,50 +119,24 @@ export default function AdminAuth() {
                   </div>
                 </div>
 
-                {!isLogin && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-1">
-                    <Label className="text-[8px] font-black text-slate-500 tracking-widest uppercase ml-1">Confirm Password</Label>
-                    <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600 group-focus-within:text-primary transition-colors" />
-                      <Input
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder=""
-                        value={confirmPassword}
-                        onChange={e => setConfirmPassword(e.target.value)}
-                        className="h-10 pl-10 rounded-xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white text-[10px]"
-                        required
-                      />
-                    </div>
-                  </motion.div>
-                )}
-
                 <div className="pt-2">
                   <Button type="submit" disabled={loading} className="w-full h-11 bg-primary text-white rounded-xl font-black tracking-[0.2em] text-[9px] uppercase shadow-lg transition-all active:scale-95">
-                    {loading ? "Decrypting..." : (isLogin ? "Login" : "Create")}
+                    {loading ? "Decrypting..." : "Login"}
                   </Button>
                 </div>
 
-                {isLogin && (
-                  <div className="space-y-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setIsLogin(false)}
-                      className="w-full py-2 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 text-[9px] font-black text-primary transition-all tracking-widest uppercase shadow-sm"
-                    >
-                      USER NOT FOUND? CLICK HERE TO ENROLL
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => navigate('/forgot-password')}
-                      className="w-full text-[9px] font-black text-slate-500 hover:text-white transition-colors tracking-widest uppercase"
-                    >
-                      Forgotten Password?
-                    </button>
-                  </div>
-                )}
+                <div className="space-y-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    className="w-full text-[9px] font-black text-slate-500 hover:text-white transition-colors tracking-widest uppercase"
+                  >
+                    Forgotten Password?
+                  </button>
+                </div>
               </form>
 
-              {isLogin && import.meta.env.MODE !== 'production' && (
+              {import.meta.env.MODE !== 'production' && (
                 <div className="mt-5 pt-5 border-t border-white/5">
                    <div className="flex flex-col items-center gap-2">
                       <p className="text-[7px] font-black text-primary/40 tracking-[0.4em] uppercase">Emergency Protocol</p>

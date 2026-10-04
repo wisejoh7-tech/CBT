@@ -39,12 +39,7 @@ export default function StaffLogin() {
       navigate('/admin');
     } catch (error: any) {
       const msg = getFriendlyErrorMessage(error?.message || error);
-      toast.error(msg, {
-        action: msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('register') ? {
-          label: 'Enroll',
-          onClick: () => navigate('/admin/auth')
-        } : undefined
-      });
+      toast.error(msg);
     }
   };
 
@@ -146,14 +141,6 @@ export default function StaffLogin() {
                 >
                   {loading ? "VERIFYING..." : "LOGIN"}
                 </Button>
-
-                <button
-                  type="button"
-                  onClick={() => navigate('/admin/auth')}
-                  className="w-full py-2.5 px-4 rounded-xl bg-primary/5 hover:bg-primary/10 border border-primary/20 text-[11px] font-black text-primary transition-all tracking-widest uppercase shadow-sm mt-3"
-                >
-                  USER NOT FOUND? CLICK HERE TO REGISTER
-                </button>
               </form>
             </CardContent>
           </Card>
