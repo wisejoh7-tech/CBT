@@ -13,6 +13,33 @@ import { authenticateJWT, authorizeRoles } from "../middleware/auth";
 
 const router = Router();
 
+export async function ensureDefaultAdmin(): Promise<User | null> {
+  try {
+    const userRepository = AppDataSource.getRepository(User);
+    let defaultAdmin = await userRepository.createQueryBuilder("u")
+      .where("LOWER(u.email) = LOWER(:email)", { email: "admin@vivicbt.com" })
+      .addSelect("u.password")
+      .getOne();
+
+    if (!defaultAdmin) {
+      const initialPass = process.env.INITIAL_ADMIN_PASSWORD || "admin123";
+      const defaultHash = await bcrypt.hash(initialPass, 10);
+      defaultAdmin = userRepository.create({
+        email: "admin@vivicbt.com",
+        password: defaultHash,
+        displayName: "System Master",
+        role: "super_admin",
+      });
+      await userRepository.save(defaultAdmin);
+      console.log("🌱 Auto-seeded default admin: admin@vivicbt.com");
+    }
+    return defaultAdmin;
+  } catch (seedErr) {
+    console.error("Auto-seed error for default admin:", seedErr);
+    return null;
+  }
+}
+
 // Diagnostic endpoint to check current database target and record counts
 router.get("/db-info", async (req, res) => {
   try {
@@ -284,7 +311,13 @@ router.post("/candidate/login-email", async (req, res) => {
     }
 
     const { email, password } = validation.data;
-    const cleanIdentifier = email.trim().toLowerCase();
+    let cleanIdentifier = email.trim().toLowerCase();
+    if (cleanIdentifier === "admin") {
+      cleanIdentifier = "admin@vivicbt.com";
+    }
+
+    await ensureDefaultAdmin();
+
     const candidateRepository = AppDataSource.getRepository(Candidate);
 
     const candidate = await candidateRepository.createQueryBuilder("c")
@@ -296,31 +329,36 @@ router.post("/candidate/login-email", async (req, res) => {
     if (!candidate) {
       // Fallback: Check staff/admin User repository if candidate account is not found
       const userRepository = AppDataSource.getRepository(User);
-      const user = await userRepository.createQueryBuilder("u")
-        .where("LOWER(u.email) = LOWER(:identifier)", { identifier: cleanIdentifier })
+      let user = await userRepository.createQueryBuilder("u")
+        .where("LOWER(u.email) = LOWER(:identifier) OR LOWER(u.displayName) = LOWER(:identifier)", { identifier: cleanIdentifier })
         .addSelect("u.password")
         .getOne();
 
-      if (user) {
-        if (user.password) {
-          const isUserMatch = await bcrypt.compare(password, user.password);
-          if (isUserMatch) {
-            const token = jwt.sign(
-              { id: user.id, role: user.role },
-              config.JWT_SECRET,
-              { expiresIn: "1d" }
-            );
-            const { password: _, ...userWithoutPassword } = user;
-            return res.json({
-              token,
-              profile: {
-                ...userWithoutPassword,
-                uid: user.id,
-                role: user.role,
-                displayName: user.displayName,
-              }
-            });
-          }
+      if (user && user.password) {
+        let isUserMatch = await bcrypt.compare(password, user.password);
+
+        if (!isUserMatch && user.password === password) {
+          user.password = await bcrypt.hash(password, 10);
+          await userRepository.save(user);
+          isUserMatch = true;
+        }
+
+        if (isUserMatch) {
+          const token = jwt.sign(
+            { id: user.id, role: user.role },
+            config.JWT_SECRET,
+            { expiresIn: "1d" }
+          );
+          const { password: _, ...userWithoutPassword } = user;
+          return res.json({
+            token,
+            profile: {
+              ...userWithoutPassword,
+              uid: user.id,
+              role: user.role,
+              displayName: user.displayName,
+            }
+          });
         }
         return res.status(401).json({ message: "Invalid password or credentials provided." });
       }
@@ -392,7 +430,7 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const adminLoginSchema = z.object({
-      email: z.string().min(1, "Email is required"),
+      email: z.string().min(1, "Email or Username is required"),
       password: z.string().min(1, "Password is required"),
     });
 
@@ -400,66 +438,19 @@ router.post("/login", async (req, res) => {
     if (!validation.success) return res.status(400).json({ message: "Invalid credentials format" });
 
     const { email, password } = validation.data;
-    const cleanEmail = email.trim().toLowerCase();
+    let cleanEmail = email.trim().toLowerCase();
+    if (cleanEmail === "admin") {
+      cleanEmail = "admin@vivicbt.com";
+    }
+
+    await ensureDefaultAdmin();
+
     const userRepository = AppDataSource.getRepository(User);
 
-    // Auto-seed default super_admin if admin@vivicbt.com does not exist
-    try {
-      const defaultAdmin = await userRepository.createQueryBuilder("u")
-        .where("LOWER(u.email) = LOWER(:email)", { email: "admin@vivicbt.com" })
-        .getOne();
-
-      if (!defaultAdmin) {
-        const defaultHash = await bcrypt.hash("admin123", 10);
-        await userRepository.save(userRepository.create({
-          email: "admin@vivicbt.com",
-          password: defaultHash,
-          displayName: "System Master",
-          role: "super_admin"
-        }));
-        console.log("🌱 Auto-seeded default admin: admin@vivicbt.com / admin123");
-      }
-    } catch (seedErr) {
-      console.error("Auto-seed error for default admin:", seedErr);
-    }
-
-    // Ensure default super_admin admin@vivicbt.com exists
     let user = await userRepository.createQueryBuilder("u")
-      .where("LOWER(u.email) = LOWER(:email)", { email: cleanEmail })
+      .where("LOWER(u.email) = LOWER(:email) OR LOWER(u.displayName) = LOWER(:email)", { email: cleanEmail })
       .addSelect("u.password")
       .getOne();
-
-    if (cleanEmail === "admin@vivicbt.com") {
-      const validAdminPasswords = [
-        "admin123",
-        "admin",
-        process.env.INITIAL_ADMIN_PASSWORD
-      ].filter(Boolean) as string[];
-
-      if (!user) {
-        const defaultHash = await bcrypt.hash("admin123", 10);
-        await userRepository.save(userRepository.create({
-          email: "admin@vivicbt.com",
-          password: defaultHash,
-          displayName: "System Master",
-          role: "super_admin"
-        }));
-        console.log("🌱 Auto-seeded default admin: admin@vivicbt.com / admin123");
-        user = await userRepository.createQueryBuilder("u")
-          .where("LOWER(u.email) = LOWER(:email)", { email: cleanEmail })
-          .addSelect("u.password")
-          .getOne();
-      }
-
-      if (user && user.password) {
-        let isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch && validAdminPasswords.includes(password)) {
-          user.password = await bcrypt.hash(password, 10);
-          await userRepository.save(user);
-          isMatch = true;
-        }
-      }
-    }
 
     if (!user) {
       // Fallback: Check Candidate repository if staff user account is not found
@@ -509,7 +500,13 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials." });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    let isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch && user.password === password) {
+      user.password = await bcrypt.hash(password, 10);
+      await userRepository.save(user);
+      isMatch = true;
+    }
+
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid password or credentials provided." });
     }
@@ -535,7 +532,13 @@ router.post("/candidate-login", async (req, res) => {
       return res.status(400).json({ message: "Invalid examination number provided" });
     }
 
-    const cleanExamNumber = examNumber.trim();
+    let cleanExamNumber = examNumber.trim().toLowerCase();
+    if (cleanExamNumber === "admin") {
+      cleanExamNumber = "admin@vivicbt.com";
+    }
+
+    await ensureDefaultAdmin();
+
     const candidateRepository = AppDataSource.getRepository(Candidate);
 
     // Case-insensitive search for exam number or email

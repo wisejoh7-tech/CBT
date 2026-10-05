@@ -86,13 +86,13 @@ export default function AdminAuth() {
               </div>
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 <div className="space-y-1">
-                  <Label className="text-[8px] font-black text-slate-500 tracking-widest uppercase ml-1">Admin Email Address</Label>
+                  <Label className="text-[8px] font-black text-slate-500 tracking-widest uppercase ml-1">Admin Email Address / Username</Label>
                   <div className="relative group">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600 group-focus-within:text-primary transition-colors" />
                     <Input
                       name="email"
-                      type="email"
-                      placeholder="admin@vivicbt.com"
+                      type="text"
+                      placeholder="admin@vivicbt.com or admin"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       className="h-10 pl-10 rounded-xl bg-slate-900 border-white/5 focus:border-primary font-bold text-white text-[10px]"
