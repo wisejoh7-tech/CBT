@@ -319,7 +319,7 @@ export default function Admin() {
 
       const res = await apiFetch(getApiUrl('/auth/candidate/register'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       await safeJsonResponse(res);
@@ -350,7 +350,7 @@ export default function Admin() {
     try {
       const res = await apiFetch(getApiUrl('/auth/register'), {
         method: 'POST',
-        headers: getHeaders(),
+        headers: { ...getHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(newStaff)
       });
       await safeJsonResponse(res);
@@ -393,7 +393,7 @@ export default function Admin() {
     try {
       const res = await apiFetch(getApiUrl('/candidates/push-exam'), {
         method: 'POST',
-        headers: getHeaders(),
+        headers: { ...getHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ examId })
       });
       await safeJsonResponse(res);
@@ -412,7 +412,7 @@ export default function Admin() {
     try {
       const res = await apiFetch(getApiUrl(`/candidates/${editingCandidate.examNumber}`), {
         method: 'PUT',
-        headers: getHeaders(),
+        headers: { ...getHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(editingCandidate)
       });
       await safeJsonResponse(res);
@@ -444,8 +444,17 @@ export default function Admin() {
 
   const handleDeleteStaff = async (id: string) => {
     if (!confirm("Revoke access for this staff?")) return;
-    await apiFetch(getApiUrl(`/auth/staff/${id}`), { method: 'DELETE', headers: getHeaders() });
-    fetchData();
+    try {
+      const res = await apiFetch(getApiUrl(`/auth/staff/${id}`), { method: 'DELETE', headers: getHeaders() });
+      if (res.ok) {
+        toast.success("Staff access revoked");
+        fetchData();
+      } else {
+        await safeJsonResponse(res);
+      }
+    } catch (e) {
+      toast.error(getFriendlyErrorMessage(e));
+    }
   };
 
   const handleDeleteQuestion = async (questionId: string) => {

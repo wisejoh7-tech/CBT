@@ -152,9 +152,22 @@ export async function apiFetch(
   delayMs = 1500
 ): Promise<Response> {
   let lastErr: any;
+
+  // Ensure Content-Type is set to application/json if options.body is present and not FormData
+  const headers = new Headers(options.headers || {});
+  if (
+    options.body &&
+    !(typeof FormData !== 'undefined' && options.body instanceof FormData) &&
+    !headers.has('Content-Type')
+  ) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const mergedOptions = { ...options, headers };
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const response = await fetch(url, options);
+      const response = await fetch(url, mergedOptions);
       if ((response.status === 503 || response.status === 502 || response.status === 504) && attempt < retries) {
         // Backend DB is initializing / server spinning up on free hosting
         const currentDelay = delayMs * Math.pow(1.5, attempt);
