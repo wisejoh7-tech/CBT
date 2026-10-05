@@ -6,6 +6,7 @@ import { Label } from '@/lib/ui/label';
 import { Camera, Trash2, Eye, EyeOff, X, FileCheck } from 'lucide-react';
 import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
 import { cn } from '@/src/lib/utils/utils';
+import { fileToCompressedDataUrl } from '@/src/lib/utils/image';
 import { toast } from 'sonner';
 
 interface AddCandidateModalProps {
@@ -155,12 +156,13 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                        onChange={async (e) => {
                          const file = e.target.files?.[0];
                          if (file) {
-                           const reader = new FileReader();
-                           reader.onload = (ev) => {
-                             setNewCandidate({ ...newCandidate, waecResultUrl: ev.target?.result as string });
+                           try {
+                             const dataUrl = await fileToCompressedDataUrl(file, 1200, 1200, 0.85);
+                             setNewCandidate({ ...newCandidate, waecResultUrl: dataUrl });
                              toast.success("Result document attached successfully");
-                           };
-                           reader.readAsDataURL(file);
+                           } catch (err) {
+                             toast.error("Failed to read result document");
+                           }
                          }
                        }}
                        className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
@@ -217,14 +219,15 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                         type="file"
                         accept="image/*"
                         className="hidden"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = (ev) => {
-                            if (ev.target?.result) setNewCandidate({ ...newCandidate, faceUrl: ev.target.result as string });
-                          };
-                          reader.readAsDataURL(file);
+                          try {
+                            const dataUrl = await fileToCompressedDataUrl(file, 800, 800, 0.85);
+                            setNewCandidate({ ...newCandidate, faceUrl: dataUrl });
+                          } catch (err) {
+                            toast.error("Failed to process passport photo");
+                          }
                         }}
                       />
                     </label>
