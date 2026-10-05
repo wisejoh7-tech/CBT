@@ -409,29 +409,36 @@ export default function Admin() {
   const handleUpdateCandidate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCandidate) return;
-    const res = await apiFetch(getApiUrl(`/candidates/${editingCandidate.examNumber}`), {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify(editingCandidate)
-    });
-    if (res.ok) {
-      toast.success("Candidate updated");
+    try {
+      const res = await apiFetch(getApiUrl(`/candidates/${editingCandidate.examNumber}`), {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(editingCandidate)
+      });
+      await safeJsonResponse(res);
+      toast.success("Candidate updated successfully");
       setEditingCandidate(null);
       fetchData();
-    } else {
-      toast.error("Update failed");
+    } catch (e) {
+      toast.error(getFriendlyErrorMessage(e));
     }
   };
 
   const handleDeleteCandidate = async (examNumber: string) => {
     if (!confirm(`Permanently delete student ${examNumber}?`)) return;
-    const res = await apiFetch(getApiUrl(`/candidates/${examNumber}`), {
-      method: 'DELETE',
-      headers: getHeaders()
-    });
-    if (res.ok) {
-      toast.success("Candidate removed");
-      fetchData();
+    try {
+      const res = await apiFetch(getApiUrl(`/candidates/${examNumber}`), {
+        method: 'DELETE',
+        headers: getHeaders()
+      });
+      if (res.ok) {
+        toast.success("Candidate removed");
+        fetchData();
+      } else {
+        await safeJsonResponse(res);
+      }
+    } catch (e) {
+      toast.error(getFriendlyErrorMessage(e));
     }
   };
 
