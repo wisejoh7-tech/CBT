@@ -10,7 +10,7 @@ interface AuthContextType {
   loading: boolean;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string, name: string, role: 'admin' | 'reg_admin' | 'super_admin') => Promise<void>;
-  loginWithExamNumber: (examNumber: string) => Promise<void>;
+  loginWithExamNumber: (examNumber: string, pass?: string) => Promise<void>;
   loginCandidateWithEmail: (email: string, pass: string) => Promise<UserProfile>;
   devAdminLogin: () => Promise<void>;
   logOut: () => Promise<void>;
@@ -108,13 +108,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithExamNumber = async (examNumber: string) => {
+  const loginWithExamNumber = async (examNumber: string, pass?: string) => {
     setLoading(true);
     try {
       const res = await apiFetch(getApiUrl('/auth/candidate-login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ examNumber }),
+        body: JSON.stringify({ examNumber, password: pass }),
       });
       
       const data = await safeJsonResponse(res);
