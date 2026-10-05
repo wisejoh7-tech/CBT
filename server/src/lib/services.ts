@@ -178,3 +178,42 @@ export const sendEmailSafely = async (options: nodemailer.SendMailOptions): Prom
     return false;
   }
 };
+
+export const sendVerificationEmail = async (
+  userEmail: string,
+  verificationLink: string,
+  customFrom?: string
+): Promise<boolean> => {
+  const fromAddress = customFrom || config.resendFromEmail || "VIVI CBT onboarding@yourdomain.com";
+  const subject = "Verify your VIVI CBT account";
+  const html = `<h2>Welcome to VIVI CBT</h2> <p>Please verify your account by clicking the link below.</p> <a href="${verificationLink}">Verify Account</a>`;
+
+  if (resend && config.resendApiKey) {
+    try {
+      const { data, error } = await resend.emails.send({
+        from: fromAddress,
+        to: userEmail,
+        subject,
+        html,
+      });
+
+      if (error) {
+        logger.error(`[Mailer/Resend] Failed to send verification email to ${userEmail}:`, error.message || error);
+        return false;
+      }
+
+      logger.info(`[Mailer/Resend] Verification email sent to ${userEmail} (id: ${data?.id})`);
+      return true;
+    } catch (err: any) {
+      logger.error(`[Mailer/Resend] Exception sending verification email to ${userEmail}:`, err.message || err);
+      return false;
+    }
+  }
+
+  return sendEmailSafely({
+    from: fromAddress,
+    to: userEmail,
+    subject,
+    html,
+  });
+};
