@@ -90,17 +90,17 @@ export default function StaffLogin() {
               <CardContent className="p-10 bg-white">
                 <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black text-primary/40 tracking-widest px-1"> Email Address</Label>
+                  <Label className="text-[10px] font-black text-primary/40 tracking-widest px-1"> Email Address / Username</Label>
                   <div className="relative group">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/10 group-focus-within:text-primary transition-colors" />
                     <Input
                       name="email"
-                      type="email"
-                      autoComplete="email"
-                      placeholder="Enter Email Address"
+                      type="text"
+                      autoComplete="username"
+                      placeholder="Enter Email Address or Username"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      className="h-12 pl-10 rounded-2xl  border-2 border-primary/5 focus:border-primary  text-primary transition-all"
+                      className="h-12 pl-10 rounded-2xl border-2 border-primary/5 focus:border-primary text-primary transition-all"
                       required
                     />
                   </div>
