@@ -17,7 +17,9 @@ export default function CandidateLogin() {
   const [email, setEmail] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [password, setPassword] = useState('');
+  const [examPassword, setExamPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showExamPassword, setShowExamPassword] = useState(false);
   const [examNumber, setExamNumber] = useState(localStorage.getItem('pendingExamNumber') || '');
   const [loginMethod, setLoginMethod] = useState<'email' | 'examNumber'>('examNumber');
 
@@ -28,7 +30,7 @@ export default function CandidateLogin() {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Invalid input. Email and password are required.");
+      toast.error("Invalid input. Email and password or PIN are required.");
       return;
     }
 
@@ -56,7 +58,7 @@ export default function CandidateLogin() {
     }
 
     try {
-      await loginWithExamNumber(examNumber.trim());
+      await loginWithExamNumber(examNumber.trim(), examPassword.trim() || undefined);
       toast.success("Identity Verified. Opening Terminal...");
       navigate('/instructions/unified');
     } catch (e: any) {
@@ -162,20 +164,43 @@ export default function CandidateLogin() {
 
               <AnimatePresence mode="wait">
                 {loginMethod === 'examNumber' ? (
-                  <motion.form key="exam" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 2.5, x: 0 }} exit={{ opacity: 0, x: -10 }} onSubmit={handleExamNumberLogin} className="space-y-6">
-                     <div className="space-y-2 text-left">
-                        <Label className="text-[10px] font-black text-primary/40 tracking-widest">Examination Number</Label>
-                        <div className="relative group">
+                  <motion.form key="exam" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} onSubmit={handleExamNumberLogin} className="space-y-6">
+                     <div className="space-y-4 text-left">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black text-primary/40 tracking-widest">Examination Number</Label>
+                          <div className="relative group">
+                            <Input
+                              name="examNumber"
+                              autoComplete="username"
+                              value={examNumber}
+                              onChange={e => setExamNumber(e.target.value)}
+                              placeholder="Enter Exam Number."
+                              className="h-10 pl-6 rounded-2xl bg-slate-50 border border-primary/10 focus:border-primary font-bold text-sm text-primary transition-all tracking-widest placeholder:text-xs"
+                              required
+                            />
+                          </div>
+                        </div>
 
-                          <Input
-                            name="examNumber"
-                            autoComplete="username"
-                            value={examNumber}
-                            onChange={e => setExamNumber(e.target.value)}
-                            placeholder="Enter Exam Number."
-                            className="h-10 pl-8 rounded-2xl bg-slate-30 border-1 border-primary/10 focus:border-primary font-bold text-lg text-primary transition-all tracking-widest placeholder:text-xs"
-                            required
-                          />
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black text-primary/40 tracking-widest">Password or PIN (Optional / If Set)</Label>
+                          <div className="relative group">
+                            <Input
+                              name="examPassword"
+                              type={showExamPassword ? 'text' : 'password'}
+                              autoComplete="current-password"
+                              value={examPassword}
+                              onChange={e => setExamPassword(e.target.value)}
+                              placeholder="Enter Password or PIN"
+                              className="h-10 pl-6 pr-10 rounded-2xl bg-slate-50 border border-primary/10 focus:border-primary font-bold text-primary transition-all placeholder:text-xs"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowExamPassword(!showExamPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/20 hover:text-primary transition-colors"
+                            >
+                              {showExamPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
                         </div>
                      </div>
                      <Button type="submit" disabled={loading} className="w-full h-11 bg-primary text-white rounded-2xl font-black tracking-widest text-[14px]">

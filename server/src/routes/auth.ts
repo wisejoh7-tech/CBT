@@ -270,12 +270,12 @@ router.post("/candidate/register", authenticateJWT, authorizeRoles("admin", "sup
   }
 });
 
-// Candidate Login (Email or Exam Number / Password)
+// Candidate Login (Email or Exam Number / Password or PIN)
 router.post("/candidate/login-email", async (req, res) => {
   try {
     const loginSchema = z.object({
       email: z.string().min(1, "Email or Examination Number is required"),
-      password: z.string().min(1, "Password is required"),
+      password: z.string().min(1, "Password or PIN is required"),
     });
 
     const validation = loginSchema.safeParse(req.body);
@@ -290,6 +290,7 @@ router.post("/candidate/login-email", async (req, res) => {
     const candidate = await candidateRepository.createQueryBuilder("c")
       .where("LOWER(c.email) = LOWER(:identifier) OR LOWER(c.examNumber) = LOWER(:identifier)", { identifier: cleanIdentifier })
       .addSelect("c.password")
+      .addSelect("c.pin")
       .getOne();
 
     if (!candidate) {
@@ -300,37 +301,44 @@ router.post("/candidate/login-email", async (req, res) => {
         .addSelect("u.password")
         .getOne();
 
-      if (user && user.password) {
-        const isUserMatch = await bcrypt.compare(password, user.password);
-        if (isUserMatch) {
-          const token = jwt.sign(
-            { id: user.id, role: user.role },
-            config.JWT_SECRET,
-            { expiresIn: "1d" }
-          );
-          const { password: _, ...userWithoutPassword } = user;
-          return res.json({
-            token,
-            profile: {
-              ...userWithoutPassword,
-              uid: user.id,
-              role: user.role,
-              displayName: user.displayName,
-            }
-          });
+      if (user) {
+        if (user.password) {
+          const isUserMatch = await bcrypt.compare(password, user.password);
+          if (isUserMatch) {
+            const token = jwt.sign(
+              { id: user.id, role: user.role },
+              config.JWT_SECRET,
+              { expiresIn: "1d" }
+            );
+            const { password: _, ...userWithoutPassword } = user;
+            return res.json({
+              token,
+              profile: {
+                ...userWithoutPassword,
+                uid: user.id,
+                role: user.role,
+                displayName: user.displayName,
+              }
+            });
+          }
         }
+        return res.status(401).json({ message: "Invalid password or credentials provided." });
       }
 
-      return res.status(404).json({ message: "User not found or invalid credentials provided. Contact staff or admin for account registration." });
+      return res.status(404).json({ message: "User account not found. Please check your email or examination number." });
     }
 
-    if (!candidate.password) {
-      return res.status(401).json({ message: "Invalid credentials. Password not set." });
+    let isMatch = false;
+    if (candidate.password) {
+      isMatch = await bcrypt.compare(password, candidate.password);
     }
 
-    const isMatch = await bcrypt.compare(password, candidate.password);
+    if (!isMatch && candidate.pin && candidate.pin.trim() === password.trim()) {
+      isMatch = true;
+    }
+
     if (!isMatch) {
-      return res.status(401).json({ message: "User not found or invalid credentials provided." });
+      return res.status(401).json({ message: "Invalid credentials provided. Please check your password or PIN." });
     }
 
     if (candidate.status !== "active") {
@@ -384,8 +392,8 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const adminLoginSchema = z.object({
-      email: z.string().email(),
-      password: z.string().min(1),
+      email: z.string().min(1, "Email is required"),
+      password: z.string().min(1, "Password is required"),
     });
 
     const validation = adminLoginSchema.safeParse(req.body);
@@ -457,12 +465,20 @@ router.post("/login", async (req, res) => {
       // Fallback: Check Candidate repository if staff user account is not found
       const candidateRepository = AppDataSource.getRepository(Candidate);
       const candidate = await candidateRepository.createQueryBuilder("c")
-        .where("LOWER(c.email) = LOWER(:email)", { email: cleanEmail })
+        .where("LOWER(c.email) = LOWER(:email) OR LOWER(c.examNumber) = LOWER(:email)", { email: cleanEmail })
         .addSelect("c.password")
+        .addSelect("c.pin")
         .getOne();
 
-      if (candidate && candidate.password) {
-        const isCandidateMatch = await bcrypt.compare(password, candidate.password);
+      if (candidate) {
+        let isCandidateMatch = false;
+        if (candidate.password) {
+          isCandidateMatch = await bcrypt.compare(password, candidate.password);
+        }
+        if (!isCandidateMatch && candidate.pin && candidate.pin.trim() === password.trim()) {
+          isCandidateMatch = true;
+        }
+
         if (isCandidateMatch) {
           if (candidate.status !== "active") {
             return res.status(403).json({ message: "Registration is not active" });
@@ -483,9 +499,10 @@ router.post("/login", async (req, res) => {
             }
           });
         }
+        return res.status(401).json({ message: "Invalid password or PIN provided." });
       }
 
-      return res.status(404).json({ message: "User not found or invalid credentials provided. Click to register if you don't have an account." });
+      return res.status(404).json({ message: "User account not found. Please check your credentials or register an account." });
     }
 
     if (!user.password) {
@@ -494,7 +511,7 @@ router.post("/login", async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "User not found or invalid credentials provided. Click to register if you don't have an account." });
+      return res.status(401).json({ message: "Invalid password or credentials provided." });
     }
 
     const token = jwt.sign(
@@ -510,7 +527,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Candidate Login (Exam Number or Email, optional Password)
+// Candidate Login (Exam Number or Email, optional Password or PIN)
 router.post("/candidate-login", async (req, res) => {
   try {
     const { examNumber, password } = req.body;
@@ -525,23 +542,61 @@ router.post("/candidate-login", async (req, res) => {
     const candidate = await candidateRepository.createQueryBuilder("candidate")
       .where("LOWER(candidate.examNumber) = LOWER(:identifier) OR LOWER(candidate.email) = LOWER(:identifier)", { identifier: cleanExamNumber })
       .addSelect("candidate.password")
+      .addSelect("candidate.pin")
       .getOne();
 
     if (!candidate) {
-      return res.status(404).json({ message: "User not found or exam number is incorrect. Contact staff or admin for account registration." });
+      // Fallback: check User repository if candidate is staff/admin
+      const userRepository = AppDataSource.getRepository(User);
+      const user = await userRepository.createQueryBuilder("u")
+        .where("LOWER(u.email) = LOWER(:identifier)", { identifier: cleanExamNumber })
+        .addSelect("u.password")
+        .getOne();
+
+      if (user) {
+        if (user.password && password) {
+          const isUserMatch = await bcrypt.compare(password, user.password);
+          if (isUserMatch) {
+            const token = jwt.sign(
+              { id: user.id, role: user.role },
+              config.JWT_SECRET,
+              { expiresIn: "1d" }
+            );
+            const { password: _, ...userWithoutPassword } = user;
+            return res.json({
+              token,
+              profile: {
+                ...userWithoutPassword,
+                uid: user.id,
+                role: user.role,
+                displayName: user.displayName,
+              }
+            });
+          }
+        }
+        return res.status(401).json({ message: "Invalid password or credentials provided." });
+      }
+
+      return res.status(404).json({ message: "User account not found or examination number is incorrect. Contact staff or admin for registration." });
     }
 
     if (candidate.status !== "active") {
       return res.status(403).json({ message: "Registration is not active" });
     }
 
-    if (candidate.password) {
+    if (candidate.password || candidate.pin) {
       if (!password) {
-        return res.status(401).json({ message: "Password is required for this account." });
+        return res.status(401).json({ message: "Password or PIN is required for this account." });
       }
-      const isMatch = await bcrypt.compare(password, candidate.password);
+      let isMatch = false;
+      if (candidate.password) {
+        isMatch = await bcrypt.compare(password, candidate.password);
+      }
+      if (!isMatch && candidate.pin && candidate.pin.trim() === password.trim()) {
+        isMatch = true;
+      }
       if (!isMatch) {
-        return res.status(401).json({ message: "Invalid credentials provided." });
+        return res.status(401).json({ message: "Invalid password or PIN provided." });
       }
     }
 
