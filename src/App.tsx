@@ -9,6 +9,7 @@ import { WifiOff, Wifi } from 'lucide-react';
 // Pages
 import Home from '@/src/pages/Home';
 import CandidateLogin from '@/src/pages/CandidateLogin';
+import CandidateRegister from '@/src/pages/CandidateRegister';
 import ExamDashboard from '@/src/pages/ExamDashboard';
 import CandidateDashboard from '@/src/pages/CandidateDashboard';
 import ExamPlayer from '@/src/pages/ExamPlayer';
@@ -99,7 +100,7 @@ export default function App() {
             <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/candidate-login" element={<PublicRoute><CandidateLogin /></PublicRoute>} />
-            <Route path="/candidate-register" element={<Navigate to="/candidate-login" replace />} />
+            <Route path="/candidate-register" element={<PublicRoute><CandidateRegister /></PublicRoute>} />
             <Route
               path="/dashboard" 
               element={

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
 import { cn } from '@/src/lib/utils/utils';
+import { fileToCompressedDataUrl } from '@/src/lib/utils/image';
 
 export default function CandidateRegister() {
   const navigate = useNavigate();
@@ -90,19 +91,17 @@ export default function CandidateRegister() {
     setTimeout(() => setStep(3), 500);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      if (dataUrl) {
-        setFormData(prev => ({ ...prev, faceUrl: dataUrl }));
-        toast.success("Passport Photo Uploaded.");
-        setTimeout(() => setStep(3), 500);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const dataUrl = await fileToCompressedDataUrl(file, 800, 800, 0.85);
+      setFormData(prev => ({ ...prev, faceUrl: dataUrl }));
+      toast.success("Passport Photo Uploaded.");
+      setTimeout(() => setStep(3), 500);
+    } catch (err) {
+      toast.error("Failed to process passport image.");
+    }
   };
 
   const handleUseSamplePassport = () => {
@@ -390,9 +389,13 @@ export default function CandidateRegister() {
                               <Input type="file" accept="image/*,application/pdf" onChange={async (e) => {
                                  const file = e.target.files?.[0];
                                  if (file) {
-                                    const reader = new FileReader();
-                                    reader.onload = (ev) => { updateField('waecResultUrl', ev.target?.result as string); toast.success("Document Attached ✓"); };
-                                    reader.readAsDataURL(file);
+                                    try {
+                                       const dataUrl = await fileToCompressedDataUrl(file, 1200, 1200, 0.85);
+                                       updateField('waecResultUrl', dataUrl);
+                                       toast.success("Document Attached ✓");
+                                    } catch (err) {
+                                       toast.error("Failed to process document.");
+                                    }
                                  }
                               }} className="absolute inset-0 opacity-0 cursor-pointer z-10" required={!formData.waecResultUrl} />
                               <div className="flex items-center gap-3 text-primary/30 font-black text-[9px] sm:text-[11px] uppercase tracking-widest">

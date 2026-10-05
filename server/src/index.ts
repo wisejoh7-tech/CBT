@@ -176,14 +176,15 @@ app.get("/", (req, res, next) => {
   }
   res.send("VIVI CBT API - ONLINE");
 });
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(ipBlocker);
 
 // Database availability middleware
 app.use((req, res, next) => {
   const dbIgnoredPaths = ["/health", "/api/health", "/"];
   const currentPath = req.path || req.originalUrl || "";
-  if (!AppDataSource.isInitialized && !dbIgnoredPaths.includes(currentPath)) {
+  if (!AppDataSource.isInitialized && isApiRequest(req) && !dbIgnoredPaths.includes(currentPath)) {
     return res.status(503).json({
       message: "System initializing. Please wait a moment...",
       retryAfter: 5
