@@ -36,17 +36,27 @@ router.put("/:examNumber", authenticateJWT, authorizeRoles("admin", "super_admin
       if (existingEmail) return res.status(400).json({ message: "Email already registered to another candidate" });
     }
 
-    candidateRepo.merge(candidate, req.body);
+    const updates = { ...req.body };
+
+    // Convert empty strings to null for nullable date/time/phone fields to avoid Postgres type errors
+    if (updates.examDate === "") updates.examDate = null;
+    if (updates.examTime === "") updates.examTime = null;
+    if (updates.dateOfBirth === "") updates.dateOfBirth = null;
+    if (updates.phoneNumber === "") updates.phoneNumber = null;
+    if (updates.assignedSeatNumber === "") updates.assignedSeatNumber = null;
+
+    candidateRepo.merge(candidate, updates);
     await candidateRepo.save(candidate);
 
     res.json(candidate);
   } catch (error: any) {
+    console.error("Candidate update error:", error);
     res.status(500).json({ message: "Update failed", error: error.message });
   }
 });
 
 // Delete candidate (Admin only)
-router.delete("/:examNumber", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+router.delete("/:examNumber", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_admin"), async (req, res) => {
   try {
     const examNumber = req.params.examNumber as string;
     const candidateRepo = AppDataSource.getRepository(Candidate);
@@ -57,12 +67,17 @@ router.delete("/:examNumber", authenticateJWT, authorizeRoles("admin", "super_ad
 
     // Unassign seat if candidate is assigned to a seat
     const seatRepo = AppDataSource.getRepository(Seat);
-    await seatRepo.update({ assignedCandidateId: candidate.id }, { assignedCandidateId: undefined });
+    await seatRepo.update({ assignedCandidateId: candidate.id }, { assignedCandidateId: null as any, status: "available" as any });
 
-    await candidateRepo.delete({ examNumber });
+    // Remove any attempts for this candidate
+    const attemptRepo = AppDataSource.getRepository(Attempt);
+    await attemptRepo.delete({ userId: candidate.examNumber });
+
+    await candidateRepo.remove(candidate);
     res.status(204).send();
-  } catch (error) {
-    res.status(500).json({ message: "Deletion failed" });
+  } catch (error: any) {
+    console.error("Candidate deletion error:", error);
+    res.status(500).json({ message: "Deletion failed", error: error.message });
   }
 });
 
