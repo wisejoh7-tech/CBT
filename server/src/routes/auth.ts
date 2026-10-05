@@ -7,7 +7,7 @@ import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
 import { Candidate } from "../entities/Candidate";
 import { createLog, logger } from "../lib/logger";
-import { redisClient, transporter, sendEmailSafely } from "../lib/services";
+import { redisClient, transporter, sendEmailSafely, sendVerificationEmail } from "../lib/services";
 import { config } from "../lib/config";
 import { authenticateJWT, authorizeRoles } from "../middleware/auth";
 
@@ -868,6 +868,26 @@ router.post("/reset-password", async (req, res) => {
     res.json({ message: "Password reset successful. You can now log in." });
   } catch (error) {
     res.status(500).json({ message: "Failed to reset password", error });
+  }
+});
+
+// Send Account Verification Email
+router.post("/send-verification-email", async (req, res) => {
+  const { email, verificationLink, from } = req.body;
+  if (!email || !verificationLink) {
+    return res.status(400).json({ message: "email and verificationLink are required" });
+  }
+
+  try {
+    const success = await sendVerificationEmail(email.trim().toLowerCase(), verificationLink, from);
+    if (success) {
+      return res.json({ message: "Verification email sent successfully" });
+    } else {
+      return res.status(500).json({ message: "Failed to send verification email" });
+    }
+  } catch (error: any) {
+    logger.error("Failed to send verification email:", error);
+    return res.status(500).json({ message: "Failed to send verification email", error: error.message || "Unknown error" });
   }
 });
 
