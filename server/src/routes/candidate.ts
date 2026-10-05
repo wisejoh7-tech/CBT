@@ -2,6 +2,7 @@ import { Router } from "express";
 import { AppDataSource } from "../data-source";
 import { Candidate } from "../entities/Candidate";
 import { Attempt } from "../entities/Attempt";
+import { Seat } from "../entities/Seat";
 import { authenticateJWT, authorizeRoles } from "../middleware/auth";
 
 const router = Router();
@@ -23,8 +24,9 @@ router.get("/", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_adm
 // Update candidate (Admin only)
 router.put("/:examNumber", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_admin"), async (req, res) => {
   try {
+    const examNumber = req.params.examNumber as string;
     const candidateRepo = AppDataSource.getRepository(Candidate);
-    const candidate = await candidateRepo.findOneBy({ examNumber: req.params.examNumber });
+    const candidate = await candidateRepo.findOneBy({ examNumber });
 
     if (!candidate) return res.status(404).json({ message: "Candidate not found" });
 
@@ -46,7 +48,18 @@ router.put("/:examNumber", authenticateJWT, authorizeRoles("admin", "super_admin
 // Delete candidate (Admin only)
 router.delete("/:examNumber", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
   try {
-    await AppDataSource.getRepository(Candidate).delete(req.params.examNumber);
+    const examNumber = req.params.examNumber as string;
+    const candidateRepo = AppDataSource.getRepository(Candidate);
+    const candidate = await candidateRepo.findOneBy({ examNumber });
+    if (!candidate) {
+      return res.status(404).json({ message: "Candidate not found" });
+    }
+
+    // Unassign seat if candidate is assigned to a seat
+    const seatRepo = AppDataSource.getRepository(Seat);
+    await seatRepo.update({ assignedCandidateId: candidate.id }, { assignedCandidateId: undefined });
+
+    await candidateRepo.delete({ examNumber });
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ message: "Deletion failed" });
