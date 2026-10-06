@@ -538,7 +538,6 @@ export default function Admin() {
         )}
       >
         <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">V</div>
           {(isSidebarOpen) && <span className="font-black text-xl tracking-tighter text-primary whitespace-nowrap overflow-hidden">VIVI ADMIN</span>}
         </div>
         <ScrollArea className="flex-1 px-3">
