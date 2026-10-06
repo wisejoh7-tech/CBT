@@ -24,6 +24,9 @@
 | `TWILIO_ACCOUNT_SID` | Optional | - | Twilio Account SID |
 | `TWILIO_AUTH_TOKEN` | Optional | - | Twilio Auth Token |
 | `TWILIO_PHONE_NUMBER` | Optional | - | Twilio Phone Number |
+| `FIREBASE_PROJECT_ID` | Optional | - | Firebase Admin Project ID |
+| `FIREBASE_CLIENT_EMAIL` | Optional | - | Firebase Admin Service Account Client Email |
+| `FIREBASE_PRIVATE_KEY` | Optional | - | Firebase Admin Service Account Private Key (PEM format) |
 
 #### Example Backend `.env`
 ```env
@@ -76,6 +79,21 @@ VITE_SOCKET_URL=https://my-exam-backend.onrender.com
 
 > **Troubleshooting "Publish directory dist does not exist!":**
 > If Render shows `Empty build command; skipping build`, or fails to create `dist`, ensure the **Build Command** field in Render settings is explicitly set to `pnpm install && pnpm run build` (or `npm install && npm run build`) so that dependencies are installed and the `dist` directory is generated before publishing.
+
+## Troubleshooting Firebase Admin & Render Port Scans
+
+### Error: `Firebase Admin initialization error: Failed to parse private key: Error: Invalid PEM formatted message.`
+This error occurs when the `FIREBASE_PRIVATE_KEY` environment variable in Render is incorrectly formatted or escaped.
+
+**How to Fix in Render Dashboard:**
+1. Navigate to your **backend service** (`my-exam-backend`) -> **Environment**.
+2. Find or add `FIREBASE_PRIVATE_KEY`.
+3. Ensure the key value contains valid newlines. On Render, copy the exact value from your Firebase service account JSON file (including `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`).
+4. Wrap the value in double quotes (`"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"`) or replace literal `\n` characters with actual newline characters in the Render environment variable editor.
+5. Save changes and trigger a re-deploy.
+
+### Error: `Port scan timeout reached, no open ports detected` / `Application exited early`
+If your application exits early due to uncaught errors during startup (such as invalid Firebase PEM private key initialization in a service or library), Render will be unable to detect an open port on `0.0.0.0:10000`. Fixing the environment variable configuration or runtime crashes resolves the port scan timeout error.
 
 ---
 
