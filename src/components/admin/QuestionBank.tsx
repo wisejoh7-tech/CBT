@@ -50,7 +50,14 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({
             <div className="space-y-8">
               <div className="flex gap-4">
                  <div className="w-10 h-10 rounded-1xl bg-primary/5 flex items-center justify-center text-primary shrink-0"><FileText className="w-5 h-5" /></div>
-                 <p className="font-bold text-lg leading-relaxed text-slate-800 pr-16">{q.text}</p>
+                 <div className="space-y-4 pr-16 flex-1">
+                   <p className="font-bold text-lg leading-relaxed text-slate-800">{q.text}</p>
+                   {q.imageUrl && (
+                     <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 p-3 max-w-md">
+                       <img src={q.imageUrl} alt="Question Attachment" className="max-h-52 object-contain rounded-xl" />
+                     </div>
+                   )}
+                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

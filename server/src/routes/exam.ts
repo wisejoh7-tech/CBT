@@ -87,6 +87,14 @@ router.post("/:id/questions", authenticateJWT, authorizeRoles("admin", "super_ad
   res.status(201).json(question);
 });
 
+router.delete("/:examId/questions/:questionId", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+  const questionRepo = AppDataSource.getRepository(Question);
+  await questionRepo.delete(req.params.questionId);
+  const total = await questionRepo.count({ where: { exam: { id: req.params.examId as any } } });
+  await AppDataSource.getRepository(Exam).update(req.params.examId, { totalQuestions: total });
+  res.status(204).send();
+});
+
 // Bulk Question Upload
 router.post("/:id/questions/bulk", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
   const exam = await AppDataSource.getRepository(Exam).findOneBy({ id: req.params.id as any });

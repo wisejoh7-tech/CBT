@@ -146,7 +146,7 @@ export default function Admin() {
   const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
 
   const [newExam, setNewExam] = useState({ title: '', subject: '', durationMinutes: 30 });
-  const [newQuestion, setNewQuestion] = useState({ text: '', options: ['', '', '', ''], correctOptionIndex: 0, topic: 'General' });
+  const [newQuestion, setNewQuestion] = useState({ text: '', options: ['', '', '', ''], correctOptionIndex: 0, topic: 'General', imageUrl: '' });
 
   const initialCandidateState = {
     fullName: '',
@@ -239,7 +239,13 @@ export default function Admin() {
       headers: { ...getHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify(newQuestion)
     });
-    if (res.ok) { toast.success("Question added"); setShowAddQuestion(false); fetchQuestions(selectedExamId); fetchData(); }
+    if (res.ok) {
+      toast.success("Question added");
+      setShowAddQuestion(false);
+      setNewQuestion({ text: '', options: ['', '', '', ''], correctOptionIndex: 0, topic: 'General', imageUrl: '' });
+      fetchQuestions(selectedExamId);
+      fetchData();
+    }
   };
 
   const toggleSubjectStatus = async (id: string) => {
