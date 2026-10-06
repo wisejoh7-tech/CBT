@@ -213,7 +213,7 @@ export default function CandidateRegister() {
         </div>
       </nav>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12 relative z-10">
+      <div className="flex-1 flex flex-col items-center justify-center px-2 sm:px-6 py-8 sm:py-12 relative z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={cn("w-full transition-all duration-500", step === 3 ? "max-w-5xl" : "max-w-md")}>
           <div className="text-center mb-6 sm:mb-10">
             <h2 className="text-1xl sm:text-2xl text-primary font-black leading-none mb-3">Register</h2>
@@ -221,7 +221,7 @@ export default function CandidateRegister() {
           </div>
 
           <Card className="rounded-[12px] sm:rounded-[12px] border border-primary/900 bg-white shadow-2xl overflow-hidden">
-            <CardContent className="p-6 sm:p-12">
+            <CardContent className="p-3.5 sm:p-12">
               <AnimatePresence mode="wait">
                 {step === 1 && (
                   <motion.form key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleSendToken} className="space-y-6 sm:space-y-8">
@@ -234,7 +234,7 @@ export default function CandidateRegister() {
                           placeholder=""
                           value={formData.email}
                           onChange={e => updateField('email', e.target.value)}
-                          className="h-12 sm:h-14 pl-12 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 focus:border-primary font-bold text-sm sm:text-base"
+                          className="h-12 sm:h-14 pl-12 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 focus:border-primary font-bold text-sm sm:text-base w-full"
                           required
                         />
                       </div>
@@ -246,7 +246,7 @@ export default function CandidateRegister() {
                 )}
 
                 {step === 2 && (
-                  <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 sm:space-y-10 max-w-[360px] mx-auto text-center">
+                  <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 sm:space-y-10 w-full max-w-md mx-auto text-center">
                     <div className="space-y-6">
                       <div className="space-y-2">
                          <Label className="text-[9px] sm:text-[10px] font-black text-primary/20  tracking-widest">Verification Token</Label>
@@ -330,17 +330,17 @@ export default function CandidateRegister() {
                           <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Full Legal Name</Label>
                           <Input placeholder="Enter Full Name" value={formData.fullName} onChange={e => updateField('fullName', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm" required />
                         </div>
-                        <div className="grid grid-cols-2 gap-4 sm:gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                           <div className="space-y-1.5 sm:space-y-2">
                             <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Mobile Phone</Label>
-                            <Input placeholder="+234..." value={formData.phoneNumber} onChange={e => updateField('phoneNumber', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm" required />
+                            <Input placeholder="+234..." value={formData.phoneNumber} onChange={e => updateField('phoneNumber', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm w-full" required />
                           </div>
                           <div className="space-y-1.5 sm:space-y-2">
                             <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Birth Date</Label>
-                            <Input type="date" value={formData.dateOfBirth} onChange={e => updateField('dateOfBirth', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-xs sm:text-sm shadow-sm" required />
+                            <Input type="date" value={formData.dateOfBirth} onChange={e => updateField('dateOfBirth', e.target.value)} className="h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-xs sm:text-sm shadow-sm w-full" required />
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 sm:gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                            <div className="space-y-1.5 sm:space-y-2">
                               <Label className="text-[9px] sm:text-[10px] font-black text-primary/40 uppercase tracking-widest">Origin State</Label>
                               <select value={formData.stateOfOrigin} onChange={e => { updateField('stateOfOrigin', e.target.value); updateField('lga', ''); }} className="w-full h-12 sm:h-14 px-4 sm:px-5 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-bold text-sm sm:text-base shadow-sm outline-none" required>
