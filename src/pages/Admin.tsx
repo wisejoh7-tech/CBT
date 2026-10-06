@@ -154,6 +154,7 @@ export default function Admin() {
     password: '',
     confirmPassword: '',
     phoneNumber: '',
+    dateOfBirth: '',
     country: 'Nigeria',
     city: '',
     stateOfOrigin: '',

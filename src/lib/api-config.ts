@@ -133,9 +133,18 @@ export async function safeJsonResponse<T = any>(res: Response): Promise<T> {
   }
 
   if (!res.ok) {
-    const rawError =
+    let rawError =
       (parsed && typeof parsed === "object" && (parsed.message || parsed.error)) ||
       `HTTP Error ${res.status}: ${res.statusText || "Server error"}`;
+    if (parsed && parsed.errors && typeof parsed.errors === 'object') {
+      const fieldErrors = Object.entries(parsed.errors)
+        .map(([field, errs]) => `${field}: ${Array.isArray(errs) ? errs.join(', ') : errs}`)
+        .filter(Boolean)
+        .join('; ');
+      if (fieldErrors) {
+        rawError = `${parsed.message || 'Validation failed'}: ${fieldErrors}`;
+      }
+    }
     throw new Error(typeof rawError === "string" ? rawError : String(rawError));
   }
 

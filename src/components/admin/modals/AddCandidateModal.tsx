@@ -115,6 +115,11 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                     <Input placeholder="School" value={newCandidate.schoolAttended} onChange={e => setNewCandidate({...newCandidate, schoolAttended: e.target.value})} required className="h-11 px-4 rounded-xl bg-slate-50 border border-primary/5 font-bold text-xs" />
                   </div>
                 </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] font-black text-primary/40 tracking-widest uppercase">Date of Birth</Label>
+                  <Input type="date" value={newCandidate.dateOfBirth || ''} onChange={e => setNewCandidate({...newCandidate, dateOfBirth: e.target.value})} className="h-11 px-4 rounded-xl bg-slate-50 border border-primary/5 font-bold text-xs" />
+                </div>
               </div>
             </div>
 
