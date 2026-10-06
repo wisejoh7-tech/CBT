@@ -46,7 +46,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-4xl bg-white rounded-[40px] shadow-2xl p-8 space-y-6 border-2 border-primary/5 max-h-[90vh] overflow-y-auto custom-scrollbar relative z-10"
+        className="w-full max-w-4xl bg-white rounded-[40px] shadow-2xl p-4 sm:p-8 space-y-6 border-2 border-primary/5 max-h-[90vh] overflow-y-auto custom-scrollbar relative z-10"
       >
         <div className="flex justify-between items-center border-b-4 border-primary/5 pb-4 mb-2 uppercase">
            <div className="text-left">
@@ -65,7 +65,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
             <div className="space-y-6">
               <div className="bg-slate-50 p-6 rounded-3xl space-y-4 border border-primary/5 shadow-inner">
                 <h4 className="text-[9px] font-black tracking-widest text-primary/30 border-b border-primary/5 pb-2 uppercase">Security & Login</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-[9px] font-black text-primary/40 tracking-widest uppercase">Exam No. (Auto)</Label>
                     <Input disabled placeholder="Auto-generated" className="h-11 px-4 rounded-xl bg-white/50 border-none font-bold shadow-inner text-xs opacity-50" />
@@ -76,7 +76,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-[9px] font-black text-primary/40 tracking-widest uppercase">Password</Label>
                     <div className="relative">
@@ -105,7 +105,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                   <Input placeholder="Full Name" value={newCandidate.fullName} onChange={e => setNewCandidate({...newCandidate, fullName: e.target.value})} required className="h-12 px-5 rounded-xl bg-slate-50 border border-primary/5 font-bold text-sm shadow-sm" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-[9px] font-black text-primary/40 tracking-widest uppercase">Phone</Label>
                     <Input placeholder="+234..." value={newCandidate.phoneNumber} onChange={e => setNewCandidate({...newCandidate, phoneNumber: e.target.value})} required className="h-11 px-4 rounded-xl bg-slate-50 border border-primary/5 font-bold text-xs" />
@@ -127,7 +127,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
             <div className="space-y-6">
               <div className="bg-slate-50 p-6 rounded-3xl space-y-4 border border-primary/5 shadow-inner">
                 <h4 className="text-[9px] font-black tracking-widest text-primary/30 border-b border-primary/5 pb-2 uppercase">Regional Information</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-[9px] font-black text-primary/40 tracking-widest uppercase">State</Label>
                     <select value={newCandidate.stateOfOrigin} onChange={e => setNewCandidate({ ...newCandidate, stateOfOrigin: e.target.value, lga: '' })} className="w-full h-11 px-4 rounded-xl bg-white border border-primary/5 font-bold text-xs outline-none transition-all shadow-sm" required>
