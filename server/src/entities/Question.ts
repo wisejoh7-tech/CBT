@@ -19,6 +19,9 @@ export class Question {
   @Column({ type: "text", nullable: true })
   explanation?: string;
 
+  @Column({ type: "text", nullable: true })
+  imageUrl?: string;
+
   @Column({ type: "varchar", length: 100, default: "General" })
   topic!: string;
 

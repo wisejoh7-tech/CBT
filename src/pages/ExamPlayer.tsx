@@ -499,6 +499,16 @@ export default function ExamPlayer() {
 
                   <h3 className="text-xl font-black leading-tight tracking-tight">{currentQuestion.text}</h3>
 
+                  {currentQuestion.imageUrl && (
+                    <div className="my-4 rounded-2xl overflow-hidden border border-primary/10 max-h-72 flex justify-center bg-white p-3 shadow-sm">
+                      <img
+                        src={currentQuestion.imageUrl}
+                        alt="Question Diagram"
+                        className="max-h-64 object-contain rounded-xl"
+                      />
+                    </div>
+                  )}
+
                   <div className="grid gap-4">
                     {currentQuestion.options.map((opt, idx) => {
                       const isSelected = answers[currentQuestion.id] === idx;
