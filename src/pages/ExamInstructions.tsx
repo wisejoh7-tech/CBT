@@ -90,71 +90,71 @@ export default function ExamInstructions() {
   return (
     <div className="min-h-screen bg-slate-50/20 flex flex-col items-center selection:bg-slate-100 relative text-black">
       <div className="cbt-background" />
-      <nav className="sticky top-0 w-full bg-white border-b-2 border-slate-100 px-8 py-4 flex justify-between items-center z-[100] shadow-sm mb-12">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
-            <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-black/10">V</div>
-            <span className="font-black text-xl tracking-tighter text-black">VIVI CBT</span>
+      <nav className="sticky top-0 w-full bg-white border-b border-slate-100 px-6 py-3 flex justify-between items-center z-[100] shadow-sm mb-8">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => navigate('/')}>
+            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-bold text-base shadow-md shadow-black/10">V</div>
+            <span className="font-black text-base tracking-tight text-black">VIVI CBT</span>
           </div>
-          <div className="h-8 w-[1px] bg-slate-100 hidden md:block" />
+          <div className="h-6 w-[1px] bg-slate-100 hidden md:block" />
           <div className="hidden md:flex items-center gap-2 text-slate-400">
-            <span className="text-[8px] font-black tracking-[0.2em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black tracking-[0.15em] leading-none text-left">VIVI Standard<br/>Examination Portal</span>
           </div>
         </div>
-        <div className="flex items-center gap-8">
-          <button onClick={() => navigate('/')} className="text-[14px] font-black tracking-widest text-slate-400 hover:text-black transition-colors flex items-center gap-1">
-            <ArrowLeft className="w-4 h-4" /> Home
+        <div className="flex items-center gap-6">
+          <button onClick={() => navigate('/')} className="text-xs font-black tracking-wider text-slate-400 hover:text-black transition-colors flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Home
           </button>
-          <div className="flex items-center gap-4 border-l pl-8 border-slate-100">
+          <div className="flex items-center gap-3 border-l pl-6 border-slate-100">
              <div className="text-right">
-                <p className="text-[10px] font-black text-slate-400 leading-none">CANDIDATE</p>
+                <p className="text-[9px] font-black text-slate-400 leading-none">CANDIDATE</p>
                 <p className="font-bold text-xs text-black">{profile?.displayName}</p>
              </div>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-2xl w-full space-y-8 px-6 pb-20">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-slate-50 border-2 border-slate-100 shadow-sm mb-4">
-            <span className="text-[10px] font-black text-black tracking-widest">EXAMINATION Subjects</span>
+      <div className="max-w-xl w-full space-y-6 px-4 pb-16">
+        <div className="text-center space-y-1.5">
+          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-slate-50 border border-slate-100 shadow-sm mb-2">
+            <span className="text-[9px] font-black text-black tracking-wider">EXAMINATION Subjects</span>
           </div>
-          <h1 className="text-2xl font-black tracking-tighter text-black leading-none">
+          <h1 className="text-xl font-black tracking-tight text-black leading-none">
             {examId === 'unified' ? 'UNIFIED Examination' : exams[0].subject}
           </h1>
-          <p className="text-[10px] font-black text-slate-400 tracking-[0.4em]">
+          <p className="text-[9px] font-black text-slate-400 tracking-[0.3em]">
             {examId === 'unified' ? 'MULTI-SUBJECTS SESSION' : exams[0].title}
           </p>
         </div>
 
-        <Card className="rounded-[40px] border-2 border-slate-100 bg-white shadow-2xl overflow-hidden p-10">
-          <div className="grid grid-cols-2 gap-8 mb-10 border-b-2 border-slate-50 pb-10">
-             <div className="space-y-1">
-                <p className="text-[9px] font-black opacity-30">DURATION</p>
-                <p className="text-1xl font-black text-black">{totalDuration} MINUTES</p>
+        <Card className="rounded-2xl border border-slate-100 bg-white shadow-xl overflow-hidden p-6">
+          <div className="grid grid-cols-2 gap-6 mb-6 border-b border-slate-100 pb-6">
+             <div className="space-y-0.5">
+                <p className="text-[9px] font-black opacity-40">DURATION</p>
+                <p className="text-base font-black text-black">{totalDuration} MINUTES</p>
              </div>
-             <div className="space-y-1">
-                <p className="text-[9px] font-black opacity-30">TOTAL ITEMS</p>
-                <p className="text-1xl font-black text-black">{totalQuestions} QUESTIONS</p>
+             <div className="space-y-0.5">
+                <p className="text-[9px] font-black opacity-40">TOTAL ITEMS</p>
+                <p className="text-base font-black text-black">{totalQuestions} QUESTIONS</p>
              </div>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-6">
              {examId === 'unified' && (
-                <div className="space-y-3">
-                   <p className="text-[14px] font-black opacity-30 tracking-widest">ENROLLED SUBJECTS</p>
-                   <div className="flex flex-wrap gap-2">
+                <div className="space-y-2">
+                   <p className="text-xs font-black opacity-40 tracking-wider">ENROLLED SUBJECTS</p>
+                   <div className="flex flex-wrap gap-1.5">
                       {exams.map(e => (
-                         <Badge key={e.id} className="bg-slate-100 text-black border-none px-4 py-2 font-black text-[14px] rounded-lg">
+                         <Badge key={e.id} className="bg-slate-100 text-black border-none px-3 py-1 font-black text-xs rounded-md">
                             {e.subject} ({e.totalQuestions} Q)
                          </Badge>
                       ))}
                    </div>
                 </div>
              )}
-             <div className="space-y-4">
-                <h3 className="text-sm font-black tracking-widest text-black">CANDIDATE INSTRUCTIONS</h3>
-                <div className="space-y-3">
+             <div className="space-y-3">
+                <h3 className="text-xs font-black tracking-wider text-black">CANDIDATE INSTRUCTIONS</h3>
+                <div className="space-y-2">
                    {[
                      "DO NOT minimize the browser window or switch tabs. Any exit from fullscreen mode will be logged as a violation.",
                      "Ensure your webcam remains unobstructed for continuous proctoring.",
@@ -162,20 +162,18 @@ export default function ExamInstructions() {
                      "All responses are automatically saved in real-time. If the system crashes, your progress will be restored upon reconnection.",
                      "Click the 'SUBMIT' button only when you are completely finished with all modules."
                    ].map((text, i) => (
-                     <div key={i} className="flex gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                        <div className="w-6 h-6 rounded-lg bg-black flex items-center justify-center shrink-0 font-black text-[10px] text-white">{i+1}</div>
-                        <p className="text-xs font-bold leading-relaxed text-slate-700">{text}</p>
+                     <div key={i} className="flex gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 items-start">
+                        <div className="w-5 h-5 rounded-md bg-black flex items-center justify-center shrink-0 font-black text-[9px] text-white mt-0.5">{i+1}</div>
+                        <p className="text-[11px] font-medium leading-relaxed text-slate-700">{text}</p>
                      </div>
                    ))}
                 </div>
              </div>
 
-
-
-             <div className="flex flex-col gap-4">
+             <div className="flex flex-col gap-3 pt-2">
                 <Button
                     onClick={() => navigate(`/exam/${examId}`)}
-                    className="w-full h-15 bg-black text-white rounded-2xl font-black text-xl tracking-widest shadow-2xl shadow-black/20 flex gap-4 hover:bg-slate-800 transition-all border-none active:scale-95"
+                    className="w-full h-11 bg-black text-white rounded-xl font-black text-sm tracking-wider shadow-lg shadow-black/10 flex gap-2 hover:bg-slate-800 transition-all border-none active:scale-95"
                 >
                   BEGIN EXAMINATION
                 </Button>
@@ -189,7 +187,7 @@ export default function ExamInstructions() {
                     }
                   }}
                   variant="ghost"
-                  className="w-full h-12 text-slate-400 font-black text-[10px] tracking-[0.3em] hover:text-black hover:bg-transparent"
+                  className="w-full h-9 text-slate-400 font-black text-[9px] tracking-[0.2em] hover:text-black hover:bg-transparent"
                 >
                   Return
                 </Button>
@@ -197,7 +195,7 @@ export default function ExamInstructions() {
           </div>
         </Card>
 
-        <p className="text-center text-[10px] font-bold text-slate-300 tracking-[0.3em]">
+        <p className="text-center text-[9px] font-bold text-slate-300 tracking-[0.2em]">
           &copy; {new Date().getFullYear()} VIVI CBT SYSTEMS &bull; ACADEMIC INTEGRITY ENFORCED
         </p>
       </div>

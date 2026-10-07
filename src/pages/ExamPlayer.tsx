@@ -396,17 +396,17 @@ export default function ExamPlayer() {
 
   if (!hasStarted && !isCompleted) {
     return (
-      <div className="min-h-screen bg-slate-50/20 flex items-center justify-center p-6 relative">
+      <div className="min-h-screen bg-slate-50/20 flex items-center justify-center p-4 relative">
         <div className="cbt-background" />
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl w-full bg-white/90 backdrop-blur-md p-12 rounded-[48px] shadow-2xl border-2 border-primary/20 text-center relative z-10">
-          <h2 className="text-1xl font-black mb-6 text-primary">EXAMINATION PROTOCOLS</h2>
-          <div className="text-left space-y-4 mb-10 text-primary/70">
-            <p className="font-bold flex items-center gap-2">1. Fullscreen is mandatory.</p>
-            <p className="font-bold flex items-center gap-2">2. Time limit: {Math.floor((timeLeft || 0) / 60)} minutes.</p>
-            <p className="font-bold flex items-center gap-2 text-red-500">3. Tab-switching or minimizing will result in session termination.</p>
-            <p className="font-bold flex items-center gap-2">4. Webcam monitoring is active for the duration of the exam.</p>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-xl border border-primary/20 text-center relative z-10">
+          <h2 className="text-base font-black mb-4 text-primary">EXAMINATION PROTOCOLS</h2>
+          <div className="text-left space-y-2.5 mb-6 text-primary/70 text-xs font-medium">
+            <p className="flex items-center gap-2">1. Fullscreen is mandatory.</p>
+            <p className="flex items-center gap-2">2. Time limit: {Math.floor((timeLeft || 0) / 60)} minutes.</p>
+            <p className="flex items-center gap-2 text-red-500 font-semibold">3. Tab-switching or minimizing will result in session termination.</p>
+            <p className="flex items-center gap-2">4. Webcam monitoring is active for the duration of the exam.</p>
           </div>
-          <Button onClick={startExam} className="w-full h-16 bg-primary text-white font-black rounded-2xl tracking-widest text-lg shadow-xl shadow-primary/20">
+          <Button onClick={startExam} className="w-full h-11 bg-primary text-white font-black rounded-xl tracking-wider text-xs shadow-lg shadow-primary/20">
             I Understand, Start Exam
           </Button>
         </motion.div>
@@ -416,17 +416,17 @@ export default function ExamPlayer() {
 
   if (isCompleted) {
     return (
-      <div className="min-h-screen bg-slate-50/20 flex items-center justify-center p-6 text-black selection:bg-slate-100 relative">
+      <div className="min-h-screen bg-slate-50/20 flex items-center justify-center p-4 text-black selection:bg-slate-100 relative">
         <div className="cbt-background" />
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-xl w-full bg-white/90 backdrop-blur-md p-12 rounded-[48px] shadow-2xl border border-primary/10 text-center relative z-10">
-          <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-6" />
-          <h2 className="text-3xl font-black mb-4 tracking-tighter">Session Terminated Successfully</h2>
-          <p className="text-slate-500 font-bold text-sm mb-10 leading-relaxed">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md w-full bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-primary/10 text-center relative z-10">
+          <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
+          <h2 className="text-xl font-black mb-3 tracking-tight">Session Terminated Successfully</h2>
+          <p className="text-slate-500 font-medium text-xs mb-8 leading-relaxed">
             Your responses have been securely uploaded to the central server. <br/>
             Results will be released to your candidate dashboard <br/>
             following final administrative verification.
           </p>
-          <Button onClick={() => { logOut?.(); navigate('/'); }} className="w-full h-16 bg-black text-white font-black rounded-2xl shadow-xl hover:bg-slate-800 transition-all border-none">
+          <Button onClick={() => { logOut?.(); navigate('/'); }} className="w-full h-11 bg-black text-white font-black rounded-xl text-xs shadow-lg hover:bg-slate-800 transition-all border-none">
             LOGOUT AND EXIT PORTAL
           </Button>
         </motion.div>
@@ -437,32 +437,32 @@ export default function ExamPlayer() {
   return (
     <div className="h-screen flex flex-col bg-slate-50/20 text-primary selection:bg-primary/10 relative">
       <div className="cbt-background" />
-      <header className="h-20 px-8 flex items-center justify-between border-b-2 border-primary/10 bg-white sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-xl">V</div>
+      <header className="h-14 px-6 flex items-center justify-between border-b border-primary/10 bg-white sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-black text-base">V</div>
             <div>
-              <h1 className="font-black tracking-tight leading-none">CBT PLAYER</h1>
-              <p className="text-[10px] font-bold text-primary/40 tracking-widest mt-1">Session: {profile?.displayName}</p>
+              <h1 className="text-xs font-black tracking-tight leading-none">CBT PLAYER</h1>
+              <p className="text-[9px] font-bold text-primary/40 tracking-wider mt-0.5">Session: {profile?.displayName}</p>
             </div>
           </div>
-          <div className="h-8 w-[1px] bg-primary/10 hidden md:block" />
+          <div className="h-6 w-[1px] bg-primary/10 hidden md:block" />
           <div className="hidden md:flex items-center gap-2 text-primary/40">
             <div className="relative">
-              <Monitor className="w-6 h-6" />
-              <User className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+              <Monitor className="w-5 h-5" />
+              <User className="w-2.5 h-2.5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <span className="text-[8px] font-black tracking-[0.2em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
+            <span className="text-[8px] font-black tracking-[0.15em] leading-none text-left">JAMB Standard<br/>Examination Portal</span>
           </div>
         </div>
 
-        <div className="flex gap-8 items-center">
-          <div className="flex items-center gap-3 text-right pr-4 border-r border-primary/10">
-            <p className="text-[10px] font-black text-primary/30 tracking-widest">Time Remaining</p>
-            <p className={cn("text-2xl font-mono font-black", timeLeft! < 300 ? "text-red-500 animate-pulse" : "")}>{formatTime(timeLeft || 0)}</p>
+        <div className="flex gap-6 items-center">
+          <div className="flex items-center gap-2 text-right pr-3 border-r border-primary/10">
+            <p className="text-[9px] font-black text-primary/40 tracking-wider">Time Remaining</p>
+            <p className={cn("text-lg font-mono font-black", timeLeft! < 300 ? "text-red-500 animate-pulse" : "")}>{formatTime(timeLeft || 0)}</p>
           </div>
-          <Button variant="ghost" onClick={handleSuspendSession} className="text-primary/30 hover:text-red-500">
-            <LogOut className="w-4 h-4" />
+          <Button variant="ghost" onClick={handleSuspendSession} className="text-primary/30 hover:text-red-500 h-8 px-2">
+            <LogOut className="w-3.5 h-3.5" />
           </Button>
           <video ref={videoRefProctor} autoPlay muted playsInline className="hidden" />
         </div>
@@ -472,13 +472,13 @@ export default function ExamPlayer() {
         <motion.div initial={{ width: 0 }} animate={{ width: `${answeredPercentage}%` }} className="h-full bg-primary shadow-[0_0_10px_var(--primary)]" />
       </div>
 
-      <nav className="h-12 bg-primary/5 border-b-2 border-primary/10 flex items-center px-8 overflow-x-auto no-scrollbar">
+      <nav className="h-9 bg-primary/5 border-b border-primary/10 flex items-center px-6 overflow-x-auto no-scrollbar">
         {exams.map((ex, idx) => (
           <button
             key={ex.id}
             onClick={() => { setActiveExamIndex(idx); setCurrentQuestionIndex(0); }}
             className={cn(
-              "h-full px-6 text-[10px] font-black tracking-widest transition-all",
+              "h-full px-4 text-[9px] font-black tracking-wider transition-all",
               activeExamIndex === idx ? "bg-primary text-white" : "text-primary/40 hover:bg-primary/10"
             )}
           >
@@ -488,39 +488,39 @@ export default function ExamPlayer() {
       </nav>
 
       <main className="flex-1 flex overflow-hidden">
-        <section className="flex-1 p-12 overflow-y-auto flex justify-center">
+        <section className="flex-1 p-6 md:p-8 overflow-y-auto flex justify-center">
           <div className="max-w-xl w-full">
             {currentQuestion && (
               <AnimatePresence mode="wait">
-                <motion.div key={currentQuestion.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
+                <motion.div key={currentQuestion.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                   <div className="flex justify-between items-center">
-                    <Badge className="bg-primary/10 text-primary font-black px-4 py-2 rounded-lg border-none">{exams[activeExamIndex].subject} • Question {currentQuestionIndex + 1}</Badge>
+                    <Badge className="bg-primary/10 text-primary font-black px-3 py-1 text-xs rounded-md border-none">{exams[activeExamIndex].subject} • Question {currentQuestionIndex + 1}</Badge>
                   </div>
 
-                  <h3 className="text-xl font-black leading-tight tracking-tight">{currentQuestion.text}</h3>
+                  <h3 className="text-sm font-bold leading-relaxed text-slate-800">{currentQuestion.text}</h3>
 
                   {currentQuestion.imageUrl && (
-                    <div className="my-4 rounded-2xl overflow-hidden border border-primary/10 max-h-72 flex justify-center bg-white p-3 shadow-sm">
+                    <div className="my-3 rounded-xl overflow-hidden border border-primary/10 max-h-60 flex justify-center bg-white p-2 shadow-sm">
                       <img
                         src={currentQuestion.imageUrl}
                         alt="Question Diagram"
-                        className="max-h-64 object-contain rounded-xl"
+                        className="max-h-52 object-contain rounded-lg"
                       />
                     </div>
                   )}
 
-                  <div className="grid gap-4">
+                  <div className="grid gap-3">
                     {currentQuestion.options.map((opt, idx) => {
                       const isSelected = answers[currentQuestion.id] === idx;
                       return (
                         <button key={idx} onClick={() => handleSelectOption(idx)} className={cn(
-                          "flex items-center p-4 rounded-2xl border-2 transition-all text-left",
+                          "flex items-center p-3 rounded-xl border-2 transition-all text-left",
                           isSelected ? "border-primary bg-primary/[0.03]" : "border-primary/10 bg-white hover:border-primary/30"
                         )}>
-                          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm mr-4", isSelected ? "bg-primary text-white" : "bg-primary/5")}>
+                          <div className={cn("w-6 h-6 rounded-md flex items-center justify-center font-black text-xs mr-3 shrink-0", isSelected ? "bg-primary text-white" : "bg-primary/5")}>
                             {String.fromCharCode(65 + idx)}
                           </div>
-                          <span className="text-sm font-bold">{opt}</span>
+                          <span className="text-xs font-semibold text-slate-700">{opt}</span>
                         </button>
                       );
                     })}
@@ -531,15 +531,15 @@ export default function ExamPlayer() {
           </div>
         </section>
 
-        <aside className="w-80 border-l-2 border-primary/10 bg-white p-8 overflow-y-auto">
-          <h4 className="text-[10px] font-black text-primary/20 tracking-[0.2em] mb-6">Question Answered</h4>
-          <div className="grid grid-cols-4 gap-3">
+        <aside className="w-64 border-l border-primary/10 bg-white p-5 overflow-y-auto hidden md:block">
+          <h4 className="text-[9px] font-black text-primary/30 tracking-[0.15em] mb-4 uppercase">Question Palette</h4>
+          <div className="grid grid-cols-4 gap-2">
             {questions.map((q, idx) => (
               <button key={q.id} onClick={() => setCurrentQuestionIndex(idx)} className={cn(
-                "aspect-square rounded-xl flex items-center justify-center font-black transition-all border-2",
-                idx === currentQuestionIndex ? "bg-primary text-white border-primary shadow-lg scale-110" :
+                "aspect-square rounded-lg flex items-center justify-center text-xs font-bold transition-all border-2",
+                idx === currentQuestionIndex ? "bg-primary text-white border-primary shadow-md scale-105" :
                 answers[q.id] !== undefined ? "bg-primary/5 text-primary border-primary/10" :
-                "bg-white border-primary/5 text-primary/20"
+                "bg-white border-primary/5 text-primary/30"
               )}>
                 {idx + 1}
               </button>
@@ -548,13 +548,13 @@ export default function ExamPlayer() {
         </aside>
       </main>
 
-      <footer className="h-24 px-12 border-t-2 border-primary/10 flex items-center justify-between bg-white">
+      <footer className="h-16 px-6 border-t border-primary/10 flex items-center justify-between bg-white">
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setCurrentQuestionIndex(p => Math.max(0, p - 1))} disabled={currentQuestionIndex === 0} className="h-14 px-8 rounded-1xl font-black tracking-widest border-2">PREVIOUS</Button>
-          <Button onClick={() => setCurrentQuestionIndex(p => Math.min(questions.length - 1, p + 1))} disabled={currentQuestionIndex === questions.length - 1} className="h-14 px-12 bg-primary text-white rounded-2xl font-black tracking-widest shadow-xl shadow-primary/20">NEXT ITEM</Button>
+          <Button variant="outline" onClick={() => setCurrentQuestionIndex(p => Math.max(0, p - 1))} disabled={currentQuestionIndex === 0} className="h-10 px-5 rounded-xl font-bold text-xs tracking-wider border-2">PREVIOUS</Button>
+          <Button onClick={() => setCurrentQuestionIndex(p => Math.min(questions.length - 1, p + 1))} disabled={currentQuestionIndex === questions.length - 1} className="h-10 px-6 bg-primary text-white rounded-xl font-bold text-xs tracking-wider shadow-md shadow-primary/20">NEXT ITEM</Button>
         </div>
 
-        <Button onClick={() => { if(confirm("Submit all answers?")) handleSubmit(); }} className="h-14 px-8 bg-red-300 text-white rounded-1xl font-black tracking-widest hover:bg-red-600 shadow-xl shadow-red-100 border-none">FINAL SUBMIT</Button>
+        <Button onClick={() => { if(confirm("Submit all answers?")) handleSubmit(); }} className="h-10 px-5 bg-rose-500 text-white rounded-xl font-black text-xs tracking-wider hover:bg-rose-600 shadow-md border-none">FINAL SUBMIT</Button>
       </footer>
 
 
