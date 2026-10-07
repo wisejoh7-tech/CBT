@@ -71,7 +71,7 @@ export const ExamModules: React.FC<ExamModulesProps> = ({
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDeleteExam(e.id)}
-                      className="h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                      className="h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
