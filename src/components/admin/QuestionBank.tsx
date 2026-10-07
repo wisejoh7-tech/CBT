@@ -26,70 +26,70 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({
   const currentExam = exams.find(e => e.id === selectedExamId);
 
   return (
-    <div className="space-y-6 text-sm font-medium max-w-6xl mx-auto">
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-primary/5">
-        <div className="flex items-center gap-6">
-          <button onClick={() => setActiveTab('modules')} className="h-12 w-12 flex items-center justify-center rounded-2xl hover:bg-slate-50 shadow-sm border border-primary/5 transition-all text-slate-400 hover:text-primary">
-            <ArrowLeft className="w-6 h-6" />
+    <div className="space-y-4 text-xs font-medium max-w-6xl mx-auto">
+      <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-primary/5">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setActiveTab('modules')} className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-slate-50 shadow-sm border border-primary/5 transition-all text-slate-400 hover:text-primary">
+            <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h3 className="text-2xl font-black tracking-tighter  text-slate-800">{currentExam?.title}</h3>
-            <p className="text-[14px] font-black ">{questions.length} Question bank</p>
+            <h3 className="text-lg font-black tracking-tight text-slate-800">{currentExam?.title}</h3>
+            <p className="text-xs font-bold text-slate-500">{questions.length} Question bank</p>
           </div>
         </div>
-        <Button onClick={() => setShowAddQuestion(true)} className="h-12 px-6 rounded-2xl bg-slate-900 text-white font-black tracking-widest uppercase text-[11px] shadow-xl hover:bg-black transition-all">
-          <PlusCircle className="w-4 h-4 mr-2" /> Add Question
+        <Button onClick={() => setShowAddQuestion(true)} className="h-9 px-4 rounded-xl bg-slate-900 text-white font-black tracking-wider uppercase text-[10px] shadow-md hover:bg-black transition-all">
+          <PlusCircle className="w-3.5 h-3.5 mr-1.5" /> Add Question
         </Button>
       </div>
 
-      <div className="space-y-4 pb-20">
+      <div className="space-y-3 pb-16">
         {questions.map((q, i) => (
-          <Card key={q.id} className="p-10 rounded-[32px] bg-white shadow-2xl relative overflow-hidden group border border-primary/5 hover:border-primary/20 transition-all">
-            <Badge className="absolute top-10 right-10 bg-slate-50 text-slate-400 border-none font-black text-[10px] px-4 py-1.5 rounded-full tracking-[0.2em] uppercase">ITEM #{i + 1}</Badge>
+          <Card key={q.id} className="p-6 rounded-2xl bg-white shadow-lg relative overflow-hidden group border border-primary/5 hover:border-primary/20 transition-all">
+            <Badge className="absolute top-6 right-6 bg-slate-50 text-slate-400 border-none font-black text-[9px] px-3 py-1 rounded-full tracking-[0.15em] uppercase">ITEM #{i + 1}</Badge>
 
-            <div className="space-y-8">
-              <div className="flex gap-4">
-                 <div className="w-10 h-10 rounded-1xl bg-primary/5 flex items-center justify-center text-primary shrink-0"><FileText className="w-5 h-5" /></div>
-                 <div className="space-y-4 pr-16 flex-1">
-                   <p className="font-bold text-lg leading-relaxed text-slate-800">{q.text}</p>
+            <div className="space-y-5">
+              <div className="flex gap-3">
+                 <div className="w-8 h-8 rounded-lg bg-primary/5 flex items-center justify-center text-primary shrink-0"><FileText className="w-4 h-4" /></div>
+                 <div className="space-y-3 pr-14 flex-1">
+                   <p className="font-semibold text-sm leading-relaxed text-slate-800">{q.text}</p>
                    {q.imageUrl && (
-                     <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 p-3 max-w-md">
-                       <img src={q.imageUrl} alt="Question Attachment" className="max-h-52 object-contain rounded-xl" />
+                     <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 p-2 max-w-md">
+                       <img src={q.imageUrl} alt="Question Attachment" className="max-h-44 object-contain rounded-lg" />
                      </div>
                    )}
                  </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {q.options.map((opt, idx) => (
                   <div key={idx} className={cn(
-                    "p-6 rounded-2xl border-2 font-bold text-sm transition-all duration-300 relative",
+                    "p-3.5 rounded-xl border-2 font-semibold text-xs transition-all duration-300 relative flex items-center",
                     idx === q.correctOptionIndex
                       ? "bg-emerald-50 border-emerald-500 text-emerald-800 shadow-emerald-100"
                       : "bg-slate-50 border-slate-100 text-slate-500"
                   )}>
                     <span className={cn(
-                      "inline-flex w-7 h-7 rounded-lg items-center justify-center mr-3 font-black text-xs shadow-sm",
+                      "inline-flex w-6 h-6 rounded-md items-center justify-center mr-2.5 font-black text-[10px] shrink-0 shadow-sm",
                       idx === q.correctOptionIndex ? "bg-emerald-500 text-white" : "bg-white text-slate-400"
                     )}>
                       {String.fromCharCode(65 + idx)}
                     </span>
-                    {opt}
+                    <span>{opt}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="pt-8 border-t border-primary/5 flex justify-between items-center">
-                 <div className="flex gap-3">
-                   {q.topic && <Badge variant="outline" className="bg-primary/5 text-primary border-none font-black text-[10px] px-4 py-1.5 rounded-full tracking-widest uppercase">{q.topic}</Badge>}
-                   <Badge variant="outline" className="bg-slate-100 text-slate-500 border-none font-black text-[10px] px-4 py-1.5 rounded-full tracking-widest uppercase">Type: MCQ</Badge>
+              <div className="pt-4 border-t border-primary/5 flex justify-between items-center">
+                 <div className="flex gap-2">
+                   {q.topic && <Badge variant="outline" className="bg-primary/5 text-primary border-none font-black text-[9px] px-3 py-1 rounded-full tracking-wider uppercase">{q.topic}</Badge>}
+                   <Badge variant="outline" className="bg-slate-100 text-slate-500 border-none font-black text-[9px] px-3 py-1 rounded-full tracking-wider uppercase">Type: MCQ</Badge>
                  </div>
 
                  <button
                   onClick={() => handleDeleteQuestion(q.id)}
-                  className="text-rose-400 hover:text-rose-600 font-black text-[11px] tracking-widest flex items-center gap-2 px-6 py-2.5 rounded-xl hover:bg-rose-50 transition-all uppercase"
+                  className="text-rose-400 hover:text-rose-600 font-black text-[10px] tracking-wider flex items-center gap-1.5 px-4 py-2 rounded-lg hover:bg-rose-50 transition-all uppercase"
                 >
-                  <Trash2 className="w-4 h-4" /> Purge Item
+                  <Trash2 className="w-3.5 h-3.5" /> Purge Item
                 </button>
               </div>
             </div>
@@ -97,11 +97,11 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({
         ))}
 
         {questions.length === 0 && (
-          <div className="py-40 text-center bg-white rounded-[20px] border-4 border-dashed border-slate-100 flex flex-col items-center gap-6">
-            <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
-               <PlusCircle className="w-10 h-10" />
+          <div className="py-24 text-center bg-white rounded-2xl border-2 border-dashed border-slate-100 flex flex-col items-center gap-4">
+            <div className="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+               <PlusCircle className="w-8 h-8" />
             </div>
-            <p className="text-xl font-black text-slate-200  ">No Assessment Data</p>
+            <p className="text-base font-black text-slate-300">No Assessment Data</p>
           </div>
         )}
       </div>
