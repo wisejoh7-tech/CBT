@@ -46,9 +46,28 @@ export default function ExamInstructions() {
           if (filtered.length === 0) {
             const subjectNames = profile?.subjectCombination || [];
             if (subjectNames.length > 0) {
-              filtered = allExams.filter(e =>
-                subjectNames.some(s => isSubjectMatch(s, e.subject))
-              );
+              const matchedExams: Exam[] = [];
+              for (const s of subjectNames) {
+                const matched = allExams.find(e => isSubjectMatch(s, e.subject));
+                if (matched) {
+                  if (!matchedExams.some(e => e.id === matched.id)) {
+                    matchedExams.push(matched);
+                  }
+                } else {
+                  matchedExams.push({
+                    id: `virtual-${encodeURIComponent(s)}`,
+                    title: `${s} Module`,
+                    description: `${s} Examination Module`,
+                    subject: s,
+                    durationMinutes: 30,
+                    totalQuestions: 0,
+                    isActive: true,
+                    createdBy: 'system',
+                    createdAt: new Date().toISOString()
+                  });
+                }
+              }
+              filtered = matchedExams;
             }
           }
 

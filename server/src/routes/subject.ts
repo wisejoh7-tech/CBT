@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { AppDataSource } from "../data-source";
 import { Subject } from "../entities/Subject";
+import { Exam } from "../entities/Exam";
 import { authenticateJWT, authorizeRoles } from "../middleware/auth";
 import { logger } from "../lib/logger";
 
@@ -52,6 +53,70 @@ router.post("/", authenticateJWT, authorizeRoles("admin", "super_admin"), async 
   } catch (error: any) {
     logger.error("Failed to create subject:", error.message);
     res.status(500).json({ message: "Failed to create subject", error: error.message });
+  }
+});
+
+// Release all subjects to Exam Player (Admin only)
+router.post("/release-all", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_admin"), async (req: any, res) => {
+  try {
+    const subjectRepo = AppDataSource.getRepository(Subject);
+    const examRepo = AppDataSource.getRepository(Exam);
+
+    // 1. Set all subjects to active
+    let subjects = await subjectRepo.find();
+    if (subjects.length === 0) {
+      const defaults = ["English Language", "Mathematics", "Physics", "Chemistry", "Biology", "Economics", "Government"];
+      const seed = defaults.map(name => subjectRepo.create({ name, isActive: true }));
+      await subjectRepo.save(seed);
+      subjects = await subjectRepo.find();
+    } else {
+      for (const s of subjects) {
+        if (!s.isActive) {
+          s.isActive = true;
+          await subjectRepo.save(s);
+        }
+      }
+    }
+
+    // 2. Set all existing exams to active
+    const existingExams = await examRepo.find();
+    for (const exam of existingExams) {
+      if (!exam.isActive) {
+        exam.isActive = true;
+        await examRepo.save(exam);
+      }
+    }
+
+    // 3. For any active subject without an exam module, auto-create one
+    const creatorId = req.user?.id || "00000000-0000-0000-0000-000000000000";
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(creatorId);
+    const validCreator = isUuid ? creatorId : "00000000-0000-0000-0000-000000000000";
+
+    for (const s of subjects) {
+      const hasExam = existingExams.some(e => {
+        if (!e.subject) return false;
+        const s1 = s.name.trim().toLowerCase();
+        const s2 = e.subject.trim().toLowerCase();
+        return s1 === s2 || s1.includes(s2) || s2.includes(s1);
+      });
+
+      if (!hasExam) {
+        const newExam = examRepo.create({
+          title: `${s.name} Module`,
+          subject: s.name,
+          durationMinutes: 30,
+          totalQuestions: 0,
+          createdBy: validCreator,
+          isActive: true
+        });
+        await examRepo.save(newExam);
+      }
+    }
+
+    res.json({ message: "All subjects released to exam player successfully" });
+  } catch (error: any) {
+    logger.error("Failed to release all subjects:", error.message);
+    res.status(500).json({ message: "Failed to release subjects", error: error.message });
   }
 });
 

@@ -253,6 +253,24 @@ export default function Admin() {
     fetchData();
   };
 
+  const handleReleaseAllSubjects = async () => {
+    if (!confirm("Release all subjects and exam modules to the Exam Player?")) return;
+    setLoading(true);
+    try {
+      const res = await apiFetch(getApiUrl('/subjects/release-all'), {
+        method: 'POST',
+        headers: getHeaders()
+      });
+      await safeJsonResponse(res);
+      toast.success("All subjects and modules released to Exam Player!");
+      fetchData();
+    } catch (e) {
+      toast.error(getFriendlyErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDeleteSubject = async (id: string) => {
     if (!confirm("Are you sure you want to delete this subject? This might affect existing exams.")) return;
     const res = await apiFetch(getApiUrl(`/subjects/${id}`), { method: 'DELETE', headers: getHeaders() });
@@ -659,6 +677,7 @@ export default function Admin() {
                     setShowAddSubject={setShowAddSubject}
                     toggleSubjectStatus={toggleSubjectStatus}
                     handleDeleteSubject={handleDeleteSubject}
+                    handleReleaseAllSubjects={handleReleaseAllSubjects}
                   />
                 )}
 
@@ -669,6 +688,7 @@ export default function Admin() {
                     setActiveTab={setActiveTab}
                     setSelectedExamId={setSelectedExamId}
                     handleDeleteExam={handleDeleteExam}
+                    handleReleaseAllSubjects={handleReleaseAllSubjects}
                   />
                 )}
 
