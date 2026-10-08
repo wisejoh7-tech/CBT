@@ -49,16 +49,25 @@ export default function CandidateDashboard() {
         setDashboardData(data.candidate);
         setAttempts(data.attempts || []);
         setEditEditForm(data.candidate);
+      } else if (profile) {
+        setDashboardData(profile);
+        setEditEditForm(profile);
       } else {
         toast.error("Session expired.");
         navigate('/candidate-login');
       }
-      setLoading(false);
     } catch (e) {
-      console.error(e);
+      console.error("Dashboard fetch error:", e);
+      if (profile) {
+        setDashboardData(profile);
+        setEditEditForm(profile);
+      } else {
+        toast.error("Failed to load candidate dashboard.");
+      }
+    } finally {
       setLoading(false);
     }
-  }, [getHeaders, navigate]);
+  }, [getHeaders, navigate, profile]);
 
   useEffect(() => {
     fetchData();

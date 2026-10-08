@@ -280,7 +280,8 @@ export default function ExamPlayer() {
         }
 
         filteredExams.sort((a: any, b: any) => {
-          if (a.subject.toLowerCase() === 'use of english') return -1;
+          const s1 = a.subject?.toLowerCase() || '';
+          if (s1 === 'use of english' || s1 === 'english') return -1;
           return 0;
         });
 
@@ -291,8 +292,7 @@ export default function ExamPlayer() {
           const qRes = await apiFetch(getApiUrl(`/exams/${exam.id}`), { headers: getHeaders() });
           if (qRes.ok) {
             const examData = await safeJsonResponse(qRes);
-            // Randomization: Shuffle questions for each student
-            const randomizedQuestions = shuffleArray<Question>(examData.questions || []);
+            const randomizedQuestions = shuffleArray<Question>(examData?.questions || []);
             qMap[exam.id] = randomizedQuestions;
           }
         }
@@ -306,26 +306,28 @@ export default function ExamPlayer() {
         });
 
         const attempt: Attempt = await safeJsonResponse(attRes);
-        setCurrentAttemptId(attempt.id);
+        if (attempt && attempt.id) {
+          setCurrentAttemptId(attempt.id);
 
-        if (attempt.status === 'completed') {
-          setIsCompleted(true);
-        } else {
-          setAnswers(attempt.answers || {});
-          setFlaggedQuestions(new Set(attempt.flagged || []));
-          setCurrentQuestionIndex(attempt.currentQuestionIndex || 0);
-          if (attempt.timeLeft) setTimeLeft(attempt.timeLeft);
-          else {
-            const totalMinutes = filteredExams.reduce((acc, curr) => acc + (curr.durationMinutes || 30), 0);
-            setTimeLeft(totalMinutes * 60);
+          if (attempt.status === 'completed') {
+            setIsCompleted(true);
+          } else {
+            setAnswers(attempt.answers || {});
+            setFlaggedQuestions(new Set(attempt.flagged || []));
+            setCurrentQuestionIndex(attempt.currentQuestionIndex || 0);
+            if (attempt.timeLeft) setTimeLeft(attempt.timeLeft);
+            else {
+              const totalMinutes = filteredExams.reduce((acc, curr) => acc + (curr.durationMinutes || 30), 0);
+              setTimeLeft(totalMinutes * 60);
+            }
           }
         }
-
-        setLoading(false);
       } catch (error) {
         console.error("Init error", error);
         toast.error("Failed to load examination.");
         navigate('/dashboard');
+      } finally {
+        setLoading(false);
       }
     }
     initExam();

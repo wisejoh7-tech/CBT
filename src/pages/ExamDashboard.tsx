@@ -50,22 +50,36 @@ export default function ExamDashboard() {
         const examRes = await apiFetch(getApiUrl('/exams'), { headers: getHeaders() });
         const allExams: Exam[] = await safeJsonResponse(examRes);
         const subjectNames = profile.subjectCombination || [];
-        const filteredExams = Array.isArray(allExams) ? allExams.filter(e =>
-          subjectNames.some(s => s.trim().toLowerCase() === e.subject.trim().toLowerCase())
-        ) : [];
+
+        let filteredExams: Exam[] = [];
+        if (Array.isArray(allExams)) {
+          filteredExams = allExams.filter(e =>
+            subjectNames.some(s => {
+              if (!s || !e.subject) return false;
+              const s1 = s.trim().toLowerCase();
+              const s2 = e.subject.trim().toLowerCase();
+              return s1 === s2 || s1.includes(s2) || s2.includes(s1);
+            })
+          );
+          if (filteredExams.length === 0) {
+            filteredExams = allExams.filter(e => e.isActive !== false);
+          }
+          if (filteredExams.length === 0) {
+            filteredExams = allExams;
+          }
+        }
         setExams(filteredExams);
 
         const attemptRes = await apiFetch(getApiUrl('/exams/attempts/my'), { headers: getHeaders() });
         const myAttempts = await safeJsonResponse(attemptRes);
 
-        setAttempts(myAttempts || []);
+        setAttempts(Array.isArray(myAttempts) ? myAttempts : []);
 
-        const unified = myAttempts?.find?.((a: any) => a.examId === 'unified');
+        const unified = Array.isArray(myAttempts) ? myAttempts.find((a: any) => a.examId === 'unified') : null;
         setUnifiedAttempt(unified || null);
-
-        setLoading(false);
       } catch (e) {
-        console.error(e);
+        console.error("Exam dashboard fetch error:", e);
+      } finally {
         setLoading(false);
       }
     };

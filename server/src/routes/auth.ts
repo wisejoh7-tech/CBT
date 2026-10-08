@@ -144,8 +144,8 @@ router.post("/candidate/send-token", async (req, res) => {
   }
 });
 
-// Candidate Final Registration (Staff and Admin only)
-router.post("/candidate/register", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_admin", "staff"), async (req, res) => {
+// Candidate Final Registration
+router.post("/candidate/register", async (req, res) => {
   const registerSchema = z.object({
     email: z.string().email("Invalid email address"),
     token: z.string().min(1, "Token is required"),

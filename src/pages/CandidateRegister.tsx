@@ -168,7 +168,13 @@ export default function CandidateRegister() {
       });
       const data = await safeJsonResponse(res);
       if (data) {
-        toast.success(`Registration Successful!`);
+        const examNum = data.candidate?.examNumber || '';
+        if (examNum) {
+          localStorage.setItem('pendingExamNumber', examNum);
+          toast.success(`Registration Successful! Your Exam Number is: ${examNum}`);
+        } else {
+          toast.success(`Registration Successful!`);
+        }
         navigate('/candidate-login');
       } else {
         toast.error(data.message || "Registration failed.");
