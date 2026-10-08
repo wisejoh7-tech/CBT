@@ -8,7 +8,7 @@ export class Attempt {
   @Column({ type: "varchar", length: 100 })
   userId!: string;
 
-  @Column({ type: "uuid" })
+  @Column({ type: "varchar", length: 100 })
   examId!: string;
 
   @Column({ type: "int", default: 0 })
