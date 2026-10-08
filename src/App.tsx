@@ -55,7 +55,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
     if (isAnyAdmin) return <Navigate to="/admin" />;
 
     if (profile.loginMethod === 'examNumber') {
-      return <Navigate to="/instructions/unified" />;
+      return <Navigate to="/exam/unified" />;
     }
     return <Navigate to="/dashboard" />;
   }
