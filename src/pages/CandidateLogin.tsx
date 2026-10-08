@@ -63,9 +63,8 @@ export default function CandidateLogin() {
 
     try {
       await loginWithExamNumber(examNumber.trim(), examPassword.trim() || undefined);
-      localStorage.removeItem('pendingExamNumber');
-      toast.success("Identity Verified. Accessing Portal...");
-      navigate('/dashboard');
+      toast.success("Identity Verified. Opening Terminal...");
+      navigate('/exam/unified');
     } catch (e: any) {
       const msg = getFriendlyErrorMessage(e);
       toast.error(msg);
