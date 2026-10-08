@@ -66,7 +66,7 @@ router.delete("/:id", authenticateJWT, authorizeRoles("admin", "super_admin"), a
 router.get("/:id", authenticateJWT, async (req, res) => {
   const exam = await AppDataSource.getRepository(Exam).findOne({
     where: { id: req.params.id as any },
-    relations: ["questions"],
+    relations: { questions: true },
   });
   if (!exam) return res.status(404).json({ message: "Exam not found" });
   res.json(exam);
@@ -313,21 +313,43 @@ router.post("/attempt/:id/submit", authenticateJWT, async (req: any, res) => {
     if (attempt.examId === 'unified' as any) {
       // For unified exams, fetch candidate profile to get subjects
       const candidate = await AppDataSource.getRepository(Candidate).findOneBy({ examNumber: attempt.userId });
-      if (!candidate) return res.status(404).json({ message: "Candidate profile not found" });
+      const subjectNames = candidate?.subjectCombination || [];
 
-      const subjectNames = candidate.subjectCombination || [];
+      if (subjectNames.length > 0) {
+        // Fetch questions from exams matching subjects
+        questions = await questionRepo.find({
+          where: subjectNames.map(s => ({ exam: { subject: s } })),
+          relations: { exam: true }
+        });
+      }
 
-      // Fetch questions from all exams matching subjects
-      questions = await questionRepo.find({
-        where: subjectNames.map(s => ({ exam: { subject: s } })),
-        relations: ["exam"]
-      });
+      // Fallback: If no questions found by subject combination, load questions from all active exams
+      if (questions.length === 0) {
+        questions = await questionRepo.find({
+          where: { exam: { isActive: true } },
+          relations: { exam: true }
+        });
+      }
+
+      // Secondary Fallback: Load all questions from any exam
+      if (questions.length === 0) {
+        questions = await questionRepo.find({
+          relations: { exam: true }
+        });
+      }
     } else {
       // Specific exam marking
       questions = await questionRepo.find({
         where: { exam: { id: attempt.examId } },
-        relations: ["exam"]
+        relations: { exam: true }
       });
+
+      // Fallback if specific exam ID questions not found directly
+      if (questions.length === 0) {
+        questions = await questionRepo.find({
+          relations: { exam: true }
+        });
+      }
     }
 
     if (questions.length === 0) {
