@@ -24,7 +24,10 @@ export default function CandidateLogin() {
   const [loginMethod, setLoginMethod] = useState<'email' | 'examNumber'>('examNumber');
 
   React.useEffect(() => {
-    localStorage.removeItem('pendingExamNumber');
+    const pending = localStorage.getItem('pendingExamNumber');
+    if (pending) {
+      setExamNumber(pending);
+    }
   }, []);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -36,6 +39,7 @@ export default function CandidateLogin() {
 
     try {
       const userProfile = await loginCandidateWithEmail(email, password);
+      localStorage.removeItem('pendingExamNumber');
       toast.success("Identity Verified. Accessing Portal...");
       const role = userProfile?.role;
       const isAdmin = role === 'admin' || role === 'super_admin' || role === 'reg_admin';
