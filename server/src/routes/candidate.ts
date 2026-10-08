@@ -21,12 +21,36 @@ router.get("/", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_adm
   }
 });
 
+// Get single candidate by exam number
+router.get("/:examNumber", authenticateJWT, async (req: any, res) => {
+  try {
+    const examNumber = req.params.examNumber as string;
+    const candidateRepo = AppDataSource.getRepository(Candidate);
+    const candidate = await candidateRepo.createQueryBuilder("c")
+      .where("LOWER(c.examNumber) = LOWER(:examNumber)", { examNumber })
+      .getOne();
+
+    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+
+    // Students can only view their own candidate slip unless admin/staff
+    if (req.user?.role === "student" && req.user?.examNumber?.toLowerCase() !== examNumber.toLowerCase()) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    res.json(candidate);
+  } catch (error) {
+    res.status(500).json({ message: "Unable to retrieve candidate" });
+  }
+});
+
 // Update candidate (Admin only)
 router.put("/:examNumber", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_admin"), async (req, res) => {
   try {
     const examNumber = req.params.examNumber as string;
     const candidateRepo = AppDataSource.getRepository(Candidate);
-    const candidate = await candidateRepo.findOneBy({ examNumber });
+    const candidate = await candidateRepo.createQueryBuilder("c")
+      .where("LOWER(c.examNumber) = LOWER(:examNumber)", { examNumber })
+      .getOne();
 
     if (!candidate) return res.status(404).json({ message: "Candidate not found" });
 
@@ -60,7 +84,9 @@ router.delete("/:examNumber", authenticateJWT, authorizeRoles("admin", "super_ad
   try {
     const examNumber = req.params.examNumber as string;
     const candidateRepo = AppDataSource.getRepository(Candidate);
-    const candidate = await candidateRepo.findOneBy({ examNumber });
+    const candidate = await candidateRepo.createQueryBuilder("c")
+      .where("LOWER(c.examNumber) = LOWER(:examNumber)", { examNumber })
+      .getOne();
     if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
     }
@@ -147,7 +173,9 @@ router.get("/dashboard", authenticateJWT, async (req: any, res) => {
   if (!examNumber) return res.status(403).json({ message: "Only candidates can access this" });
 
   try {
-    const candidate = await AppDataSource.getRepository(Candidate).findOneBy({ examNumber });
+    const candidate = await AppDataSource.getRepository(Candidate).createQueryBuilder("c")
+      .where("LOWER(c.examNumber) = LOWER(:examNumber)", { examNumber })
+      .getOne();
     if (!candidate) {
       return res.status(404).json({ message: "Candidate record not found" });
     }
@@ -205,7 +233,9 @@ router.put("/profile", authenticateJWT, async (req: any, res) => {
 
   try {
     const candidateRepo = AppDataSource.getRepository(Candidate);
-    const candidate = await candidateRepo.findOneBy({ examNumber });
+    const candidate = await candidateRepo.createQueryBuilder("c")
+      .where("LOWER(c.examNumber) = LOWER(:examNumber)", { examNumber })
+      .getOne();
     if (!candidate) return res.status(404).json({ message: "Candidate not found" });
 
     // Update fields
@@ -234,7 +264,9 @@ router.get("/print/:type", authenticateJWT, async (req: any, res) => {
   if (!examNumber) return res.status(403).json({ message: "Unauthorized" });
 
   try {
-    const candidate = await AppDataSource.getRepository(Candidate).findOneBy({ examNumber });
+    const candidate = await AppDataSource.getRepository(Candidate).createQueryBuilder("c")
+      .where("LOWER(c.examNumber) = LOWER(:examNumber)", { examNumber })
+      .getOne();
     if (!candidate) return res.status(404).json({ message: "Candidate not found" });
 
     if (type === 'schedule') {
