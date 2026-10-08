@@ -110,9 +110,9 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({
               <option value="super_admin">Super Administrator</option>
             </select>
           </div>
-          <div className="flex gap-4 pt-4">
-            <Button type="submit" className="flex-1 h-14 bg-primary text-white font-black rounded-2xl shadow-xl hover:scale-[1.02] transition-all tracking-widest text-xs uppercase">Provision Account</Button>
-            <Button type="button" onClick={onClose} variant="outline" className="h-14 px-8 rounded-2xl font-black text-xs border-primary/10 hover:bg-slate-50 uppercase">Cancel</Button>
+          <div className="flex gap-3 pt-4">
+            <Button type="submit" className="flex-1 h-12 bg-primary text-white font-black rounded-2xl shadow-xl hover:scale-[1.02] transition-all tracking-widest text-xs uppercase">Create</Button>
+            <Button type="button" onClick={onClose} variant="outline" className="flex-1 h-12 rounded-2xl font-black text-xs border-primary/10 hover:bg-slate-50 uppercase">Cancel</Button>
           </div>
         </form>
       </motion.div>
