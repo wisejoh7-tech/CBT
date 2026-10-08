@@ -25,7 +25,7 @@ export const EditCandidateModal: React.FC<EditCandidateModalProps> = ({
   return (
     <div className="fixed inset-0 z-[200] bg-primary/10 backdrop-blur-md flex items-center justify-center p-6 text-base overflow-hidden">
       <div className="cbt-background" />
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-2xl bg-white rounded-[48px] shadow-2xl p-12 space-y-10 border border-primary/5 max-h-[90vh] overflow-y-auto relative z-10">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-4xl bg-white rounded-[48px] shadow-2xl p-12 space-y-10 border border-primary/5 max-h-[90vh] overflow-y-auto relative z-10">
         <h3 className="text-2xl font-black text-primary mb-8 text-center tracking-tighter">Manage Candidate</h3>
         <form onSubmit={handleUpdateCandidate} className="space-y-8 font-medium">
           <div className="bg-slate-50 p-8 rounded-[32px] space-y-6 border-2 border-primary/5">
