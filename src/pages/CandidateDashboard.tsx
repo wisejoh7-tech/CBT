@@ -186,32 +186,78 @@ export default function CandidateDashboard() {
                       </div>
                     </div>
 
-                    <div className="grid gap-6 sm:gap-8">
-                       <div className="space-y-4">
-                          <p className="text-[9px] sm:text-[10px] font-black text-primary/20 tracking-[0.25em] uppercase">Biographic Profile</p>
-                          <div className="grid grid-cols-1 xs:grid-cols-2 gap-y-4 xs:gap-y-6 gap-x-8">
-                             {[
-                               { label: 'Institution', value: dashboardData?.schoolAttended },
-                               { label: 'Date of Birth', value: dashboardData?.dateOfBirth },
-                               { label: 'Phone', value: dashboardData?.phoneNumber },
-                               { label: 'Residential', value: dashboardData?.address },
-                             ].map((item) => (
-                               <div key={item.label} className="space-y-1">
-                                  <p className="text-[8px] sm:text-[9px] font-black text-primary/40 tracking-widest uppercase">{item.label}</p>
-                                  <p className="text-[12px] sm:text-[13px] font-bold text-slate-700 truncate">{item.value || 'N/A'}</p>
-                               </div>
-                             ))}
+                    <div className="space-y-8">
+                       {/* Biographic Profile Table */}
+                       <div className="space-y-3">
+                          <p className="text-[10px] sm:text-[11px] font-black text-primary/40 tracking-[0.2em] uppercase">Biographic Profile</p>
+                          <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+                             <table className="w-full border-collapse text-xs sm:text-sm text-left">
+                                <thead>
+                                   <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black tracking-wider text-slate-500 uppercase">
+                                      <th className="p-3 sm:p-3.5 w-1/3 border-r border-slate-200/60">Field</th>
+                                      <th className="p-3 sm:p-3.5 w-2/3">Information</th>
+                                   </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 font-medium">
+                                   <tr>
+                                      <td className="p-3 sm:p-3.5 font-bold text-slate-500 bg-slate-50/40 border-r border-slate-100">Full Name</td>
+                                      <td className="p-3 sm:p-3.5 font-black text-slate-900">{dashboardData?.fullName || 'N/A'}</td>
+                                   </tr>
+                                   <tr>
+                                      <td className="p-3 sm:p-3.5 font-bold text-slate-500 bg-slate-50/40 border-r border-slate-100">Registration Number</td>
+                                      <td className="p-3 sm:p-3.5 font-bold text-primary font-mono">{dashboardData?.examNumber || 'N/A'}</td>
+                                   </tr>
+                                   <tr>
+                                      <td className="p-3 sm:p-3.5 font-bold text-slate-500 bg-slate-50/40 border-r border-slate-100">State & LGA</td>
+                                      <td className="p-3 sm:p-3.5 font-semibold text-slate-700">{dashboardData?.stateOfOrigin || 'N/A'} • {dashboardData?.lga || 'N/A'}</td>
+                                   </tr>
+                                   <tr>
+                                      <td className="p-3 sm:p-3.5 font-bold text-slate-500 bg-slate-50/40 border-r border-slate-100">Institution</td>
+                                      <td className="p-3 sm:p-3.5 font-semibold text-slate-700">{dashboardData?.schoolAttended || 'N/A'}</td>
+                                   </tr>
+                                   <tr>
+                                      <td className="p-3 sm:p-3.5 font-bold text-slate-500 bg-slate-50/40 border-r border-slate-100">Date of Birth</td>
+                                      <td className="p-3 sm:p-3.5 font-semibold text-slate-700">{dashboardData?.dateOfBirth || 'N/A'}</td>
+                                   </tr>
+                                   <tr>
+                                      <td className="p-3 sm:p-3.5 font-bold text-slate-500 bg-slate-50/40 border-r border-slate-100">Phone</td>
+                                      <td className="p-3 sm:p-3.5 font-semibold text-slate-700">{dashboardData?.phoneNumber || 'N/A'}</td>
+                                   </tr>
+                                   <tr>
+                                      <td className="p-3 sm:p-3.5 font-bold text-slate-500 bg-slate-50/40 border-r border-slate-100">Residential Address</td>
+                                      <td className="p-3 sm:p-3.5 font-semibold text-slate-700">{dashboardData?.address || 'N/A'}</td>
+                                   </tr>
+                                </tbody>
+                             </table>
                           </div>
                        </div>
 
-                       <div className="space-y-4">
-                          <p className="text-[9px] sm:text-[10px] font-black text-primary/20 tracking-[0.25em] uppercase">Curriculum Selection</p>
-                          <div className="flex flex-wrap gap-2 sm:gap-3">
-                             {dashboardData?.subjectCombination?.map((s: string) => (
-                               <div key={s} className="px-4 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-primary/5 font-black text-[10px] sm:text-[11px] text-primary/60 tracking-wider shadow-sm">
-                                  {s}
-                               </div>
-                             ))}
+                       {/* Curriculum Selection Table */}
+                       <div className="space-y-3">
+                          <p className="text-[10px] sm:text-[11px] font-black text-primary/40 tracking-[0.2em] uppercase">Curriculum Selection</p>
+                          <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+                             <table className="w-full border-collapse text-xs sm:text-sm text-left">
+                                <thead>
+                                   <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black tracking-wider text-slate-500 uppercase">
+                                      <th className="p-3 sm:p-3.5 w-16 text-center border-r border-slate-200/60">#</th>
+                                      <th className="p-3 sm:p-3.5">Selected Subject</th>
+                                   </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                   {dashboardData?.subjectCombination?.length ? (
+                                      dashboardData.subjectCombination.map((subject: string, idx: number) => (
+                                         <tr key={subject}>
+                                            <td className="p-3 sm:p-3.5 text-center font-bold text-slate-400 bg-slate-50/40 border-r border-slate-100">{idx + 1}</td>
+                                            <td className="p-3 sm:p-3.5 font-bold text-slate-800">{subject}</td>
+                                         </tr>
+                                      ))
+                                   ) : (
+                                      <tr>
+                                         <td colSpan={2} className="p-4 text-center text-slate-400 italic">No subject combination selected</td>
+                                      </tr>
+                                   )}
+                                </tbody>
+                             </table>
                           </div>
                        </div>
                     </div>
@@ -275,27 +321,34 @@ export default function CandidateDashboard() {
                    <h3 className="font-black text-[10px] sm:text-xs tracking-[0.2em] uppercase">Exam Schedule</h3>
                  </div>
 
-                 <div className="space-y-4 sm:space-y-5">
-                    <div className="space-y-1 bg-slate-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-primary/5">
-                       <p className="text-[8px] sm:text-[9px] font-black text-primary/20 tracking-widest flex items-center gap-2 uppercase"><MapPin className="w-3 h-3" /> Venue</p>
-                       <p className="font-black text-[12px] sm:text-[13px] text-primary/80 truncate uppercase">{dashboardData?.examVenue || "TO BE ASSIGNED"}</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                       <div className="space-y-1 bg-slate-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-primary/5">
-                          <p className="text-[8px] sm:text-[9px] font-black text-primary/20 tracking-widest flex items-center gap-2 uppercase"><CalendarIcon className="w-3 h-3" /> Date</p>
-                          <p className="font-black text-[12px] sm:text-[13px] text-primary/80 uppercase">{dashboardData?.examDate || "TBA"}</p>
-                       </div>
-                       <div className="space-y-1 bg-slate-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-primary/5">
-                          <p className="text-[8px] sm:text-[9px] font-black text-primary/20 tracking-widest flex items-center gap-2 uppercase"><Clock className="w-3 h-3" /> Time</p>
-                          <p className="font-black text-[12px] sm:text-[13px] text-primary/80 uppercase">{dashboardData?.examTime || "TBA"}</p>
-                       </div>
-                    </div>
+                 <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+                    <table className="w-full border-collapse text-xs sm:text-sm text-left">
+                       <thead>
+                          <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black tracking-wider text-slate-500 uppercase">
+                             <th className="p-3 w-1/3 border-r border-slate-200/60">Schedule</th>
+                             <th className="p-3 w-2/3">Details</th>
+                          </tr>
+                       </thead>
+                       <tbody className="divide-y divide-slate-100 font-medium">
+                          <tr>
+                             <td className="p-3 font-bold text-slate-500 bg-slate-50/40 border-r border-slate-100 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-primary/50" /> Venue</td>
+                             <td className="p-3 font-black text-slate-800 uppercase">{dashboardData?.examVenue || "TO BE ASSIGNED"}</td>
+                          </tr>
+                          <tr>
+                             <td className="p-3 font-bold text-slate-500 bg-slate-50/40 border-r border-slate-100 flex items-center gap-1.5"><CalendarIcon className="w-3.5 h-3.5 text-primary/50" /> Date</td>
+                             <td className="p-3 font-bold text-slate-700 uppercase">{dashboardData?.examDate || "TBA"}</td>
+                          </tr>
+                          <tr>
+                             <td className="p-3 font-bold text-slate-500 bg-slate-50/40 border-r border-slate-100 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-primary/50" /> Time</td>
+                             <td className="p-3 font-bold text-slate-700 uppercase">{dashboardData?.examTime || "TBA"}</td>
+                          </tr>
+                       </tbody>
+                    </table>
                  </div>
 
                  <Button
                    onClick={() => handlePrint('schedule')}
-                   className="mt-8 sm:mt-10 h-12 sm:h-14 w-full bg-slate-900 text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest flex gap-2 sm:gap-3 hover:bg-black shadow-lg transition-all active:scale-[0.98]"
+                   className="mt-6 sm:mt-8 h-12 sm:h-14 w-full bg-slate-900 text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest flex gap-2 sm:gap-3 hover:bg-black shadow-lg transition-all active:scale-[0.98]"
                  >
                    <Printer className="w-4 h-4" /> PRINT EXAM SLIP
                  </Button>
@@ -309,28 +362,52 @@ export default function CandidateDashboard() {
                   <h3 className="font-black text-[10px] sm:text-xs tracking-[0.2em] uppercase">Academic Records</h3>
                 </div>
 
-                <div className="space-y-3 relative z-10">
+                <div className="relative z-10">
                   {attempts.length === 0 ? (
-                    <div className="h-32 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-white/10 rounded-2xl">
-                      <FileText className="w-6 h-6 text-white/10 mb-2" />
-                      <p className="text-[8px] sm:text-[9px] font-black text-white/20 tracking-widest uppercase">No results yet</p>
+                    <div className="border border-white/10 rounded-2xl overflow-hidden">
+                      <table className="w-full border-collapse text-xs text-left">
+                        <thead>
+                          <tr className="bg-white/5 border-b border-white/10 text-[9px] font-black tracking-wider text-white/40 uppercase">
+                            <th className="p-3">Session</th>
+                            <th className="p-3 text-right">Score</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td colSpan={2} className="p-6 text-center text-white/30 font-bold uppercase tracking-wider text-[10px]">No results yet</td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   ) : (
-                    attempts.map(attempt => (
-                      <div key={attempt.id} className="p-4 sm:p-5 bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl flex justify-between items-center shadow-inner hover:bg-white/10 transition-all group">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[7px] sm:text-[8px] font-black text-white/30 tracking-widest uppercase">Session Score</p>
-                          <p className="font-black text-lg sm:text-xl truncate">{attempt.isReleased ? `${attempt.score} / ${attempt.totalPossible}` : "PENDING"}</p>
-                        </div>
-                        {attempt.isReleased ? (
-                          <button onClick={() => handlePrint('result', attempt.id)} className="p-2 sm:p-2.5 bg-emerald-500 rounded-xl hover:scale-110 transition-transform active:scale-95 shadow-lg shadow-emerald-500/20">
-                            <Printer className="w-3.5 h-3.5 sm:w-4 h-4 text-white" />
-                          </button>
-                        ) : (
-                          <Badge className="bg-amber-500/20 text-amber-400 border-none font-black text-[7px] sm:text-[8px] px-2 py-1 uppercase tracking-widest">Processing</Badge>
-                        )}
-                      </div>
-                    ))
+                    <div className="border border-white/10 rounded-2xl overflow-hidden">
+                      <table className="w-full border-collapse text-xs text-left">
+                        <thead>
+                          <tr className="bg-white/5 border-b border-white/10 text-[9px] font-black tracking-wider text-white/40 uppercase">
+                            <th className="p-3">Session Score</th>
+                            <th className="p-3 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/10 font-medium">
+                          {attempts.map(attempt => (
+                            <tr key={attempt.id} className="hover:bg-white/5 transition-colors">
+                              <td className="p-3 font-black text-sm text-white">
+                                {attempt.isReleased ? `${attempt.score} / ${attempt.totalPossible}` : "PENDING"}
+                              </td>
+                              <td className="p-3 text-right">
+                                {attempt.isReleased ? (
+                                  <button onClick={() => handlePrint('result', attempt.id)} className="p-2 bg-emerald-500 text-white rounded-lg hover:scale-105 transition-transform active:scale-95 shadow-md" title="Print Result">
+                                    <Printer className="w-3.5 h-3.5" />
+                                  </button>
+                                ) : (
+                                  <Badge className="bg-amber-500/20 text-amber-400 border-none font-black text-[8px] px-2 py-0.5 uppercase tracking-widest">Processing</Badge>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               </Card>
