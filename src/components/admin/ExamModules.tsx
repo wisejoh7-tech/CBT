@@ -20,27 +20,27 @@ export const ExamModules: React.FC<ExamModulesProps> = ({
   handleDeleteExam,
 }) => {
   return (
-    <div className="space-y-4 text-sm font-medium max-w-4xl mx-auto">
-      <div className="flex justify-between items-center bg-white p-5 rounded-3xl shadow-sm border border-primary/5">
-        <div className="flex items-center gap-4">
-           <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary shadow-inner">
-              <Activity className="w-5 h-5" />
+    <div className="space-y-4 text-xs font-medium max-w-4xl mx-auto">
+      <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-primary/5">
+        <div className="flex items-center gap-3">
+           <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center text-primary shadow-inner">
+              <Activity className="w-4 h-4" />
            </div>
            <div>
-              <h3 className="text-xl font-black tracking-tighter ">Assessment Modules</h3>
-              <p className="text-[13px] font-black ">Managing {exams.length} exam containers</p>
+              <h3 className="text-base font-black tracking-tight">Assessment Modules</h3>
+              <p className="text-[11px] font-bold text-slate-500">Managing {exams.length} exam containers</p>
            </div>
         </div>
-        <Button onClick={() => setShowAddExam(true)} className="h-10 px-5 rounded-xl bg-primary text-white font-black tracking-widest uppercase text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
-          <PlusCircle className="w-3.5 h-3.5 mr-2" /> New Assessment
+        <Button onClick={() => setShowAddExam(true)} className="h-8 px-4 rounded-xl bg-primary text-white font-black tracking-widest uppercase text-[9px] shadow-md shadow-primary/20 hover:scale-105 transition-all">
+          <PlusCircle className="w-3.5 h-3.5 mr-1.5" /> New Assessment
         </Button>
       </div>
 
-      <div className="bg-white rounded-[28px] border border-primary/5 overflow-hidden shadow-xl">
+      <div className="bg-white rounded-[24px] border border-primary/5 overflow-hidden shadow-xl">
         <div className="max-h-[450px] overflow-y-auto custom-scrollbar">
           <table className="w-full text-left">
             <thead className="bg-slate-50/50 border-b border-primary/5 sticky top-0 z-10 backdrop-blur-md">
-              <tr className="text-[14px] font-black  uppercase">
+              <tr className="text-xs font-black uppercase">
                 <th className="px-6 py-4">Assessment Title</th>
                 <th className="px-6 py-4">Subject</th>
                 <th className="px-6 py-4">Parameters</th>
