@@ -61,7 +61,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-4xl bg-white rounded-[40px] shadow-2xl p-8 border border-primary/5 overflow-hidden relative z-10 max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-5xl bg-white rounded-[40px] shadow-2xl p-8 border border-primary/5 overflow-hidden relative z-10 max-h-[90vh] overflow-y-auto"
       >
         <h3 className="text-xl font-black text-primary mb-6 text-center tracking-tighter uppercase">Add Question</h3>
         <form onSubmit={handleAddQuestion} className="space-y-4 font-medium">
@@ -144,8 +144,8 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
             ))}
           </div>
 
-          <div className="flex gap-4">
-            <div className="flex-1 space-y-1.5">
+          <div className="flex flex-col gap-4">
+            <div className="w-full space-y-1.5">
               <Label className="text-[11px] font-black text-primary/40 tracking-widest uppercase">Correct Answer</Label>
               <select
                 value={newQuestion.correctOptionIndex}
@@ -158,7 +158,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
                 <option value={3}>Answer: D</option>
               </select>
             </div>
-            <div className="flex-1 space-y-1.5">
+            <div className="w-full space-y-1.5">
               <Label className="text-[11px] font-black text-primary/40 tracking-widest uppercase">Topic Tag</Label>
               <Input
                 placeholder="e.g. Algebra"
