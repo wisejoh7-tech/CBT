@@ -647,7 +647,9 @@ router.delete("/staff/:id", async (req, res) => {
 router.get("/public/download-slip/:examNumber", async (req, res) => {
   const { examNumber } = req.params;
   try {
-    const candidate = await AppDataSource.getRepository(Candidate).findOneBy({ examNumber });
+    const candidate = await AppDataSource.getRepository(Candidate).createQueryBuilder("c")
+      .where("LOWER(c.examNumber) = LOWER(:examNumber)", { examNumber })
+      .getOne();
     if (!candidate) return res.status(404).send("Candidate not found");
 
     const html = `
@@ -733,7 +735,9 @@ router.get("/public/download-result/:attemptId", async (req, res) => {
     if (!attempt) return res.status(404).send("Result not found");
     if (!attempt.isReleased) return res.status(403).send("Result not yet released by admin");
 
-    const candidate = await AppDataSource.getRepository(Candidate).findOneBy({ examNumber: attempt.userId });
+    const candidate = await AppDataSource.getRepository(Candidate).createQueryBuilder("c")
+      .where("LOWER(c.examNumber) = LOWER(:examNumber)", { examNumber: attempt.userId })
+      .getOne();
     if (!candidate) return res.status(404).send("Candidate not found");
 
     const scorePercentage = ((attempt.score / attempt.totalPossible) * 100).toFixed(2);
