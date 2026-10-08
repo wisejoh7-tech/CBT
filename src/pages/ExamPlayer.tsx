@@ -242,18 +242,39 @@ export default function ExamPlayer() {
            throw new Error("Invalid response from server");
         }
 
-        const subjectNames = profile.subjectCombination || [];
-        let filteredExams = allExams.filter((e: any) =>
-          subjectNames.some(s => s.trim().toLowerCase() === e.subject.trim().toLowerCase()) || e.id === examId
-        );
+        let filteredExams: any[] = [];
 
-        // Fallback: If nothing matched profile, show all active exams to ensure candidate can see questions
-        if (filteredExams.length === 0) {
-          filteredExams = allExams.filter((e: any) => e.isActive);
+        if (examId && examId !== 'unified') {
+          const single = allExams.find((e: any) => e.id === examId);
+          if (single) filteredExams = [single];
         }
 
         if (filteredExams.length === 0) {
-          toast.error("No matching exams found.");
+          const subjectNames = profile.subjectCombination || [];
+          if (subjectNames.length > 0) {
+            filteredExams = allExams.filter((e: any) =>
+              subjectNames.some((s: string) => {
+                if (!s || !e.subject) return false;
+                const s1 = s.trim().toLowerCase();
+                const s2 = e.subject.trim().toLowerCase();
+                return s1 === s2 || s1.includes(s2) || s2.includes(s1);
+              })
+            );
+          }
+        }
+
+        // Fallback 1: Show active exams
+        if (filteredExams.length === 0) {
+          filteredExams = allExams.filter((e: any) => e.isActive !== false);
+        }
+
+        // Fallback 2: Show all exams
+        if (filteredExams.length === 0) {
+          filteredExams = allExams;
+        }
+
+        if (filteredExams.length === 0) {
+          toast.error("No examination modules available.");
           navigate('/dashboard');
           return;
         }

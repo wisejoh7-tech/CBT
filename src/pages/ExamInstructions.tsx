@@ -9,6 +9,17 @@ import { useAuth } from '@/src/context/AuthContext';
 import { toast } from 'sonner';
 import { Badge } from '@/lib/ui/badge';
 
+function isSubjectMatch(sub1: string, sub2: string): boolean {
+  if (!sub1 || !sub2) return false;
+  const s1 = sub1.trim().toLowerCase();
+  const s2 = sub2.trim().toLowerCase();
+  if (s1 === s2) return true;
+  if (s1.includes(s2) || s2.includes(s1)) return true;
+  if ((s1.includes('english') || s1.includes('eng')) && (s2.includes('english') || s2.includes('eng'))) return true;
+  if ((s1.includes('math') || s1.includes('mat')) && (s2.includes('math') || s2.includes('mat'))) return true;
+  return false;
+}
+
 export default function ExamInstructions() {
   const { examId } = useParams<{ examId: string }>();
   const [exams, setExams] = useState<Exam[]>([]);
@@ -18,33 +29,42 @@ export default function ExamInstructions() {
 
   useEffect(() => {
     async function fetchInstructions() {
-      if (examId === 'unified' && !profile) return;
-
       try {
+        setLoading(true);
         const res = await apiFetch(getApiUrl('/exams'), {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         const allExams: Exam[] = await safeJsonResponse(res);
-        if (allExams) {
-          if (examId === 'unified') {
-            const subjectNames = profile?.subjectCombination || [];
-            let filtered = allExams.filter(e =>
-              subjectNames.some(s => s.trim().toLowerCase() === e.subject.trim().toLowerCase())
-            );
+        if (Array.isArray(allExams) && allExams.length > 0) {
+          let filtered: Exam[] = [];
 
-            // If nothing matched combination, show ALL active exams as fallback
-            // This ensures candidates can still start even if combination is "incomplete" or misconfigured
-            if (filtered.length === 0) {
-              filtered = allExams.filter(e => e.isActive);
-            }
-
-            setExams(filtered);
-          } else {
+          if (examId && examId !== 'unified') {
             const single = allExams.find(e => e.id === examId);
-            if (single) setExams([single]);
+            if (single) filtered = [single];
           }
+
+          if (filtered.length === 0) {
+            const subjectNames = profile?.subjectCombination || [];
+            if (subjectNames.length > 0) {
+              filtered = allExams.filter(e =>
+                subjectNames.some(s => isSubjectMatch(s, e.subject))
+              );
+            }
+          }
+
+          // Fallback 1: Active exams
+          if (filtered.length === 0) {
+            filtered = allExams.filter(e => e.isActive !== false);
+          }
+
+          // Fallback 2: All exams in system
+          if (filtered.length === 0) {
+            filtered = allExams;
+          }
+
+          setExams(filtered);
         } else {
-          toast.error("Security parameters not found.");
+          toast.error("No active examination modules available.");
         }
       } catch (e) {
         toast.error(getFriendlyErrorMessage(e));
