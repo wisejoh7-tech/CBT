@@ -178,10 +178,10 @@ export default function ExamPlayer() {
               ctx.drawImage(videoRefProctor.current, 0, 0, 160, 120);
               const snap = canvas.toDataURL('image/jpeg', 0.5);
 
-              await apiFetch(getApiUrl(`/exams/attempt/${currentAttemptId}/snapshots`), {
+              await apiFetch(getApiUrl(`/exams/attempt/${currentAttemptId}/proctoring`), {
                 method: 'POST',
                 headers: getHeaders(),
-                body: JSON.stringify({ snapshot: snap })
+                body: JSON.stringify({ image: snap })
               });
             }
           }
@@ -278,9 +278,10 @@ export default function ExamPlayer() {
         setQuestionsByExam(qMap);
 
         // Fetch or create attempt
-        const attRes = await apiFetch(getApiUrl(`/exams/${examId || 'unified'}/attempt`), {
+        const attRes = await apiFetch(getApiUrl('/exams/attempt'), {
           method: 'POST',
-          headers: getHeaders()
+          headers: getHeaders(),
+          body: JSON.stringify({ examId: examId || 'unified' })
         });
 
         const attempt: Attempt = await safeJsonResponse(attRes);
