@@ -23,6 +23,17 @@ import { cn } from '@/src/lib/utils/utils';
 import { shuffleArray } from '@/src/lib/utils/shuffle';
 import { getApiUrl, safeJsonResponse, apiFetch } from '@/src/lib/api-config';
 
+function isSubjectMatch(sub1: string, sub2: string): boolean {
+  if (!sub1 || !sub2) return false;
+  const s1 = sub1.trim().toLowerCase();
+  const s2 = sub2.trim().toLowerCase();
+  if (s1 === s2) return true;
+  if (s1.includes(s2) || s2.includes(s1)) return true;
+  if ((s1.includes('english') || s1.includes('eng')) && (s2.includes('english') || s2.includes('eng'))) return true;
+  if ((s1.includes('math') || s1.includes('mat')) && (s2.includes('math') || s2.includes('mat'))) return true;
+  return false;
+}
+
 export default function ExamPlayer() {
   const { examId } = useParams<{ examId: string }>();
   const [exams, setExams] = useState<Exam[]>([]);
@@ -252,14 +263,25 @@ export default function ExamPlayer() {
         if (filteredExams.length === 0) {
           const subjectNames = profile.subjectCombination || [];
           if (subjectNames.length > 0) {
-            filteredExams = allExams.filter((e: any) =>
-              subjectNames.some((s: string) => {
-                if (!s || !e.subject) return false;
-                const s1 = s.trim().toLowerCase();
-                const s2 = e.subject.trim().toLowerCase();
-                return s1 === s2 || s1.includes(s2) || s2.includes(s1);
-              })
-            );
+            const matchedExams: any[] = [];
+            for (const s of subjectNames) {
+              const matched = allExams.find((e: any) => isSubjectMatch(s, e.subject));
+              if (matched) {
+                if (!matchedExams.some(e => e.id === matched.id)) {
+                  matchedExams.push(matched);
+                }
+              } else {
+                matchedExams.push({
+                  id: `virtual-${encodeURIComponent(s)}`,
+                  title: `${s} Module`,
+                  subject: s,
+                  durationMinutes: 30,
+                  totalQuestions: 0,
+                  isActive: true
+                });
+              }
+            }
+            filteredExams = matchedExams;
           }
         }
 
@@ -289,11 +311,15 @@ export default function ExamPlayer() {
 
         const qMap: Record<string, Question[]> = {};
         for (const exam of filteredExams) {
-          const qRes = await apiFetch(getApiUrl(`/exams/${exam.id}`), { headers: getHeaders() });
-          if (qRes.ok) {
-            const examData = await safeJsonResponse(qRes);
-            const randomizedQuestions = shuffleArray<Question>(examData?.questions || []);
-            qMap[exam.id] = randomizedQuestions;
+          if (exam.id.startsWith('virtual-')) {
+            qMap[exam.id] = [];
+          } else {
+            const qRes = await apiFetch(getApiUrl(`/exams/${exam.id}`), { headers: getHeaders() });
+            if (qRes.ok) {
+              const examData = await safeJsonResponse(qRes);
+              const randomizedQuestions = shuffleArray<Question>(examData?.questions || []);
+              qMap[exam.id] = randomizedQuestions;
+            }
           }
         }
         setQuestionsByExam(qMap);

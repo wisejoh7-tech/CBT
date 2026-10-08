@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/lib/ui/button';
 import { Badge } from '@/lib/ui/badge';
-import { PlusCircle, BookMarked, Trash2 } from 'lucide-react';
+import { PlusCircle, BookMarked, Trash2, Send } from 'lucide-react';
 import { cn } from '@/src/lib/utils/utils';
 
 interface CurriculumManagerProps {
@@ -9,6 +9,7 @@ interface CurriculumManagerProps {
   setShowAddSubject: (val: boolean) => void;
   toggleSubjectStatus: (id: string) => void;
   handleDeleteSubject: (id: string) => void;
+  handleReleaseAllSubjects?: () => void;
 }
 
 export const CurriculumManager: React.FC<CurriculumManagerProps> = ({
@@ -16,6 +17,7 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({
   setShowAddSubject,
   toggleSubjectStatus,
   handleDeleteSubject,
+  handleReleaseAllSubjects,
 }) => {
   return (
     <div className="space-y-4 text-sm font-medium max-w-3xl mx-auto">
@@ -29,9 +31,16 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({
               <p className="text-[13px] font-black ">Managing {offeredSubjects.length} subjects</p>
            </div>
         </div>
-        <Button onClick={() => setShowAddSubject(true)} className="h-10 px-5 rounded-xl bg-primary text-white font-black tracking-widest  text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
-          <PlusCircle className="w-3.5 h-3.5 mr-2" /> Add Subject
-        </Button>
+        <div className="flex items-center gap-2">
+          {handleReleaseAllSubjects && (
+            <Button onClick={handleReleaseAllSubjects} className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black tracking-widest text-[10px] shadow-lg shadow-emerald-600/20 hover:scale-105 transition-all">
+              <Send className="w-3.5 h-3.5 mr-2" /> Release All to Exam Player
+            </Button>
+          )}
+          <Button onClick={() => setShowAddSubject(true)} className="h-10 px-5 rounded-xl bg-primary text-white font-black tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
+            <PlusCircle className="w-3.5 h-3.5 mr-2" /> Add Subject
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-[28px] border border-primary/5 overflow-hidden shadow-xl">

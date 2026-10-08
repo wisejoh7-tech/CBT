@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/lib/ui/button';
 import { Badge } from '@/lib/ui/badge';
-import { Activity, PlusCircle, Settings2, Trash2 } from 'lucide-react';
+import { Activity, PlusCircle, Settings2, Trash2, Send } from 'lucide-react';
 import { Exam } from '@/src/types';
 
 interface ExamModulesProps {
@@ -10,6 +10,7 @@ interface ExamModulesProps {
   setActiveTab: (val: string) => void;
   setSelectedExamId: (id: string) => void;
   handleDeleteExam: (id: string) => void;
+  handleReleaseAllSubjects?: () => void;
 }
 
 export const ExamModules: React.FC<ExamModulesProps> = ({
@@ -18,6 +19,7 @@ export const ExamModules: React.FC<ExamModulesProps> = ({
   setActiveTab,
   setSelectedExamId,
   handleDeleteExam,
+  handleReleaseAllSubjects,
 }) => {
   return (
     <div className="space-y-4 text-xs font-medium max-w-4xl mx-auto">
@@ -31,9 +33,16 @@ export const ExamModules: React.FC<ExamModulesProps> = ({
               <p className="text-[11px] font-bold text-slate-500">Managing {exams.length} exam containers</p>
            </div>
         </div>
-        <Button onClick={() => setShowAddExam(true)} className="h-8 px-4 rounded-xl bg-primary text-white font-black tracking-widest uppercase text-[9px] shadow-md shadow-primary/20 hover:scale-105 transition-all">
-          <PlusCircle className="w-3.5 h-3.5 mr-1.5" /> New Assessment
-        </Button>
+        <div className="flex items-center gap-2">
+          {handleReleaseAllSubjects && (
+            <Button onClick={handleReleaseAllSubjects} className="h-8 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black tracking-widest uppercase text-[9px] shadow-md shadow-emerald-600/20 hover:scale-105 transition-all">
+              <Send className="w-3.5 h-3.5 mr-1.5" /> Release All Subjects
+            </Button>
+          )}
+          <Button onClick={() => setShowAddExam(true)} className="h-8 px-4 rounded-xl bg-primary text-white font-black tracking-widest uppercase text-[9px] shadow-md shadow-primary/20 hover:scale-105 transition-all">
+            <PlusCircle className="w-3.5 h-3.5 mr-1.5" /> New Assessment
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-[24px] border border-primary/5 overflow-hidden shadow-xl">

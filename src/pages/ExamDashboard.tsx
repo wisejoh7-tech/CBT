@@ -23,6 +23,17 @@ import { Badge } from '@/lib/ui/badge';
 import { toast } from 'sonner';
 import { getApiUrl, safeJsonResponse, apiFetch } from '@/src/lib/api-config';
 
+function isSubjectMatch(sub1: string, sub2: string): boolean {
+  if (!sub1 || !sub2) return false;
+  const s1 = sub1.trim().toLowerCase();
+  const s2 = sub2.trim().toLowerCase();
+  if (s1 === s2) return true;
+  if (s1.includes(s2) || s2.includes(s1)) return true;
+  if ((s1.includes('english') || s1.includes('eng')) && (s2.includes('english') || s2.includes('eng'))) return true;
+  if ((s1.includes('math') || s1.includes('mat')) && (s2.includes('math') || s2.includes('mat'))) return true;
+  return false;
+}
+
 export default function ExamDashboard() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
@@ -54,12 +65,7 @@ export default function ExamDashboard() {
         let filteredExams: Exam[] = [];
         if (Array.isArray(allExams)) {
           filteredExams = allExams.filter(e =>
-            subjectNames.some(s => {
-              if (!s || !e.subject) return false;
-              const s1 = s.trim().toLowerCase();
-              const s2 = e.subject.trim().toLowerCase();
-              return s1 === s2 || s1.includes(s2) || s2.includes(s1);
-            })
+            subjectNames.some(s => isSubjectMatch(s, e.subject))
           );
           if (filteredExams.length === 0) {
             filteredExams = allExams.filter(e => e.isActive !== false);
