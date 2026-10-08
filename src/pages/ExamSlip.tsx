@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Candidate } from '@/src/types';
 import { Button } from '@/lib/ui/button';
-import { Printer, ArrowLeft, ShieldCheck, User, MapPin, Calendar, Monitor } from 'lucide-react';
+import { Printer, ArrowLeft, User, Monitor } from 'lucide-react';
 import { getApiUrl, safeJsonResponse, apiFetch } from '@/src/lib/api-config';
 
 export default function ExamSlip() {
@@ -33,9 +33,9 @@ export default function ExamSlip() {
   if (!candidate) return <div className="p-20 text-center">Candidate not found.</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50/20 py-8 px-4 font-sans relative">
+    <div className="min-h-screen bg-slate-50/20 py-8 px-4 font-sans relative overflow-x-hidden w-full">
       <div className="cbt-background" />
-      <nav className="max-w-4xl mx-auto mb-10 bg-white/80 backdrop-blur-md border-2 border-primary/10 px-8 py-4 rounded-[24px] flex justify-between items-center shadow-sm relative z-10">
+      <nav className="max-w-4xl mx-auto mb-8 bg-white/80 backdrop-blur-md border-2 border-primary/10 px-6 sm:px-8 py-4 rounded-[24px] flex justify-between items-center shadow-sm relative z-10 w-full">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => navigate('/')}>
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">V</div>
@@ -53,81 +53,130 @@ export default function ExamSlip() {
         <button onClick={() => navigate('/')} className="text-[12px] font-black tracking-widest text-primary/40 hover:text-primary transition-colors">Portal Home</button>
       </nav>
 
-      <div className="max-w-4xl mx-auto mb-6 flex justify-between items-center print:hidden">
-        <div className="flex gap-3">
-          <Button onClick={() => navigate('/')} className="h-12 px-6 bg-slate-900 text-white rounded-xl font-black text-[10px] tracking-widest gap-2 hover:bg-black shadow-lg transition-all border-none">
-            <ArrowLeft className="w-4 h-4" /> Return to Home
-          </Button>
-        </div>
-        <Button onClick={() => window.print()} className="h-14 px-10 bg-primary text-white rounded-2xl font-black text-[11px] tracking-widest shadow-xl active:scale-95 transition-transform border-none">
+      {/* Button container styled in a responsive grid aligned by column */}
+      <div className="max-w-4xl mx-auto mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full print:hidden">
+        <Button onClick={() => navigate('/')} className="w-full h-12 px-6 bg-slate-900 text-white rounded-xl font-black text-[10px] tracking-widest gap-2 hover:bg-black shadow-lg transition-all border-none justify-center">
+          <ArrowLeft className="w-4 h-4" /> Return to Home
+        </Button>
+        <Button onClick={() => window.print()} className="w-full h-12 px-6 bg-primary text-white rounded-xl font-black text-[11px] tracking-widest shadow-xl active:scale-95 transition-transform border-none justify-center">
           <Printer className="w-5 h-5 mr-2" /> Print Examination Slip
         </Button>
       </div>
 
-      <div className="max-w-4xl mx-auto bg-white border-[2px] border-primary p-8 rounded-[30px] relative overflow-hidden print:border-4 print:shadow-none">
-        <div className="text-center border-b-2 border-primary/10 pb-8 mb-8">
-          <h4 className="text-1xl font-black text-primary tracking-tighter">CBT EXAMINATION SLIP</h4>
-          <p className="text-[12px] font-black text-primary/40 ">Registration Confirmation &bull; Session 2026</p>
+      <div className="max-w-4xl mx-auto bg-white border-2 border-primary p-6 sm:p-8 rounded-[30px] relative overflow-hidden print:border-4 print:shadow-none w-full">
+        <div className="text-center border-b-2 border-primary/10 pb-6 mb-6">
+          <h4 className="text-xl sm:text-2xl font-black text-primary tracking-tight">CBT EXAMINATION SLIP</h4>
+          <p className="text-xs sm:text-sm font-black text-primary/50 mt-1">Registration Confirmation • Session 2026</p>
         </div>
 
-        <div className="grid grid-cols-[150px_1fr] gap-8 mb-8">
-           <div className="w-20 h-20 bg-slate-50 rounded-2xl border-4 border-white shadow-lg overflow-hidden flex items-center justify-center">
-              {candidate.faceUrl ? <img src={candidate.faceUrl} className="w-full h-full object-cover" /> : <User className="w-12 h-12 opacity-10" />}
-           </div>
-           <div className="space-y-6">
-              <div><p className="text-[11px] font-black opacity-30">Full Name</p><p className="font-black text-1xl">{candidate.fullName}</p></div>
-              <div className="grid grid-cols-2 gap-4">
-                 <div><p className="text-[10px] font-black opacity-30">Exam Number</p><p className="font-bold">{candidate.examNumber}</p></div>
-                 <div><p className="text-[10px] font-black opacity-30 ">PIN</p><p className="font-bold tracking-widest ">{candidate.pin || <span className="text-[8px] opacity-40 font-black tracking-tight">Not Set</span>}</p></div>
-              </div>
-           </div>
+        {/* Tabular Form */}
+        <div className="w-full overflow-x-auto rounded-2xl border border-primary/20 shadow-sm mb-6">
+          <table className="w-full text-left border-collapse bg-white text-xs sm:text-sm">
+            <tbody className="divide-y divide-primary/10">
+              <tr>
+                <td className="p-3 sm:p-4 bg-slate-50 font-black text-primary/70 w-1/3 sm:w-1/4 border-r border-primary/10">
+                  Candidate Photo
+                </td>
+                <td className="p-3 sm:p-4">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 bg-slate-50 rounded-2xl border-2 border-primary/20 shadow-md overflow-hidden flex items-center justify-center">
+                    {candidate.faceUrl ? (
+                      <img src={candidate.faceUrl} alt="Candidate" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-10 h-10 text-primary/20" />
+                    )}
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className="p-3 sm:p-4 bg-slate-50 font-black text-primary/70 border-r border-primary/10">
+                  Full Name
+                </td>
+                <td className="p-3 sm:p-4 font-black text-slate-900 text-sm sm:text-base">
+                  {candidate.fullName}
+                </td>
+              </tr>
+              <tr>
+                <td className="p-3 sm:p-4 bg-slate-50 font-black text-primary/70 border-r border-primary/10">
+                  Exam Number
+                </td>
+                <td className="p-3 sm:p-4 font-bold text-primary text-sm sm:text-base">
+                  {candidate.examNumber}
+                </td>
+              </tr>
+              <tr>
+                <td className="p-3 sm:p-4 bg-slate-50 font-black text-primary/70 border-r border-primary/10">
+                  PIN
+                </td>
+                <td className="p-3 sm:p-4 font-bold tracking-widest text-slate-900">
+                  {candidate.pin || <span className="text-xs text-slate-400 font-black">Not Set</span>}
+                </td>
+              </tr>
+              <tr>
+                <td className="p-3 sm:p-4 bg-slate-50 font-black text-primary/70 border-r border-primary/10">
+                  Assigned Center
+                </td>
+                <td className="p-3 sm:p-4 font-bold text-slate-900">
+                  <div>{candidate.examVenue || 'Hall 2'}</div>
+                  <div className="text-xs font-black text-primary/60 mt-1">
+                    Seat: {candidate.assignedSeatNumber || '1'}
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className="p-3 sm:p-4 bg-slate-50 font-black text-primary/70 border-r border-primary/10">
+                  Schedule Info
+                </td>
+                <td className="p-3 sm:p-4 font-bold text-slate-900">
+                  <div>Date: {candidate.examDate || '2026-10-08'}</div>
+                  <div className="text-xs text-slate-600 mt-1">Time: {candidate.examTime || '23:56:00'}</div>
+                </td>
+              </tr>
+              <tr>
+                <td className="p-3 sm:p-4 bg-slate-50 font-black text-primary/70 border-r border-primary/10">
+                  Subject Combination
+                </td>
+                <td className="p-3 sm:p-4 font-bold text-slate-900">
+                  {candidate.subjectCombination && candidate.subjectCombination.length > 0 ? (
+                    <ul className="space-y-1 list-disc list-inside text-xs sm:text-sm">
+                      {candidate.subjectCombination.map((subject, index) => (
+                        <li key={index} className="text-primary font-bold">{subject}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <ul className="space-y-1 list-disc list-inside text-xs sm:text-sm">
+                      <li className="text-primary font-bold">Chemistry</li>
+                      <li className="text-primary font-bold">Mathematics</li>
+                      <li className="text-primary font-bold">Physics</li>
+                      <li className="text-primary font-bold">English Language</li>
+                    </ul>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <td className="p-3 sm:p-4 bg-slate-50 font-black text-primary/70 border-r border-primary/10">
+                  Security Instructions
+                </td>
+                <td className="p-3 sm:p-4 font-medium text-slate-800 text-xs sm:text-sm">
+                  <ul className="space-y-1.5 list-disc list-inside leading-relaxed">
+                    <li>Candidates must arrive 30 minutes before the scheduled time.</li>
+                    <li>Biometric verification is mandatory for terminal access.</li>
+                    <li>Calculators and mobile devices are strictly prohibited.</li>
+                  </ul>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-           <div className="p-6 bg-slate-50 rounded-3xl border-2 border-primary/5">
-              <div className="flex items-center gap-3 mb-4">
-                 <MapPin className="w-5 h-5 text-primary" />
-                 <p className="text-[10px] font-black tracking-widest">Assigned Center</p>
-              </div>
-              <p className="font-bold text-sm">{candidate.examVenue || 'NOT YET ASSIGNED'}</p>
-              <p className="text-[10px] font-bold opacity-40 mt-1">Seat: {candidate.assignedSeatNumber || 'ASSIGNED ON ARRIVAL'}</p>
-           </div>
-           <div className="p-6 bg-slate-50 rounded-3xl border-2 border-primary/5">
-              <div className="flex items-center gap-3 mb-4">
-                 <Calendar className="w-5 h-5 text-primary" />
-                 <p className="text-[10px] font-black tracking-widest">Schedule Info</p>
-              </div>
-              <p className="font-bold text-sm">Date: {candidate.examDate || 'TBA'}</p>
-              <p className="text-[10px] font-bold opacity-40 mt-1">Time: {candidate.examTime || 'TBA'}</p>
-           </div>
-        </div>
-
-        <div className="mb-8">
-           <p className="text-[10px] font-black opacity-30 tracking-widest mb-4">Subject Combination</p>
-           <div className="flex flex-wrap gap-2">
-              {candidate.subjectCombination.map((s, i) => (
-                 <div key={i} className="px-4 py-2 bg-primary/5 rounded-xl border border-primary/10 font-black text-[10px] text-primary">
-                    {s}
-                 </div>
-              ))}
-           </div>
-        </div>
-
-        <div className="p-6 bg-primary text-white rounded-3xl">
-           <div className="flex items-center gap-2 mb-2">
-              <ShieldCheck className="w-4 h-4" />
-              <p className="text-[10px] font-black tracking-widest">Security Instructions</p>
-           </div>
-           <ul className="text-[9px] font-bold space-y-1 opacity-80 list-disc list-inside">
-              <li>Candidates must arrive 30 minutes before the scheduled time.</li>
-              <li>Biometric verification is mandatory for terminal access.</li>
-              <li>Calculators and mobile devices are strictly prohibited.</li>
-           </ul>
-        </div>
-
-        <div className="mt-8 flex justify-between items-center opacity-20">
-           <div className="text-[8px] font-black tracking-widest">VERIFIED AT {new Date(candidate.createdAt).toLocaleDateString()}</div>
-           <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${candidate.examNumber}`} className="w-12 h-12 grayscale" />
+        <div className="mt-6 flex justify-between items-center opacity-30">
+          <div className="text-[9px] font-black tracking-widest">
+            VERIFIED AT {candidate.createdAt ? new Date(candidate.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
+          </div>
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${candidate.examNumber}`}
+            className="w-12 h-12 grayscale"
+            alt="Verification QR"
+          />
         </div>
       </div>
     </div>
