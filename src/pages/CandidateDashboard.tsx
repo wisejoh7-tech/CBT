@@ -389,22 +389,25 @@ export default function CandidateDashboard() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/10 font-medium">
-                          {attempts.map(attempt => (
-                            <tr key={attempt.id} className="hover:bg-white/5 transition-colors">
-                              <td className="p-3 font-black text-sm text-white">
-                                {attempt.isReleased ? `${attempt.score} / ${attempt.totalPossible}` : "PENDING"}
-                              </td>
-                              <td className="p-3 text-right">
-                                {attempt.isReleased ? (
-                                  <button onClick={() => handlePrint('result', attempt.id)} className="p-2 bg-emerald-500 text-white rounded-lg hover:scale-105 transition-transform active:scale-95 shadow-md" title="Print Result">
-                                    <Printer className="w-3.5 h-3.5" />
-                                  </button>
-                                ) : (
-                                  <Badge className="bg-amber-500/20 text-amber-400 border-none font-black text-[8px] px-2 py-0.5 uppercase tracking-widest">Processing</Badge>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
+                          {attempts.map(attempt => {
+                            const isReleased = attempt.isReleased || attempt.released;
+                            return (
+                              <tr key={attempt.id} className="hover:bg-white/5 transition-colors">
+                                <td className="p-3 font-black text-sm text-white">
+                                  {isReleased ? `${attempt.score} / ${attempt.totalPossible}` : "PENDING"}
+                                </td>
+                                <td className="p-3 text-right">
+                                  {isReleased ? (
+                                    <button onClick={() => handlePrint('result', attempt.id)} className="p-2 bg-emerald-500 text-white rounded-lg hover:scale-105 transition-transform active:scale-95 shadow-md" title="Print Result">
+                                      <Printer className="w-3.5 h-3.5" />
+                                    </button>
+                                  ) : (
+                                    <Badge className="bg-amber-500/20 text-amber-400 border-none font-black text-[8px] px-2 py-0.5 uppercase tracking-widest">Processing</Badge>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
