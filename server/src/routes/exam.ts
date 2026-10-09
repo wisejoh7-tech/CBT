@@ -185,10 +185,15 @@ router.post("/attempts/:id/release", authenticateJWT, authorizeRoles("admin", "s
     attempt.isReleased = true;
     await attemptRepo.save(attempt);
 
-    // Fetch candidate for notifications
+    // Fetch candidate for notifications and clear assigned active exam
     const candidate = await candidateRepo.findOneBy({ examNumber: attempt.userId });
 
     if (candidate) {
+      if (candidate.assignedExamId) {
+        candidate.assignedExamId = null as any;
+        await candidateRepo.save(candidate);
+      }
+
       const scoreMsg = `VIVI CBT: Hello ${candidate.fullName}, your exam results have been released. Score: ${attempt.score}/${attempt.totalPossible}. Visit the portal to print your slip.`;
 
       // Send Email
@@ -225,6 +230,38 @@ router.post("/attempts/:id/release", authenticateJWT, authorizeRoles("admin", "s
     res.json({ message: "Results released and notifications dispatched." });
   } catch (error: any) {
     res.status(500).json({ message: "Failed to release results", error: error.message });
+  }
+});
+
+// Reset Attempt (Admin)
+router.post("/attempts/:id/reset", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+  try {
+    const attemptRepo = AppDataSource.getRepository(Attempt);
+    const candidateRepo = AppDataSource.getRepository(Candidate);
+
+    const attempt = await attemptRepo.findOneBy({ id: req.params.id as any });
+    if (!attempt) return res.status(404).json({ message: "Attempt not found" });
+
+    // Clear candidate's assigned active exam
+    const candidate = await candidateRepo.findOneBy({ examNumber: attempt.userId });
+    if (candidate && candidate.assignedExamId) {
+      candidate.assignedExamId = null as any;
+      await candidateRepo.save(candidate);
+    }
+
+    await attemptRepo.remove(attempt);
+
+    await createLog({
+      type: "exam",
+      severity: "warning",
+      message: `Exam attempt ${req.params.id} for user ${attempt.userId} reset by admin.`,
+      userId: (req as any).user?.id,
+      metadata: { attemptId: req.params.id, candidateId: attempt.userId }
+    });
+
+    res.json({ message: "Attempt reset successfully. Active session removed." });
+  } catch (error: any) {
+    res.status(500).json({ message: "Failed to reset attempt", error: error.message });
   }
 });
 

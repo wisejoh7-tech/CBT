@@ -106,6 +106,8 @@ export default function CandidateDashboard() {
 
   if (loading) return <div className="p-20 text-center font-black animate-pulse text-primary tracking-widest">Loading Portal...</div>;
 
+  const releasedAttempt = attempts.find(a => a.isReleased || a.released);
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50/20 font-sans relative antialiased tracking-tight text-sm sm:text-base">
       <div className="cbt-background" />
@@ -133,25 +135,40 @@ export default function CandidateDashboard() {
              <div className="absolute top-0 right-0 w-20 h-20g bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-white/10 transition-colors" />
              <div className="flex items-center gap-4 sm:gap-5 relative z-10 w-full md:w-auto">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/10 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/20 backdrop-blur-sm shrink-0">
-                   <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                   {releasedAttempt && !dashboardData?.assignedExamId ? <Award className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-300" /> : <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 text-white" />}
                 </div>
                 <div className="space-y-1 min-w-0">
                    <h3 className="text-lg sm:text-xl font-black tracking-tight leading-none truncate">
-                     {dashboardData?.assignedExamId ? "Active Assessment" : "Ready for Exam?"}
+                     {dashboardData?.assignedExamId
+                       ? "Active Assessment"
+                       : releasedAttempt
+                       ? "Official Result Released"
+                       : "Ready for Exam?"}
                    </h3>
                    <p className="text-[10px] sm:text-[11px] font-medium text-white/60 tracking-wide uppercase line-clamp-2">
                      {dashboardData?.assignedExamId
                        ? "Assessment has been initiated on your terminal."
+                       : releasedAttempt
+                       ? `Verified Raw Score: ${releasedAttempt.score} / ${releasedAttempt.totalPossible}`
                        : "Proceed to terminal to begin session."}
                    </p>
                 </div>
              </div>
-             <Button
-               onClick={() => navigate(dashboardData?.assignedExamId ? `/instructions/${dashboardData.assignedExamId}` : '/instructions/unified')}
-               className="h-12 sm:h-14 w-full md:w-auto px-8 sm:px-10 bg-white text-primary rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest shadow-xl active:scale-95 transition-all hover:bg-slate-50 border-none shrink-0"
-             >
-               {dashboardData?.assignedExamId ? "START ASSIGNED EXAM" : "Start Exam"}
-             </Button>
+             {releasedAttempt && !dashboardData?.assignedExamId ? (
+               <Button
+                 onClick={() => handlePrint('result', releasedAttempt.id)}
+                 className="h-12 sm:h-14 w-full md:w-auto px-8 sm:px-10 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest shadow-xl active:scale-95 transition-all border-none shrink-0 flex items-center justify-center gap-2"
+               >
+                 <Printer className="w-4 h-4" /> PRINT RESULT SLIP
+               </Button>
+             ) : (
+               <Button
+                 onClick={() => navigate(dashboardData?.assignedExamId ? `/instructions/${dashboardData.assignedExamId}` : '/instructions/unified')}
+                 className="h-12 sm:h-14 w-full md:w-auto px-8 sm:px-10 bg-white text-primary rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest shadow-xl active:scale-95 transition-all hover:bg-slate-50 border-none shrink-0"
+               >
+                 {dashboardData?.assignedExamId ? "START ASSIGNED EXAM" : "Start Exam"}
+               </Button>
+             )}
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
@@ -398,9 +415,13 @@ export default function CandidateDashboard() {
                                 </td>
                                 <td className="p-3 text-right">
                                   {isReleased ? (
-                                    <button onClick={() => handlePrint('result', attempt.id)} className="p-2 bg-emerald-500 text-white rounded-lg hover:scale-105 transition-transform active:scale-95 shadow-md" title="Print Result">
-                                      <Printer className="w-3.5 h-3.5" />
-                                    </button>
+                                    <Button
+                                      onClick={() => handlePrint('result', attempt.id)}
+                                      className="h-8 px-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] tracking-wider rounded-lg inline-flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+                                      title="Print Official Result Slip"
+                                    >
+                                      <Printer className="w-3.5 h-3.5" /> PRINT RESULTS
+                                    </Button>
                                   ) : (
                                     <Badge className="bg-amber-500/20 text-amber-400 border-none font-black text-[8px] px-2 py-0.5 uppercase tracking-widest">Processing</Badge>
                                   )}
