@@ -72,15 +72,15 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
   };
 
   return (
-    <div className="space-y-4 text-sm font-medium max-w-5xl mx-auto w-full">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-primary/5">
-        <div className="flex items-center gap-4 min-w-0">
+    <div className="space-y-4 text-sm font-medium max-w-5xl mx-auto w-full max-w-full">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-primary/5 w-full max-w-full overflow-hidden">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0 w-full lg:w-auto">
           <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary shadow-inner shrink-0">
             <Award className="w-5 h-5" />
           </div>
-          <div className="min-w-0">
-            <h3 className="text-xl font-black tracking-tighter truncate">Result Release Center</h3>
-            <p className="text-[13px] font-black truncate text-slate-500">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg sm:text-xl font-black tracking-tighter leading-tight break-words">Result Release Center</h3>
+            <p className="text-xs sm:text-[13px] font-bold sm:font-black text-slate-500 break-words whitespace-normal leading-snug mt-0.5">
               Managing {completedAttempts.length} completed sessions ({candidates.length} total enrolled candidates)
             </p>
           </div>
@@ -91,7 +91,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
             onClick={() => handleExportCSV(false)}
             variant="outline"
             size="sm"
-            className="h-10 px-3.5 rounded-xl border-slate-200 text-slate-700 font-black text-[10px] gap-2 hover:bg-slate-50 hover:text-primary transition-all"
+            className="h-9 sm:h-10 px-2.5 sm:px-3.5 rounded-xl border-slate-200 text-slate-700 font-black text-[10px] gap-1.5 sm:gap-2 hover:bg-slate-50 hover:text-primary transition-all flex-1 sm:flex-initial justify-center"
             title="Download completed results as CSV"
           >
             <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
@@ -102,7 +102,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
             onClick={() => handleExportExcel(false)}
             variant="outline"
             size="sm"
-            className="h-10 px-3.5 rounded-xl border-emerald-200 text-emerald-800 bg-emerald-50/50 font-black text-[10px] gap-2 hover:bg-emerald-100 transition-all"
+            className="h-9 sm:h-10 px-2.5 sm:px-3.5 rounded-xl border-emerald-200 text-emerald-800 bg-emerald-50/50 font-black text-[10px] gap-1.5 sm:gap-2 hover:bg-emerald-100 transition-all flex-1 sm:flex-initial justify-center"
             title="Download completed results as Excel (.xlsx)"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -112,7 +112,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
           <Button
             onClick={() => handleExportExcel(true)}
             size="sm"
-            className="h-10 px-4 rounded-xl bg-primary text-white font-black text-[10px] gap-2 hover:bg-primary/90 shadow-md transition-all"
+            className="h-9 sm:h-10 px-3 sm:px-4 rounded-xl bg-primary text-white font-black text-[10px] gap-1.5 sm:gap-2 hover:bg-primary/90 shadow-md transition-all flex-1 sm:flex-initial justify-center"
             title="Download scores for all candidates as Excel (.xlsx)"
           >
             <Download className="w-3.5 h-3.5 shrink-0" />
@@ -123,7 +123,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
             onClick={fetchData}
             variant="ghost"
             size="sm"
-            className="h-10 px-3 rounded-xl border border-primary/10 text-primary font-black text-[10px] gap-1.5 hover:bg-primary/5 transition-all"
+            className="h-9 sm:h-10 px-2.5 sm:px-3 rounded-xl border border-primary/10 text-primary font-black text-[10px] gap-1.5 hover:bg-primary/5 transition-all shrink-0"
           >
             <RefreshCw className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">REFRESH</span>
