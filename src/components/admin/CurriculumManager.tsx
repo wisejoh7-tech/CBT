@@ -21,9 +21,9 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({
 }) => {
   return (
     <div className="space-y-4 text-sm font-medium max-w-3xl mx-auto">
-      <div className="flex justify-between items-center bg-white p-5 rounded-3xl shadow-sm border border-primary/5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl shadow-sm border border-primary/5">
         <div className="flex items-center gap-4">
-           <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary shadow-inner">
+           <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary shadow-inner shrink-0">
               <BookMarked className="w-5 h-5" />
            </div>
            <div>
@@ -31,21 +31,21 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({
               <p className="text-[13px] font-black ">Managing {offeredSubjects.length} subjects</p>
            </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
           {handleReleaseAllSubjects && (
-            <Button onClick={handleReleaseAllSubjects} className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black tracking-widest text-[10px] shadow-lg shadow-emerald-600/20 hover:scale-105 transition-all">
+            <Button onClick={handleReleaseAllSubjects} className="w-full sm:w-auto justify-center h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black tracking-widest text-[10px] shadow-lg shadow-emerald-600/20 hover:scale-105 transition-all">
               <Send className="w-3.5 h-3.5 mr-2" /> Release All to Exam Player
             </Button>
           )}
-          <Button onClick={() => setShowAddSubject(true)} className="h-10 px-5 rounded-xl bg-primary text-white font-black tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
+          <Button onClick={() => setShowAddSubject(true)} className="w-full sm:w-auto justify-center h-10 px-5 rounded-xl bg-primary text-white font-black tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
             <PlusCircle className="w-3.5 h-3.5 mr-2" /> Add Subject
           </Button>
         </div>
       </div>
 
       <div className="bg-white rounded-[28px] border border-primary/5 overflow-hidden shadow-xl">
-        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-          <table className="w-full text-left">
+        <div className="max-h-[400px] overflow-y-auto overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left min-w-[320px]">
             <thead className="bg-slate-50/50 border-b border-primary/5 sticky top-0 z-10 backdrop-blur-md">
               <tr className="text-[14px] font-black  ">
                 <th className="px-6 py-4">Identification</th>
