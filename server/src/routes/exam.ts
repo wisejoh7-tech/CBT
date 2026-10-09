@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Brackets } from "typeorm";
 import { AppDataSource } from "../data-source";
 import { Exam } from "../entities/Exam";
 import { Question } from "../entities/Question";
@@ -316,11 +317,17 @@ router.post("/attempt/:id/submit", authenticateJWT, async (req: any, res) => {
       const subjectNames = candidate?.subjectCombination || [];
 
       if (subjectNames.length > 0) {
-        // Fetch questions from exams matching subjects
-        questions = await questionRepo.find({
-          where: subjectNames.map(s => ({ exam: { subject: s } })),
-          relations: { exam: true }
-        });
+        // Fetch questions from exams matching subjects with flexible case-insensitive matching
+        const query = questionRepo.createQueryBuilder("q")
+          .leftJoinAndSelect("q.exam", "exam")
+          .where(
+            new Brackets(qb => {
+              subjectNames.forEach((s, i) => {
+                qb.orWhere("LOWER(exam.subject) LIKE LOWER(:s" + i + ")", { ["s" + i]: `%${s.trim()}%` });
+              });
+            })
+          );
+        questions = await query.getMany();
       }
 
       // Fallback: If no questions found by subject combination, load questions from all active exams
