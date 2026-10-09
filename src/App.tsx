@@ -151,7 +151,7 @@ export default function App() {
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/exam-slip/:examNumber" element={<ProtectedRoute><ExamSlip /></ProtectedRoute>} />
             <Route path="/results" element={<ResultChecker />} />
-            <Route path="/result-slip/:examNumber" element={<ProtectedRoute><ResultSlip /></ProtectedRoute>} />
+            <Route path="/result-slip/:examNumber" element={<ResultSlip />} />
             <Route path="/verify/:examNumber" element={<ResultSlip isVerification />} />
           </Routes>
           <Toaster position="top-center" />
