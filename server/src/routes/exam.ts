@@ -171,6 +171,79 @@ router.get("/attempts/all", authenticateJWT, authorizeRoles("admin", "super_admi
   res.json(attempts);
 });
 
+// Release All Completed Results
+router.post("/attempts/release-all", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+  try {
+    const attemptRepo = AppDataSource.getRepository(Attempt);
+    const candidateRepo = AppDataSource.getRepository(Candidate);
+
+    const unreleasedAttempts = await attemptRepo.find({
+      where: { status: 'completed', isReleased: false }
+    });
+
+    if (unreleasedAttempts.length === 0) {
+      return res.json({ message: "No pending unreleased results found.", count: 0 });
+    }
+
+    let releasedCount = 0;
+    for (const attempt of unreleasedAttempts) {
+      attempt.isReleased = true;
+      await attemptRepo.save(attempt);
+      releasedCount++;
+
+      const candidate = await candidateRepo.findOneBy({ examNumber: attempt.userId });
+      if (candidate) {
+        if (candidate.assignedExamId) {
+          candidate.assignedExamId = null as any;
+          await candidateRepo.save(candidate);
+        }
+
+        const scoreMsg = `VIVI CBT: Hello ${candidate.fullName}, your exam results have been released. Score: ${attempt.score}/${attempt.totalPossible}. Visit the portal to print your slip.`;
+
+        if (candidate.email) {
+          try {
+            await sendEmailSafely({
+              to: candidate.email,
+              subject: "OFFICIAL EXAM RESULT RELEASED",
+              html: `
+                <div style="font-family: sans-serif; padding: 20px; color: #333;">
+                  <h2 style="color: #0EA5E9;">Result Notification</h2>
+                  <p>Hello <b>${candidate.fullName}</b>,</p>
+                  <p>Your performance record for the VIVI Standard Examination has been verified and released.</p>
+                  <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0;">
+                    <p style="margin: 0; font-size: 14px; color: #64748b;">AGGREGATE SCORE</p>
+                    <p style="margin: 5px 0 0 0; font-size: 32px; font-weight: 900; color: #0EA5E9;">${attempt.score} / ${attempt.totalPossible}</p>
+                  </div>
+                  <p>You can now log in to your candidate dashboard to view the full breakdown and print your official result slip.</p>
+                  <p style="font-size: 12px; color: #94a3b8; margin-top: 40px;">&copy; 2026 VIVI CBT Systems. This is an automated security notification.</p>
+                </div>
+              `
+            });
+          } catch (emailErr) {
+            logger.error(`Failed to send result email to ${candidate.email}:`, emailErr);
+          }
+        }
+
+        if (candidate.phoneNumber) {
+          await sendSMS(candidate.phoneNumber, scoreMsg);
+        }
+      }
+    }
+
+    await createLog({
+      type: "exam",
+      severity: "info",
+      message: `Batch release completed: ${releasedCount} results published by admin.`,
+      userId: (req as any).user?.id
+    });
+
+    res.json({ message: `Successfully released ${releasedCount} result(s).`, count: releasedCount });
+  } catch (error: any) {
+    logger.error("Batch release results error:", error);
+    res.status(500).json({ message: "Failed to release all results", error: error.message });
+  }
+});
+
 // Release Results
 router.post("/attempts/:id/release", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
   try {

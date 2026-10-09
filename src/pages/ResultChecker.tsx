@@ -129,6 +129,9 @@ export default function ResultChecker() {
           <div className="bg-white p-6 rounded-[8px]  border-2 border-primary shadow-1xl relative overflow-hidden">
             <div className="space-y-8 ">
               <h4 className="text-1xl font-black tracking-tighter text-primary">CHECK RESULT</h4>
+              <p className="text-[11px] font-bold text-slate-500 leading-snug">
+                Enter your Registration Number (and PIN if assigned) to access your official examination result slip once released by the administration.
+              </p>
               <form onSubmit={handleCheckResult} className="space-y-4">
                 <div className="relative">
                   <Input value={targetExamNumber} onChange={e => setTargetExamNumber(e.target.value)} placeholder="Registration Number" className="h-12 rounded-xl bg-slate-50 border-2 border-primary/20 focus:border-primary text-center font-black shadow-sm" />
