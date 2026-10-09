@@ -180,10 +180,11 @@ router.get("/dashboard", authenticateJWT, async (req: any, res) => {
       return res.status(404).json({ message: "Candidate record not found" });
     }
 
-    const attempts = await AppDataSource.getRepository(Attempt).find({
-      where: { userId: examNumber, status: 'completed' },
-      order: { completedAt: 'DESC' }
-    });
+    const attempts = await AppDataSource.getRepository(Attempt).createQueryBuilder("a")
+      .where("LOWER(a.userId) = LOWER(:examNumber)", { examNumber })
+      .andWhere("a.status = :status", { status: 'completed' })
+      .orderBy("a.completedAt", "DESC")
+      .getMany();
 
     // Mask results that are not released yet
     const processedAttempts = attempts.map(attempt => {
@@ -292,10 +293,10 @@ router.get("/print/:type", authenticateJWT, async (req: any, res) => {
       const { attemptId } = req.query;
       if (!attemptId) return res.status(400).json({ message: "Attempt ID required" });
 
-      const attempt = await AppDataSource.getRepository(Attempt).findOneBy({
-        id: attemptId as string,
-        userId: examNumber
-      });
+      const attempt = await AppDataSource.getRepository(Attempt).createQueryBuilder("a")
+        .where("a.id = :attemptId", { attemptId })
+        .andWhere("LOWER(a.userId) = LOWER(:examNumber)", { examNumber })
+        .getOne();
 
       if (!attempt) return res.status(404).json({ message: "Result not found" });
       if (!attempt.isReleased) return res.status(403).json({ message: "Result not yet released" });
