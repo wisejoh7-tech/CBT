@@ -485,15 +485,15 @@ export default function ExamPlayer() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-slate-50/20 text-primary selection:bg-primary/10 relative">
+    <div className="h-screen flex flex-col bg-slate-50/20 text-primary selection:bg-primary/10 relative max-w-full overflow-x-hidden">
       <div className="cbt-background" />
-      <header className="h-14 px-6 flex items-center justify-between border-b border-primary/10 bg-white sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-black text-base">V</div>
+      <header className="h-14 px-3 sm:px-6 flex items-center justify-between border-b border-primary/10 bg-white sticky top-0 z-50">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-black text-base shrink-0">V</div>
             <div>
               <h1 className="text-xs font-black tracking-tight leading-none">CBT PLAYER</h1>
-              <p className="text-[9px] font-bold text-primary/40 tracking-wider mt-0.5">Session: {profile?.displayName}</p>
+              <p className="text-[9px] font-bold text-primary/40 tracking-wider mt-0.5 truncate max-w-[120px] sm:max-w-none">Session: {profile?.displayName}</p>
             </div>
           </div>
           <div className="h-6 w-[1px] bg-primary/10 hidden md:block" />
@@ -506,12 +506,12 @@ export default function ExamPlayer() {
           </div>
         </div>
 
-        <div className="flex gap-6 items-center">
-          <div className="flex items-center gap-2 text-right pr-3 border-r border-primary/10">
-            <p className="text-[9px] font-black text-primary/40 tracking-wider">Time Remaining</p>
-            <p className={cn("text-lg font-mono font-black", timeLeft! < 300 ? "text-red-500 animate-pulse" : "")}>{formatTime(timeLeft || 0)}</p>
+        <div className="flex gap-2 sm:gap-6 items-center">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-right pr-2 sm:pr-3 border-r border-primary/10">
+            <p className="text-[8px] sm:text-[9px] font-black text-primary/40 tracking-wider hidden xs:block">Time Remaining</p>
+            <p className={cn("text-base sm:text-lg font-mono font-black", timeLeft! < 300 ? "text-red-500 animate-pulse" : "")}>{formatTime(timeLeft || 0)}</p>
           </div>
-          <Button variant="ghost" onClick={handleSuspendSession} className="text-primary/30 hover:text-red-500 h-8 px-2">
+          <Button variant="ghost" onClick={handleSuspendSession} className="text-primary/30 hover:text-red-500 h-8 px-1.5 sm:px-2">
             <LogOut className="w-3.5 h-3.5" />
           </Button>
           <video ref={videoRefProctor} autoPlay muted playsInline className="hidden" />
@@ -522,13 +522,13 @@ export default function ExamPlayer() {
         <motion.div initial={{ width: 0 }} animate={{ width: `${answeredPercentage}%` }} className="h-full bg-primary shadow-[0_0_10px_var(--primary)]" />
       </div>
 
-      <nav className="h-9 bg-primary/5 border-b border-primary/10 flex items-center px-6 overflow-x-auto no-scrollbar">
+      <nav className="h-9 bg-primary/5 border-b border-primary/10 flex items-center px-3 sm:px-6 overflow-x-auto no-scrollbar">
         {exams.map((ex, idx) => (
           <button
             key={ex.id}
             onClick={() => { setActiveExamIndex(idx); setCurrentQuestionIndex(0); }}
             className={cn(
-              "h-full px-4 text-[9px] font-black tracking-wider transition-all",
+              "h-full px-3 sm:px-4 text-[9px] font-black tracking-wider transition-all shrink-0 whitespace-nowrap",
               activeExamIndex === idx ? "bg-primary text-white" : "text-primary/40 hover:bg-primary/10"
             )}
           >
@@ -538,16 +538,16 @@ export default function ExamPlayer() {
       </nav>
 
       <main className="flex-1 flex overflow-hidden">
-        <section className="flex-1 p-6 md:p-8 overflow-y-auto flex justify-center">
+        <section className="flex-1 p-3 sm:p-6 md:p-8 overflow-y-auto flex justify-center">
           <div className="max-w-xl w-full">
             {currentQuestion && (
               <AnimatePresence mode="wait">
-                <motion.div key={currentQuestion.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                <motion.div key={currentQuestion.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4 sm:space-y-6">
                   <div className="flex justify-between items-center">
-                    <Badge className="bg-primary/10 text-primary font-black px-3 py-1 text-xs rounded-md border-none">{exams[activeExamIndex].subject} • Question {currentQuestionIndex + 1}</Badge>
+                    <Badge className="bg-primary/10 text-primary font-black px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs rounded-md border-none">{exams[activeExamIndex]?.subject} • Question {currentQuestionIndex + 1}</Badge>
                   </div>
 
-                  <h3 className="text-sm font-bold leading-relaxed text-slate-800">{currentQuestion.text}</h3>
+                  <h3 className="text-xs sm:text-sm font-bold leading-relaxed text-slate-800">{currentQuestion.text}</h3>
 
                   {currentQuestion.imageUrl && (
                     <div className="my-3 rounded-xl overflow-hidden border border-primary/10 max-h-60 flex justify-center bg-white p-2 shadow-sm">
@@ -559,18 +559,18 @@ export default function ExamPlayer() {
                     </div>
                   )}
 
-                  <div className="grid gap-3">
+                  <div className="grid gap-2.5 sm:gap-3">
                     {currentQuestion.options.map((opt, idx) => {
                       const isSelected = answers[currentQuestion.id] === idx;
                       return (
                         <button key={idx} onClick={() => handleSelectOption(idx)} className={cn(
-                          "flex items-center p-3 rounded-xl border-2 transition-all text-left",
+                          "flex items-center p-2.5 sm:p-3 rounded-xl border-2 transition-all text-left w-full",
                           isSelected ? "border-primary bg-primary/[0.03]" : "border-primary/10 bg-white hover:border-primary/30"
                         )}>
-                          <div className={cn("w-6 h-6 rounded-md flex items-center justify-center font-black text-xs mr-3 shrink-0", isSelected ? "bg-primary text-white" : "bg-primary/5")}>
+                          <div className={cn("w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center font-black text-[11px] sm:text-xs mr-2.5 sm:mr-3 shrink-0", isSelected ? "bg-primary text-white" : "bg-primary/5")}>
                             {String.fromCharCode(65 + idx)}
                           </div>
-                          <span className="text-xs font-semibold text-slate-700">{opt}</span>
+                          <span className="text-xs font-semibold text-slate-700 break-words flex-1 min-w-0">{opt}</span>
                         </button>
                       );
                     })}
@@ -598,13 +598,13 @@ export default function ExamPlayer() {
         </aside>
       </main>
 
-      <footer className="h-16 px-6 border-t border-primary/10 flex items-center justify-between bg-white">
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setCurrentQuestionIndex(p => Math.max(0, p - 1))} disabled={currentQuestionIndex === 0} className="h-10 px-5 rounded-xl font-bold text-xs tracking-wider border-2">PREVIOUS</Button>
-          <Button onClick={() => setCurrentQuestionIndex(p => Math.min(questions.length - 1, p + 1))} disabled={currentQuestionIndex === questions.length - 1} className="h-10 px-6 bg-primary text-white rounded-xl font-bold text-xs tracking-wider shadow-md shadow-primary/20">NEXT ITEM</Button>
+      <footer className="h-16 px-3 sm:px-6 border-t border-primary/10 flex items-center justify-between bg-white gap-2 max-w-full overflow-x-hidden">
+        <div className="flex gap-1.5 sm:gap-2 shrink-0">
+          <Button variant="outline" onClick={() => setCurrentQuestionIndex(p => Math.max(0, p - 1))} disabled={currentQuestionIndex === 0} className="h-9 sm:h-10 px-2.5 sm:px-5 rounded-xl font-bold text-[10px] sm:text-xs tracking-wider border-2 shrink-0">PREVIOUS</Button>
+          <Button onClick={() => setCurrentQuestionIndex(p => Math.min(questions.length - 1, p + 1))} disabled={currentQuestionIndex === questions.length - 1} className="h-9 sm:h-10 px-3 sm:px-6 bg-primary text-white rounded-xl font-bold text-[10px] sm:text-xs tracking-wider shadow-md shadow-primary/20 shrink-0">NEXT ITEM</Button>
         </div>
 
-        <Button onClick={() => { if(confirm("Submit all answers?")) handleSubmit(); }} className="h-10 px-5 bg-rose-500 text-white rounded-xl font-black text-xs tracking-wider hover:bg-rose-600 shadow-md border-none">FINAL SUBMIT</Button>
+        <Button onClick={() => { if(confirm("Submit all answers?")) handleSubmit(); }} className="h-9 sm:h-10 px-2.5 sm:px-5 bg-rose-500 text-white rounded-xl font-black text-[10px] sm:text-xs tracking-wider hover:bg-rose-600 shadow-md border-none shrink-0">FINAL SUBMIT</Button>
       </footer>
 
 
