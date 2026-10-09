@@ -44,16 +44,58 @@ router.delete("/logs/:id", authenticateJWT, authorizeRoles("super_admin"), async
 router.get("/export-results", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
   try {
     const attempts = await AppDataSource.getRepository(Attempt).find({
-      where: { status: "completed" }
+      where: { status: "completed" },
+      order: { completedAt: "DESC" }
     });
+    const candidates = await AppDataSource.getRepository(Candidate).find();
+    const exams = await AppDataSource.getRepository(Exam).find();
 
-    let csv = "Exam Number,Score,Total Possible,Date Completed\n";
+    const headers = [
+      "Exam Number",
+      "Full Name",
+      "Email",
+      "Phone Number",
+      "Exam Title",
+      "Score",
+      "Total Possible",
+      "Percentage",
+      "Release Status",
+      "Trust Score",
+      "Started At",
+      "Completed At"
+    ];
+
+    const escapeCsv = (val: any) => `"${String(val ?? "").replace(/"/g, '""')}"`;
+
+    let csv = "\uFEFF" + headers.map(escapeCsv).join(",") + "\n";
+
     attempts.forEach((a: any) => {
-      csv += `${a.userId},${a.score},${a.totalPossible},${a.completedAt?.toISOString()}\n`;
+      const candidate = candidates.find(c => c.examNumber === a.userId || c.id === a.userId);
+      const exam = exams.find(e => e.id === a.examId);
+      const examTitle = exam ? `${exam.title} (${exam.subject})` : (a.examId === 'unified' ? 'Unified Standard Exam' : a.examId || 'General Assessment');
+      const isReleased = Boolean(a.isReleased || a.released);
+      const percentage = a.totalPossible > 0 ? `${((a.score / a.totalPossible) * 100).toFixed(2)}%` : '0%';
+
+      const row = [
+        candidate?.examNumber || a.userId,
+        candidate?.fullName || "N/A",
+        candidate?.email || "N/A",
+        candidate?.phoneNumber || "N/A",
+        examTitle,
+        a.score,
+        a.totalPossible,
+        percentage,
+        isReleased ? "PUBLISHED" : "PENDING",
+        a.trustScore != null ? `${Math.round(a.trustScore)}%` : "100%",
+        a.startedAt ? new Date(a.startedAt).toLocaleString() : "N/A",
+        a.completedAt ? new Date(a.completedAt).toLocaleString() : "N/A"
+      ];
+
+      csv += row.map(escapeCsv).join(",") + "\n";
     });
 
-    res.header('Content-Type', 'text/csv');
-    res.attachment('cbt_results_export.csv');
+    res.header('Content-Type', 'text/csv; charset=utf-8');
+    res.attachment(`cbt_results_export_${new Date().toISOString().slice(0, 10)}.csv`);
     res.send(csv);
   } catch (error) {
     res.status(500).json({ message: "Export failed" });
