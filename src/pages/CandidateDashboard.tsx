@@ -103,7 +103,10 @@ export default function CandidateDashboard() {
     if (type === 'schedule') {
       window.open(`/exam-slip/${dashboardData?.examNumber}`, '_blank');
     } else {
-      window.open(`/result-slip/${dashboardData?.examNumber}?attemptId=${attemptId}`, '_blank');
+      const url = attemptId
+        ? `/result-slip/${dashboardData?.examNumber}?attemptId=${attemptId}`
+        : `/result-slip/${dashboardData?.examNumber}`;
+      window.open(url, '_blank');
     }
   };
 
@@ -215,26 +218,26 @@ export default function CandidateDashboard() {
              <div className="absolute top-0 right-0 w-20 h-20g bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-white/10 transition-colors" />
              <div className="flex items-center gap-4 sm:gap-5 relative z-10 w-full md:w-auto">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/10 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/20 backdrop-blur-sm shrink-0">
-                   {releasedAttempt && !dashboardData?.assignedExamId ? <Award className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-300" /> : <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 text-white" />}
+                   {releasedAttempt ? <Award className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-300" /> : <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 text-white" />}
                 </div>
                 <div className="space-y-1 min-w-0">
                    <h3 className="text-lg sm:text-xl font-black tracking-tight leading-none truncate">
-                     {dashboardData?.assignedExamId
-                       ? "Active Assessment"
-                       : releasedAttempt
+                     {releasedAttempt
                        ? "Official Result Released"
+                       : dashboardData?.assignedExamId
+                       ? "Active Assessment"
                        : "Ready for Exam?"}
                    </h3>
                    <p className="text-[10px] sm:text-[11px] font-medium text-white/60 tracking-wide uppercase line-clamp-2">
-                     {dashboardData?.assignedExamId
-                       ? "Assessment has been initiated on your terminal."
-                       : releasedAttempt
+                     {releasedAttempt
                        ? `Verified Raw Score: ${releasedAttempt.score} / ${releasedAttempt.totalPossible}`
+                       : dashboardData?.assignedExamId
+                       ? "Assessment has been initiated on your terminal."
                        : "Proceed to terminal to begin session."}
                    </p>
                 </div>
              </div>
-             {releasedAttempt && !dashboardData?.assignedExamId ? (
+             {releasedAttempt ? (
                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
                  <Button
                    onClick={() => handleDownloadResultPDF(releasedAttempt)}
@@ -247,8 +250,16 @@ export default function CandidateDashboard() {
                    variant="outline"
                    className="h-12 sm:h-14 w-full sm:w-auto px-6 sm:px-8 bg-white/10 hover:bg-white/20 text-white border-white/20 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2"
                  >
-                   <Printer className="w-4 h-4" /> PRINT SLIP
+                   <Printer className="w-4 h-4" /> PRINT RESULT SLIP
                  </Button>
+                 {dashboardData?.assignedExamId && (
+                   <Button
+                     onClick={() => navigate(`/instructions/${dashboardData.assignedExamId}`)}
+                     className="h-12 sm:h-14 w-full sm:w-auto px-6 sm:px-8 bg-white text-primary rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest shadow-xl active:scale-95 transition-all hover:bg-slate-50 border-none shrink-0"
+                   >
+                     START ASSIGNED EXAM
+                   </Button>
+                 )}
                </div>
              ) : (
                <Button
