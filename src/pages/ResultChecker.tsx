@@ -35,7 +35,10 @@ export default function ResultChecker() {
       const res = await apiFetch(getApiUrl('/exams/public/check-result'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ examNumber: cleanId })
+        body: JSON.stringify({
+          examNumber: cleanId,
+          pin: pin.trim() || undefined
+        })
       });
 
       await safeJsonResponse(res);
