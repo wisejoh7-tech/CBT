@@ -471,26 +471,26 @@ router.post("/public/check-result", async (req, res) => {
       return res.status(404).json({ message: "Candidate record not found for the provided registration number." });
     }
 
-    if (candidate.pin && candidate.pin.trim() !== String(pin || "").trim()) {
+    if (pin && String(pin).trim() !== "" && candidate.pin && candidate.pin.trim() !== String(pin).trim()) {
       return res.status(401).json({ message: "Invalid PIN provided for candidate." });
     }
 
     const attemptRepo = AppDataSource.getRepository(Attempt);
     const identifiers = Array.from(new Set([
-      candidate.examNumber?.toLowerCase(),
-      candidate.id?.toLowerCase(),
-      candidate.email?.toLowerCase()
+      candidate.examNumber?.trim().toLowerCase(),
+      candidate.id?.trim().toLowerCase(),
+      candidate.email?.trim().toLowerCase()
     ].filter(Boolean)));
 
     let attempt;
     if (attemptId) {
       attempt = await attemptRepo.createQueryBuilder("a")
         .where("a.id = :attemptId", { attemptId })
-        .andWhere("LOWER(a.userId) IN (:...identifiers)", { identifiers })
+        .andWhere("LOWER(TRIM(a.userId)) IN (:...identifiers)", { identifiers })
         .getOne();
     } else {
       attempt = await attemptRepo.createQueryBuilder("a")
-        .where("LOWER(a.userId) IN (:...identifiers)", { identifiers })
+        .where("LOWER(TRIM(a.userId)) IN (:...identifiers)", { identifiers })
         .andWhere("a.status = :status", { status: 'completed' })
         .orderBy("a.completedAt", "DESC")
         .getOne();

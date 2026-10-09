@@ -47,11 +47,21 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
       if (!examNumber) return;
       try {
         setLoading(true);
-        // We'll use a specific endpoint for the result slip or reuse the public one if no token
+        const pinFromQuery = searchParams.get('pin') || undefined;
+        const token = localStorage.getItem('token');
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const res = await apiFetch(getApiUrl('/exams/public/check-result'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ examNumber: examNumber, attemptId: attemptId || undefined })
+          headers,
+          body: JSON.stringify({
+            examNumber: examNumber,
+            attemptId: attemptId || undefined,
+            pin: pinFromQuery
+          })
         });
 
         const data = await safeJsonResponse(res);
@@ -59,14 +69,15 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
           setCandidate(data.candidate);
           setUnifiedAttempt(data.attempt);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching result slip:", error);
+        toast.error(getFriendlyErrorMessage(error) || "Unable to load examination result slip.");
       } finally {
         setLoading(false);
       }
     }
     fetchResultData();
-  }, [examNumber]);
+  }, [examNumber, attemptId, searchParams]);
 
   if (loading) return <div className="h-screen flex items-center justify-center font-black text-primary animate-pulse tracking-widest">Generating Official Transcript...</div>;
 

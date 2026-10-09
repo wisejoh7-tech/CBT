@@ -181,14 +181,15 @@ router.get("/dashboard", authenticateJWT, async (req: any, res) => {
     }
 
     const identifiers = Array.from(new Set([
-      candidate.examNumber?.toLowerCase(),
-      candidate.id?.toLowerCase(),
-      candidate.email?.toLowerCase(),
-      req.user.id?.toLowerCase()
+      candidate.examNumber?.trim().toLowerCase(),
+      candidate.id?.trim().toLowerCase(),
+      candidate.email?.trim().toLowerCase(),
+      req.user.id?.trim().toLowerCase(),
+      req.user.examNumber?.trim().toLowerCase()
     ].filter(Boolean)));
 
     const attempts = await AppDataSource.getRepository(Attempt).createQueryBuilder("a")
-      .where("LOWER(a.userId) IN (:...identifiers)", { identifiers })
+      .where("LOWER(TRIM(a.userId)) IN (:...identifiers)", { identifiers })
       .andWhere("a.status = :status", { status: 'completed' })
       .orderBy("a.completedAt", "DESC")
       .getMany();
@@ -302,7 +303,7 @@ router.get("/print/:type", authenticateJWT, async (req: any, res) => {
 
       const attempt = await AppDataSource.getRepository(Attempt).createQueryBuilder("a")
         .where("a.id = :attemptId", { attemptId })
-        .andWhere("LOWER(a.userId) = LOWER(:examNumber)", { examNumber })
+        .andWhere("LOWER(TRIM(a.userId)) = LOWER(TRIM(:examNumber))", { examNumber })
         .getOne();
 
       if (!attempt) return res.status(404).json({ message: "Result not found" });
