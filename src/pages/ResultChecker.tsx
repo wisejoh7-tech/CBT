@@ -44,7 +44,8 @@ export default function ResultChecker() {
       await safeJsonResponse(res);
 
       toast.success("Result found. Accessing Transcript...");
-      navigate(`/result-slip/${cleanId}`);
+      const queryString = pin.trim() ? `?pin=${encodeURIComponent(pin.trim())}` : '';
+      navigate(`/result-slip/${cleanId}${queryString}`);
     } catch (error: any) {
       toast.error(getFriendlyErrorMessage(error) || "System error. Please try again later.");
     } finally {
@@ -132,6 +133,10 @@ export default function ResultChecker() {
                 <div className="relative">
                   <Input value={targetExamNumber} onChange={e => setTargetExamNumber(e.target.value)} placeholder="Registration Number" className="h-12 rounded-xl bg-slate-50 border-2 border-primary/20 focus:border-primary text-center font-black shadow-sm" />
                   <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-10" />
+                </div>
+                <div className="relative">
+                  <Input value={pin} onChange={e => setPin(e.target.value)} placeholder="PIN (Optional)" className="h-12 rounded-xl bg-slate-50 border-2 border-primary/20 focus:border-primary text-center font-black shadow-sm" />
+                  <Lock className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-10" />
                 </div>
                 <Button type="submit" disabled={checkingResult} className="w-full h-14 bg-primary text-white text-1xl rounded-2xl font-black tracking-widest shadow-1xl hover:text-white hover:scale-105 transition-all active:bg-green-700">
                   {checkingResult ? "VERIFYING..." : "ENTER "}
