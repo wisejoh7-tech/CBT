@@ -452,4 +452,60 @@ router.post("/attempt/:id/submit", authenticateJWT, async (req: any, res) => {
   }
 });
 
+// Public Check Result Endpoint
+router.post("/public/check-result", async (req, res) => {
+  const { examNumber, attemptId } = req.body;
+  if (!examNumber || typeof examNumber !== "string") {
+    return res.status(400).json({ message: "Exam number is required" });
+  }
+
+  const cleanExamNumber = examNumber.trim().toLowerCase();
+
+  try {
+    const candidateRepo = AppDataSource.getRepository(Candidate);
+    const candidate = await candidateRepo.createQueryBuilder("c")
+      .where("LOWER(c.examNumber) = LOWER(:examNumber)", { examNumber: cleanExamNumber })
+      .getOne();
+
+    if (!candidate) {
+      return res.status(404).json({ message: "Candidate record not found for the provided registration number." });
+    }
+
+    const attemptRepo = AppDataSource.getRepository(Attempt);
+    const identifiers = Array.from(new Set([
+      candidate.examNumber?.toLowerCase(),
+      candidate.id?.toLowerCase(),
+      candidate.email?.toLowerCase()
+    ].filter(Boolean)));
+
+    let attempt;
+    if (attemptId) {
+      attempt = await attemptRepo.createQueryBuilder("a")
+        .where("a.id = :attemptId", { attemptId })
+        .andWhere("LOWER(a.userId) IN (:...identifiers)", { identifiers })
+        .getOne();
+    } else {
+      attempt = await attemptRepo.createQueryBuilder("a")
+        .where("LOWER(a.userId) IN (:...identifiers)", { identifiers })
+        .andWhere("a.status = :status", { status: 'completed' })
+        .orderBy("a.completedAt", "DESC")
+        .getOne();
+    }
+
+    if (!attempt) {
+      return res.status(404).json({ message: "No completed exam attempt record found for this candidate." });
+    }
+
+    if (!attempt.isReleased) {
+      return res.status(403).json({ message: "Result has not been released yet by administration." });
+    }
+
+    const { password: _, pin: __, ...safeCandidate } = candidate as any;
+    return res.json({ candidate: safeCandidate, attempt });
+  } catch (error: any) {
+    logger.error("Check result error:", error);
+    return res.status(500).json({ message: "Unable to retrieve examination result." });
+  }
+});
+
 export default router;

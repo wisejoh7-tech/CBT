@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Candidate, Attempt } from '@/src/types';
 import { Button } from '@/lib/ui/button';
 import { Badge } from '@/lib/ui/badge';
@@ -13,6 +13,8 @@ import { cn } from '@/src/lib/utils/utils';
 
 export default function ResultSlip({ isVerification = false }: { isVerification?: boolean }) {
   const { examNumber } = useParams<{ examNumber: string }>();
+  const [searchParams] = useSearchParams();
+  const attemptId = searchParams.get('attemptId');
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [unifiedAttempt, setUnifiedAttempt] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
         const res = await apiFetch(getApiUrl('/exams/public/check-result'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ examNumber: examNumber })
+          body: JSON.stringify({ examNumber: examNumber, attemptId: attemptId || undefined })
         });
 
         const data = await safeJsonResponse(res);
