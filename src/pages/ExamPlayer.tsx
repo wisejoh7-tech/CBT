@@ -312,12 +312,7 @@ export default function ExamPlayer() {
           if (single) filteredExams = [single];
         }
 
-        // Fallback 1: Show active exams
-        if (filteredExams.length === 0) {
-          filteredExams = allExams.filter((e: any) => e.isActive !== false);
-        }
-
-        // Fallback 2: Show all exams
+        // Fallback: Show all exams
         if (filteredExams.length === 0) {
           filteredExams = allExams;
         }

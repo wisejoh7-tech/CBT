@@ -375,7 +375,7 @@ router.post("/attempt/:id/submit", authenticateJWT, async (req: any, res) => {
         });
       }
 
-      // Secondary Fallback: Load all questions from any exam
+      // Fallback: Load all questions from any exam
       if (questions.length === 0) {
         questions = await questionRepo.find({
           relations: { exam: true }

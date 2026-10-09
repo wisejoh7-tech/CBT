@@ -27,25 +27,25 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
   const completedAttempts = attempts.filter(a => a.status === 'completed');
 
   return (
-    <div className="space-y-4 text-sm font-medium max-w-4xl mx-auto">
-      <div className="flex justify-between items-center bg-white p-5 rounded-2xl shadow-sm border border-primary/5">
-        <div className="flex items-center gap-4">
-           <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary shadow-inner">
+    <div className="space-y-4 text-sm font-medium max-w-4xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-5 rounded-2xl shadow-sm border border-primary/5">
+        <div className="flex items-center gap-4 min-w-0">
+           <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary shadow-inner shrink-0">
               <Award className="w-5 h-5" />
            </div>
-           <div>
-              <h3 className="text-xl font-black tracking-tighter">Result Release Center</h3>
-              <p className="text-[13px] font-black">Managing {completedAttempts.length} completed sessions</p>
+           <div className="min-w-0">
+              <h3 className="text-xl font-black tracking-tighter truncate">Result Release Center</h3>
+              <p className="text-[13px] font-black truncate">Managing {completedAttempts.length} completed sessions</p>
            </div>
         </div>
-        <Button onClick={fetchData} variant="outline" size="sm" className="h-10 px-4 rounded-xl border-primary/10 text-primary font-black text-[9px] gap-2 hover:bg-primary/5 transition-all">
-           <RefreshCw className="w-3.5 h-3.5" /> REFRESH DATA
+        <Button onClick={fetchData} variant="outline" size="sm" className="h-10 px-4 rounded-xl border-primary/10 text-primary font-black text-[9px] gap-2 hover:bg-primary/5 transition-all w-full sm:w-auto">
+           <RefreshCw className="w-3.5 h-3.5 shrink-0" /> REFRESH DATA
         </Button>
       </div>
 
-      <div className="bg-white rounded-[28px] border border-primary/5 overflow-hidden shadow-xl">
-        <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
-          <table className="w-full text-left">
+      <div className="bg-white rounded-[28px] border border-primary/5 overflow-hidden shadow-xl w-full">
+        <div className="max-h-[500px] overflow-x-auto overflow-y-auto custom-scrollbar w-full">
+          <table className="w-full text-left min-w-[600px]">
             <thead className="bg-slate-50/50 border-b border-primary/5 sticky top-0 z-10 backdrop-blur-md">
               <tr className="text-[14px] font-black ">
                 <th className="px-6 py-4">Candidate</th>

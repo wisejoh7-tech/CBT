@@ -19,20 +19,20 @@ export const StudentRegistry: React.FC<StudentRegistryProps> = ({
   navigate,
 }) => {
   return (
-    <div className="space-y-4 text-sm font-medium max-w-4xl mx-auto">
-      <div className="flex justify-between items-center bg-white p-5 rounded-2xl shadow-sm border border-primary/5">
-        <div>
-          <h3 className="text-xl font-black tracking-tighter  ">Student Registry</h3>
-          <p className="text-[14px] font-black ">Managing {candidates.length} candidates</p>
+    <div className="space-y-4 text-sm font-medium max-w-4xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-5 rounded-2xl shadow-sm border border-primary/5">
+        <div className="min-w-0">
+          <h3 className="text-xl font-black tracking-tighter truncate">Student Registry</h3>
+          <p className="text-[14px] font-black truncate">Managing {candidates.length} candidates</p>
         </div>
-        <Button onClick={() => setShowAddCandidate(true)} className="h-10 px-5 rounded-xl bg-primary text-white font-black tracking-widest uppercase text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
-          <UserPlus className="w-3.5 h-3.5 mr-2" /> Enroll Candidate
+        <Button onClick={() => setShowAddCandidate(true)} className="h-10 px-5 rounded-xl bg-primary text-white font-black tracking-widest uppercase text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all w-full sm:w-auto">
+          <UserPlus className="w-3.5 h-3.5 mr-2 shrink-0" /> Enroll Candidate
         </Button>
       </div>
 
-      <div className="bg-white rounded-[20px] border  overflow-hidden shadow-xl">
-        <div className="max-h-[450px] overflow-y-auto custom-scrollbar">
-          <table className="w-full text-left">
+      <div className="bg-white rounded-[20px] border overflow-hidden shadow-xl w-full">
+        <div className="max-h-[450px] overflow-x-auto overflow-y-auto custom-scrollbar w-full">
+          <table className="w-full text-left min-w-[550px]">
             <thead className="bg-slate-50/50 sticky top-0 z-10 backdrop-blur-md">
               <tr className="text-[14px] font-black ">
                 <th className="px-6 py-4">Profile</th>

@@ -180,8 +180,15 @@ router.get("/dashboard", authenticateJWT, async (req: any, res) => {
       return res.status(404).json({ message: "Candidate record not found" });
     }
 
+    const identifiers = Array.from(new Set([
+      candidate.examNumber?.toLowerCase(),
+      candidate.id?.toLowerCase(),
+      candidate.email?.toLowerCase(),
+      req.user.id?.toLowerCase()
+    ].filter(Boolean)));
+
     const attempts = await AppDataSource.getRepository(Attempt).createQueryBuilder("a")
-      .where("LOWER(a.userId) = LOWER(:examNumber)", { examNumber })
+      .where("LOWER(a.userId) IN (:...identifiers)", { identifiers })
       .andWhere("a.status = :status", { status: 'completed' })
       .orderBy("a.completedAt", "DESC")
       .getMany();

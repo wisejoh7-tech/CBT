@@ -26,9 +26,9 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({
            <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary shadow-inner shrink-0">
               <BookMarked className="w-5 h-5" />
            </div>
-           <div>
-              <h3 className="text-xl font-black tracking-tighter ">Curriculum</h3>
-              <p className="text-[13px] font-black ">Managing {offeredSubjects.length} subjects</p>
+           <div className="min-w-0">
+              <h3 className="text-xl font-black tracking-tighter truncate">Curriculum</h3>
+              <p className="text-[13px] font-black truncate">Managing {offeredSubjects.length} subjects</p>
            </div>
         </div>
         <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
