@@ -4,6 +4,7 @@ import { Award, Send, CheckCircle2, Eye, RefreshCw, RotateCcw, Download, FileSpr
 import { Attempt, Candidate, Exam } from '@/src/types';
 import { cn } from '@/src/lib/utils/utils';
 import { formatResultData, formatAllCandidatesResultData, downloadCSV, downloadExcel } from '@/src/lib/exportResults';
+import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 import { toast } from 'sonner';
 
 interface ResultsManagerProps {
@@ -26,6 +27,34 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
   fetchData,
 }) => {
   const completedAttempts = attempts.filter(a => a.status === 'completed');
+  const unreleasedCount = completedAttempts.filter(a => !(a.released || a.isReleased)).length;
+
+  const handleReleaseAllResults = async () => {
+    if (unreleasedCount === 0) {
+      toast.info("All completed results are already released.");
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to release ALL ${unreleasedCount} pending exam results? This will publish results and send candidate notifications.`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await apiFetch(getApiUrl('/exams/attempts/release-all'), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await safeJsonResponse(res);
+      toast.success(data?.message || "All pending results released successfully!");
+      fetchData();
+    } catch (e: any) {
+      toast.error(getFriendlyErrorMessage(e) || "Failed to release all results");
+    }
+  };
 
   const handleExportCSV = (exportAllCandidates: boolean = false) => {
     try {
@@ -87,6 +116,18 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-start lg:justify-end">
+          {unreleasedCount > 0 && (
+            <Button
+              onClick={handleReleaseAllResults}
+              size="sm"
+              className="h-9 sm:h-10 px-3 sm:px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] gap-1.5 sm:gap-2 shadow-md transition-all flex-1 sm:flex-initial justify-center"
+              title="Release all unreleased completed exam results at once"
+            >
+              <Send className="w-3.5 h-3.5 shrink-0" />
+              <span>RELEASE ALL ({unreleasedCount})</span>
+            </Button>
+          )}
+
           <Button
             onClick={() => handleExportCSV(false)}
             variant="outline"
