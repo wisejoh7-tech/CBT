@@ -454,7 +454,7 @@ router.post("/attempt/:id/submit", authenticateJWT, async (req: any, res) => {
 
 // Public Check Result Endpoint
 router.post("/public/check-result", async (req, res) => {
-  const { examNumber, attemptId } = req.body;
+  const { examNumber, attemptId, pin } = req.body;
   if (!examNumber || typeof examNumber !== "string") {
     return res.status(400).json({ message: "Exam number is required" });
   }
@@ -469,6 +469,10 @@ router.post("/public/check-result", async (req, res) => {
 
     if (!candidate) {
       return res.status(404).json({ message: "Candidate record not found for the provided registration number." });
+    }
+
+    if (candidate.pin && candidate.pin.trim() !== String(pin || "").trim()) {
+      return res.status(401).json({ message: "Invalid PIN provided for candidate." });
     }
 
     const attemptRepo = AppDataSource.getRepository(Attempt);
