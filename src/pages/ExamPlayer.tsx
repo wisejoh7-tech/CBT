@@ -253,37 +253,63 @@ export default function ExamPlayer() {
            throw new Error("Invalid response from server");
         }
 
-        let filteredExams: any[] = [];
+        let subjectNames = profile?.subjectCombination || [];
 
-        if (examId && examId !== 'unified') {
-          const single = allExams.find((e: any) => e.id === examId);
-          if (single) filteredExams = [single];
-        }
-
-        if (filteredExams.length === 0) {
-          const activeExams = allExams.filter((e: any) => e.isActive !== false);
-          const subjectNames = profile.subjectCombination || [];
-
-          if (activeExams.length > 0) {
-            filteredExams = [...activeExams];
-          }
-
-          // Also ensure any subjects in candidate's combination without active exam get virtual module
-          if (subjectNames.length > 0) {
-            for (const s of subjectNames) {
-              const matched = filteredExams.some(e => isSubjectMatch(s, e.subject));
-              if (!matched) {
-                filteredExams.push({
-                  id: `virtual-${encodeURIComponent(s)}`,
-                  title: `${s} Module`,
-                  subject: s,
-                  durationMinutes: 30,
-                  totalQuestions: 0,
-                  isActive: true
-                });
+        if (subjectNames.length === 0) {
+          try {
+            const candRes = await apiFetch(getApiUrl('/candidates/dashboard'), { headers: getHeaders() });
+            if (candRes.ok) {
+              const candData = await safeJsonResponse(candRes);
+              if (candData?.profile?.subjectCombination && Array.isArray(candData.profile.subjectCombination)) {
+                subjectNames = candData.profile.subjectCombination;
               }
             }
+          } catch (e) {
+            console.error("Failed to fetch candidate dashboard profile:", e);
           }
+        }
+
+        if (subjectNames.length === 0) {
+          try {
+            const subRes = await apiFetch(getApiUrl('/subjects'), { headers: getHeaders() });
+            if (subRes.ok) {
+              const subs = await safeJsonResponse(subRes);
+              if (Array.isArray(subs)) {
+                subjectNames = subs.map((s: any) => s.name || s.title || s.subject).filter(Boolean);
+              }
+            }
+          } catch (e) {
+            console.error("Failed to fetch subjects list:", e);
+          }
+        }
+
+        let filteredExams: any[] = [];
+
+        if (subjectNames.length > 0) {
+          const matchedExams: any[] = [];
+          for (const s of subjectNames) {
+            const matched = allExams.find((e: any) => isSubjectMatch(s, e.subject));
+            if (matched) {
+              if (!matchedExams.some(e => e.id === matched.id)) {
+                matchedExams.push(matched);
+              }
+            } else {
+              matchedExams.push({
+                id: `virtual-${encodeURIComponent(s)}`,
+                title: `${s} Module`,
+                subject: s,
+                durationMinutes: 30,
+                totalQuestions: 0,
+                isActive: true
+              });
+            }
+          }
+          filteredExams = matchedExams;
+        }
+
+        if (filteredExams.length === 0 && examId && examId !== 'unified') {
+          const single = allExams.find((e: any) => e.id === examId);
+          if (single) filteredExams = [single];
         }
 
         // Fallback: Show all exams
@@ -307,14 +333,24 @@ export default function ExamPlayer() {
 
         const qMap: Record<string, Question[]> = {};
         for (const exam of filteredExams) {
-          if (exam.id.startsWith('virtual-')) {
+          let targetExamId = exam.id;
+          if (targetExamId.startsWith('virtual-')) {
+            const realExam = allExams.find((e: any) => isSubjectMatch(exam.subject, e.subject));
+            if (realExam) {
+              targetExamId = realExam.id;
+            }
+          }
+
+          if (targetExamId.startsWith('virtual-')) {
             qMap[exam.id] = [];
           } else {
-            const qRes = await apiFetch(getApiUrl(`/exams/${exam.id}`), { headers: getHeaders() });
+            const qRes = await apiFetch(getApiUrl(`/exams/${targetExamId}`), { headers: getHeaders() });
             if (qRes.ok) {
               const examData = await safeJsonResponse(qRes);
               const randomizedQuestions = shuffleArray<Question>(examData?.questions || []);
               qMap[exam.id] = randomizedQuestions;
+            } else {
+              qMap[exam.id] = [];
             }
           }
         }

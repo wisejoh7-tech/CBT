@@ -31,55 +31,79 @@ export default function ExamInstructions() {
     async function fetchInstructions() {
       try {
         setLoading(true);
-        const res = await apiFetch(getApiUrl('/exams'), {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
+        const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
+        const res = await apiFetch(getApiUrl('/exams'), { headers });
         const allExams: Exam[] = await safeJsonResponse(res);
-        if (Array.isArray(allExams) && allExams.length > 0) {
-          let filtered: Exam[] = [];
+        const examsList = Array.isArray(allExams) ? allExams : [];
 
-          if (examId && examId !== 'unified') {
-            const single = allExams.find(e => e.id === examId);
-            if (single) filtered = [single];
-          }
+        let subjectNames: string[] = profile?.subjectCombination || [];
 
-          if (filtered.length === 0) {
-            const activeExams = allExams.filter(e => e.isActive !== false);
-            const subjectNames = profile?.subjectCombination || [];
-
-            if (activeExams.length > 0) {
-              filtered = [...activeExams];
-            }
-
-            if (subjectNames.length > 0) {
-              for (const s of subjectNames) {
-                const matched = filtered.some(e => isSubjectMatch(s, e.subject));
-                if (!matched) {
-                  filtered.push({
-                    id: `virtual-${encodeURIComponent(s)}`,
-                    title: `${s} Module`,
-                    description: `${s} Examination Module`,
-                    subject: s,
-                    durationMinutes: 30,
-                    totalQuestions: 0,
-                    isActive: true,
-                    createdBy: 'system',
-                    createdAt: new Date().toISOString()
-                  });
-                }
+        // If candidate profile in memory lacks subjectCombination, fetch dashboard
+        if (subjectNames.length === 0) {
+          try {
+            const dashRes = await apiFetch(getApiUrl('/candidates/dashboard'), { headers });
+            if (dashRes.ok) {
+              const dashData = await safeJsonResponse(dashRes);
+              if (dashData?.candidate?.subjectCombination?.length > 0) {
+                subjectNames = dashData.candidate.subjectCombination;
               }
             }
+          } catch (e) {
+            // Ignore dashboard fetch error
           }
-
-          // Fallback: All exams in system
-          if (filtered.length === 0) {
-            filtered = allExams;
-          }
-
-          setExams(filtered);
-        } else {
-          toast.error("No active examination modules available.");
         }
+
+        // If still empty (admin preview or default), fetch active offered subjects
+        if (subjectNames.length === 0) {
+          try {
+            const subRes = await apiFetch(getApiUrl('/subjects'), { headers });
+            if (subRes.ok) {
+              const subData = await safeJsonResponse(subRes);
+              if (Array.isArray(subData) && subData.length > 0) {
+                subjectNames = subData.filter((s: any) => s.isActive !== false).map((s: any) => s.name);
+              }
+            }
+          } catch (e) {
+            // Ignore subjects fetch error
+          }
+        }
+
+        let filtered: Exam[] = [];
+
+        if (subjectNames.length > 0) {
+          const matchedExams: Exam[] = [];
+          for (const s of subjectNames) {
+            const matched = examsList.find(e => isSubjectMatch(s, e.subject));
+            if (matched) {
+              if (!matchedExams.some(e => e.id === matched.id)) {
+                matchedExams.push(matched);
+              }
+            } else {
+              matchedExams.push({
+                id: `virtual-${encodeURIComponent(s)}`,
+                title: `${s} Module`,
+                description: `${s} Examination Module`,
+                subject: s,
+                durationMinutes: 30,
+                totalQuestions: 0,
+                isActive: true,
+                createdBy: 'system',
+                createdAt: new Date().toISOString()
+              });
+            }
+          }
+          filtered = matchedExams;
+        }
+
+        if (filtered.length === 0) {
+          filtered = examsList.filter(e => e.isActive !== false);
+        }
+
+        if (filtered.length === 0) {
+          filtered = examsList;
+        }
+
+        setExams(filtered);
       } catch (e) {
         toast.error(getFriendlyErrorMessage(e));
       } finally {

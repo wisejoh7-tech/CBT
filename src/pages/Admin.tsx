@@ -68,6 +68,21 @@ export default function Admin() {
     }
   };
 
+  const handleResetResult = async (id: string) => {
+    if (!confirm("RESET SESSION: This will permanently remove this candidate's exam attempt and clear active terminal assignment. Proceed?")) return;
+    try {
+      const res = await apiFetch(getApiUrl(`/exams/attempts/${id}/reset`), {
+        method: 'POST',
+        headers: getHeaders()
+      });
+      await safeJsonResponse(res);
+      toast.success("Candidate exam attempt reset successfully");
+      fetchData();
+    } catch (e) {
+      toast.error(getFriendlyErrorMessage(e));
+    }
+  };
+
   const handleClearAllLogs = async () => {
     if (!confirm("CRITICAL: This will permanently delete ALL system audit logs. Proceed?")) return;
     try {
@@ -642,6 +657,7 @@ export default function Admin() {
                     attempts={attempts}
                     candidates={candidates}
                     handleReleaseResult={handleReleaseResult}
+                    handleResetResult={handleResetResult}
                     setViewingSnaps={setViewingSnaps}
                     fetchData={fetchData}
                   />

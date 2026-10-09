@@ -3,7 +3,7 @@ import { Card } from '@/lib/ui/card';
 import { Button } from '@/lib/ui/button';
 import { Badge } from '@/lib/ui/badge';
 import { ScrollArea } from '@/lib/ui/scroll-area';
-import { Award, Send, CheckCircle2, Eye, RefreshCw } from 'lucide-react';
+import { Award, Send, CheckCircle2, Eye, RefreshCw, RotateCcw } from 'lucide-react';
 import { Attempt, Candidate } from '@/src/types';
 import { cn } from '@/src/lib/utils/utils';
 
@@ -11,6 +11,7 @@ interface ResultsManagerProps {
   attempts: Attempt[];
   candidates: Candidate[];
   handleReleaseResult: (id: string) => void;
+  handleResetResult?: (id: string) => void;
   setViewingSnaps: (id: string | null) => void;
   fetchData: () => void;
 }
@@ -19,6 +20,7 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
   attempts,
   candidates,
   handleReleaseResult,
+  handleResetResult,
   setViewingSnaps,
   fetchData,
 }) => {
@@ -89,19 +91,31 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                        </button>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {isReleased ? (
-                        <div className="inline-flex items-center gap-2 text-emerald-500 bg-emerald-50 px-4 py-1.5 rounded-xl border border-emerald-100">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span className="text-[9px] font-black tracking-widest uppercase">PUBLISHED</span>
-                        </div>
-                      ) : (
-                        <Button
-                          onClick={() => handleReleaseResult(a.id)}
-                          className="h-9 px-4 bg-slate-900 text-white rounded-xl font-black text-[12px] tracking-widest hover:bg-primary transition-all shadow-lg active:scale-95 "
-                        >
-                          <Send className="w-3 h-3 mr-2" /> RELEASE NOW
-                        </Button>
-                      )}
+                      <div className="inline-flex items-center gap-2">
+                        {isReleased ? (
+                          <div className="inline-flex items-center gap-2 text-emerald-500 bg-emerald-50 px-4 py-1.5 rounded-xl border border-emerald-100">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span className="text-[9px] font-black tracking-widest uppercase">PUBLISHED</span>
+                          </div>
+                        ) : (
+                          <Button
+                            onClick={() => handleReleaseResult(a.id)}
+                            className="h-9 px-4 bg-slate-900 text-white rounded-xl font-black text-[12px] tracking-widest hover:bg-primary transition-all shadow-lg active:scale-95"
+                          >
+                            <Send className="w-3 h-3 mr-2" /> RELEASE NOW
+                          </Button>
+                        )}
+                        {handleResetResult && (
+                          <Button
+                            onClick={() => handleResetResult(a.id)}
+                            variant="outline"
+                            className="h-9 px-3 border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl font-black text-[10px] tracking-widest transition-all"
+                            title="Reset Candidate Session & Clear Attempt"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 mr-1" /> RESET
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

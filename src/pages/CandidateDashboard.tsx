@@ -8,6 +8,7 @@ import {
   LogOut,
   GraduationCap,
   Printer,
+  Download,
   Award,
   User,
   FileText,
@@ -27,6 +28,8 @@ import { Label } from '@/lib/ui/label';
 import { toast } from 'sonner';
 import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 import { NIGERIAN_STATES, STATE_LGAS } from '@/src/lib/constants/nigeria-data';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function CandidateDashboard() {
   const [attempts, setAttempts] = useState<Attempt[]>([]);
@@ -104,7 +107,86 @@ export default function CandidateDashboard() {
     }
   };
 
+  const handleDownloadResultPDF = (attempt?: Attempt) => {
+    const releasedAttempt = attempts.find(a => a.isReleased || a.released);
+    const targetAttempt = attempt || releasedAttempt;
+    if (!targetAttempt || !dashboardData) return;
+
+    try {
+      const doc = new jsPDF();
+
+      // Header Banner
+      doc.setFillColor(14, 165, 233);
+      doc.rect(0, 0, 210, 35, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('VIVI CBT OFFICIAL RESULT SLIP', 105, 20, { align: 'center' });
+      doc.setFontSize(10);
+      doc.text('UNIFIED EXAMINATION STANDARDS', 105, 28, { align: 'center' });
+
+      // Candidate Information
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CANDIDATE DETAILS', 14, 48);
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Full Name: ${dashboardData.fullName || 'N/A'}`, 14, 56);
+      doc.text(`Exam Number: ${dashboardData.examNumber || 'N/A'}`, 14, 63);
+      doc.text(`State / LGA: ${dashboardData.stateOfOrigin || 'N/A'} - ${dashboardData.lga || 'N/A'}`, 14, 70);
+      doc.text(`Institution: ${dashboardData.schoolAttended || 'N/A'}`, 14, 77);
+
+      // Exam Result Table
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('PERFORMANCE RECORD', 14, 92);
+
+      const tableBody: (string | number)[][] = [];
+      if (targetAttempt.results?.subjects) {
+        Object.entries(targetAttempt.results.subjects).forEach(([subject, stats]: [string, any]) => {
+          tableBody.push([subject, `${stats.correct} / ${stats.total}`]);
+        });
+      } else if (Array.isArray(targetAttempt.results) && targetAttempt.results.length > 0) {
+        targetAttempt.results.forEach((r: any) => {
+          tableBody.push([r.subject || 'Subject', `${r.score}`]);
+        });
+      } else {
+        tableBody.push(['Unified Assessment', `${targetAttempt.score} / ${targetAttempt.totalPossible}`]);
+      }
+
+      (doc as any).autoTable({
+        startY: 97,
+        head: [['Subject', 'Score']],
+        body: tableBody,
+        foot: [['AGGREGATE SCORE', `${targetAttempt.score} / ${targetAttempt.totalPossible}`]],
+        headStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255], fontStyle: 'bold' },
+        footStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
+        theme: 'grid',
+      });
+
+      const finalY = (doc as any).lastAutoTable?.finalY || 150;
+
+      // Footer / Verification notice
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(100, 116, 139);
+      doc.text('This is an official computer-generated result slip issued by VIVI CBT Systems.', 14, finalY + 15);
+      doc.text(`Downloaded on: ${new Date().toLocaleString()}`, 14, finalY + 22);
+
+      doc.save(`Result_${dashboardData.examNumber || 'Slip'}.pdf`);
+      toast.success("Result PDF downloaded successfully!");
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      toast.error("Failed to generate PDF. Opening printable result slip.");
+      handlePrint('result', targetAttempt.id);
+    }
+  };
+
   if (loading) return <div className="p-20 text-center font-black animate-pulse text-primary tracking-widest">Loading Portal...</div>;
+
+  const releasedAttempt = attempts.find(a => a.isReleased || a.released);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50/20 font-sans relative antialiased tracking-tight text-sm sm:text-base">
@@ -133,25 +215,49 @@ export default function CandidateDashboard() {
              <div className="absolute top-0 right-0 w-20 h-20g bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-white/10 transition-colors" />
              <div className="flex items-center gap-4 sm:gap-5 relative z-10 w-full md:w-auto">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/10 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/20 backdrop-blur-sm shrink-0">
-                   <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                   {releasedAttempt && !dashboardData?.assignedExamId ? <Award className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-300" /> : <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 text-white" />}
                 </div>
                 <div className="space-y-1 min-w-0">
                    <h3 className="text-lg sm:text-xl font-black tracking-tight leading-none truncate">
-                     {dashboardData?.assignedExamId ? "Active Assessment" : "Ready for Exam?"}
+                     {dashboardData?.assignedExamId
+                       ? "Active Assessment"
+                       : releasedAttempt
+                       ? "Official Result Released"
+                       : "Ready for Exam?"}
                    </h3>
                    <p className="text-[10px] sm:text-[11px] font-medium text-white/60 tracking-wide uppercase line-clamp-2">
                      {dashboardData?.assignedExamId
                        ? "Assessment has been initiated on your terminal."
+                       : releasedAttempt
+                       ? `Verified Raw Score: ${releasedAttempt.score} / ${releasedAttempt.totalPossible}`
                        : "Proceed to terminal to begin session."}
                    </p>
                 </div>
              </div>
-             <Button
-               onClick={() => navigate(dashboardData?.assignedExamId ? `/instructions/${dashboardData.assignedExamId}` : '/instructions/unified')}
-               className="h-12 sm:h-14 w-full md:w-auto px-8 sm:px-10 bg-white text-primary rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest shadow-xl active:scale-95 transition-all hover:bg-slate-50 border-none shrink-0"
-             >
-               {dashboardData?.assignedExamId ? "START ASSIGNED EXAM" : "Start Exam"}
-             </Button>
+             {releasedAttempt && !dashboardData?.assignedExamId ? (
+               <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
+                 <Button
+                   onClick={() => handleDownloadResultPDF(releasedAttempt)}
+                   className="h-12 sm:h-14 w-full sm:w-auto px-6 sm:px-8 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest shadow-xl active:scale-95 transition-all border-none flex items-center justify-center gap-2"
+                 >
+                   <Download className="w-4 h-4" /> DOWNLOAD RESULTS
+                 </Button>
+                 <Button
+                   onClick={() => handlePrint('result', releasedAttempt.id)}
+                   variant="outline"
+                   className="h-12 sm:h-14 w-full sm:w-auto px-6 sm:px-8 bg-white/10 hover:bg-white/20 text-white border-white/20 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2"
+                 >
+                   <Printer className="w-4 h-4" /> PRINT SLIP
+                 </Button>
+               </div>
+             ) : (
+               <Button
+                 onClick={() => navigate(dashboardData?.assignedExamId ? `/instructions/${dashboardData.assignedExamId}` : '/instructions/unified')}
+                 className="h-12 sm:h-14 w-full md:w-auto px-8 sm:px-10 bg-white text-primary rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest shadow-xl active:scale-95 transition-all hover:bg-slate-50 border-none shrink-0"
+               >
+                 {dashboardData?.assignedExamId ? "START ASSIGNED EXAM" : "Start Exam"}
+               </Button>
+             )}
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
@@ -398,9 +504,23 @@ export default function CandidateDashboard() {
                                 </td>
                                 <td className="p-3 text-right">
                                   {isReleased ? (
-                                    <button onClick={() => handlePrint('result', attempt.id)} className="p-2 bg-emerald-500 text-white rounded-lg hover:scale-105 transition-transform active:scale-95 shadow-md" title="Print Result">
-                                      <Printer className="w-3.5 h-3.5" />
-                                    </button>
+                                    <div className="inline-flex items-center gap-2">
+                                      <Button
+                                        onClick={() => handleDownloadResultPDF(attempt)}
+                                        className="h-8 px-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] tracking-wider rounded-lg inline-flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+                                        title="Download Official Result PDF"
+                                      >
+                                        <Download className="w-3.5 h-3.5" /> DOWNLOAD
+                                      </Button>
+                                      <Button
+                                        onClick={() => handlePrint('result', attempt.id)}
+                                        variant="outline"
+                                        className="h-8 px-3 border-white/20 hover:bg-white/10 text-white font-black text-[10px] tracking-wider rounded-lg inline-flex items-center gap-1.5 active:scale-95 transition-all"
+                                        title="Print Official Result Slip"
+                                      >
+                                        <Printer className="w-3.5 h-3.5" /> PRINT
+                                      </Button>
+                                    </div>
                                   ) : (
                                     <Badge className="bg-amber-500/20 text-amber-400 border-none font-black text-[8px] px-2 py-0.5 uppercase tracking-widest">Processing</Badge>
                                   )}
