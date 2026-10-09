@@ -656,6 +656,7 @@ export default function Admin() {
                   <ResultsManager
                     attempts={attempts}
                     candidates={candidates}
+                    exams={exams}
                     handleReleaseResult={handleReleaseResult}
                     handleResetResult={handleResetResult}
                     setViewingSnaps={setViewingSnaps}

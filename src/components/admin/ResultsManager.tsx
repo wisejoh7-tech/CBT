@@ -1,15 +1,15 @@
 import React from 'react';
-import { Card } from '@/lib/ui/card';
 import { Button } from '@/lib/ui/button';
-import { Badge } from '@/lib/ui/badge';
-import { ScrollArea } from '@/lib/ui/scroll-area';
-import { Award, Send, CheckCircle2, Eye, RefreshCw, RotateCcw } from 'lucide-react';
-import { Attempt, Candidate } from '@/src/types';
+import { Award, Send, CheckCircle2, Eye, RefreshCw, RotateCcw, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { Attempt, Candidate, Exam } from '@/src/types';
 import { cn } from '@/src/lib/utils/utils';
+import { formatResultData, formatAllCandidatesResultData, downloadCSV, downloadExcel } from '@/src/lib/exportResults';
+import { toast } from 'sonner';
 
 interface ResultsManagerProps {
   attempts: Attempt[];
   candidates: Candidate[];
+  exams?: Exam[];
   handleReleaseResult: (id: string) => void;
   handleResetResult?: (id: string) => void;
   setViewingSnaps: (id: string | null) => void;
@@ -19,6 +19,7 @@ interface ResultsManagerProps {
 export const ResultsManager: React.FC<ResultsManagerProps> = ({
   attempts,
   candidates,
+  exams = [],
   handleReleaseResult,
   handleResetResult,
   setViewingSnaps,
@@ -26,28 +27,115 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
 }) => {
   const completedAttempts = attempts.filter(a => a.status === 'completed');
 
+  const handleExportCSV = (exportAllCandidates: boolean = false) => {
+    try {
+      const data = exportAllCandidates
+        ? formatAllCandidatesResultData(candidates, attempts, exams)
+        : formatResultData(completedAttempts, candidates, exams);
+
+      if (data.length === 0) {
+        toast.error("No result data available to export");
+        return;
+      }
+
+      const filename = exportAllCandidates
+        ? `all_student_scores_${new Date().toISOString().slice(0, 10)}.csv`
+        : `completed_exam_results_${new Date().toISOString().slice(0, 10)}.csv`;
+
+      downloadCSV(data, filename);
+      toast.success(`Exported ${data.length} student results to CSV`);
+    } catch (err: any) {
+      toast.error("Failed to export CSV: " + (err.message || err));
+    }
+  };
+
+  const handleExportExcel = (exportAllCandidates: boolean = false) => {
+    try {
+      const data = exportAllCandidates
+        ? formatAllCandidatesResultData(candidates, attempts, exams)
+        : formatResultData(completedAttempts, candidates, exams);
+
+      if (data.length === 0) {
+        toast.error("No result data available to export");
+        return;
+      }
+
+      const filename = exportAllCandidates
+        ? `all_student_scores_${new Date().toISOString().slice(0, 10)}.xlsx`
+        : `completed_exam_results_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+      downloadExcel(data, filename, exportAllCandidates ? "All Student Scores" : "Exam Results");
+      toast.success(`Exported ${data.length} student results to Excel (.xlsx)`);
+    } catch (err: any) {
+      toast.error("Failed to export Excel: " + (err.message || err));
+    }
+  };
+
   return (
-    <div className="space-y-4 text-sm font-medium max-w-4xl mx-auto w-full">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-5 rounded-2xl shadow-sm border border-primary/5">
+    <div className="space-y-4 text-sm font-medium max-w-5xl mx-auto w-full">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-primary/5">
         <div className="flex items-center gap-4 min-w-0">
-           <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary shadow-inner shrink-0">
-              <Award className="w-5 h-5" />
-           </div>
-           <div className="min-w-0">
-              <h3 className="text-xl font-black tracking-tighter truncate">Result Release Center</h3>
-              <p className="text-[13px] font-black truncate">Managing {completedAttempts.length} completed sessions</p>
-           </div>
+          <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary shadow-inner shrink-0">
+            <Award className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-xl font-black tracking-tighter truncate">Result Release Center</h3>
+            <p className="text-[13px] font-black truncate text-slate-500">
+              Managing {completedAttempts.length} completed sessions ({candidates.length} total enrolled candidates)
+            </p>
+          </div>
         </div>
-        <Button onClick={fetchData} variant="outline" size="sm" className="h-10 px-4 rounded-xl border-primary/10 text-primary font-black text-[9px] gap-2 hover:bg-primary/5 transition-all w-full sm:w-auto">
-           <RefreshCw className="w-3.5 h-3.5 shrink-0" /> REFRESH DATA
-        </Button>
+
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-start lg:justify-end">
+          <Button
+            onClick={() => handleExportCSV(false)}
+            variant="outline"
+            size="sm"
+            className="h-10 px-3.5 rounded-xl border-slate-200 text-slate-700 font-black text-[10px] gap-2 hover:bg-slate-50 hover:text-primary transition-all"
+            title="Download completed results as CSV"
+          >
+            <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span>CSV (RESULTS)</span>
+          </Button>
+
+          <Button
+            onClick={() => handleExportExcel(false)}
+            variant="outline"
+            size="sm"
+            className="h-10 px-3.5 rounded-xl border-emerald-200 text-emerald-800 bg-emerald-50/50 font-black text-[10px] gap-2 hover:bg-emerald-100 transition-all"
+            title="Download completed results as Excel (.xlsx)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span>EXCEL (RESULTS)</span>
+          </Button>
+
+          <Button
+            onClick={() => handleExportExcel(true)}
+            size="sm"
+            className="h-10 px-4 rounded-xl bg-primary text-white font-black text-[10px] gap-2 hover:bg-primary/90 shadow-md transition-all"
+            title="Download scores for all candidates as Excel (.xlsx)"
+          >
+            <Download className="w-3.5 h-3.5 shrink-0" />
+            <span>EXPORT ALL SCORES</span>
+          </Button>
+
+          <Button
+            onClick={fetchData}
+            variant="ghost"
+            size="sm"
+            className="h-10 px-3 rounded-xl border border-primary/10 text-primary font-black text-[10px] gap-1.5 hover:bg-primary/5 transition-all"
+          >
+            <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">REFRESH</span>
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-[28px] border border-primary/5 overflow-hidden shadow-xl w-full">
         <div className="max-h-[500px] overflow-x-auto overflow-y-auto custom-scrollbar w-full">
           <table className="w-full text-left min-w-[600px]">
             <thead className="bg-slate-50/50 border-b border-primary/5 sticky top-0 z-10 backdrop-blur-md">
-              <tr className="text-[14px] font-black ">
+              <tr className="text-[14px] font-black">
                 <th className="px-6 py-4">Candidate</th>
                 <th className="px-6 py-4 text-center">Score</th>
                 <th className="px-6 py-4 text-center">Security</th>
@@ -67,28 +155,34 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
                           {candidate?.fullName?.charAt(0) || '?'}
                         </div>
                         <div className="min-w-0">
-                           <p className="font-black text-xs text-slate-800 truncate max-w-[150px]">{candidate?.fullName || a.userId}</p>
-                           <p className="text-[8px] font-bold text-slate-400 tracking-widest">{a.userId}</p>
+                          <p className="font-black text-xs text-slate-800 truncate max-w-[150px]">
+                            {candidate?.fullName || a.userId}
+                          </p>
+                          <p className="text-[8px] font-bold text-slate-400 tracking-widest">{a.userId}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
                       <div className="inline-flex flex-col items-center">
-                        <span className="text-sm font-black text-primary">{a.score} / {a.totalPossible}</span>
+                        <span className="text-sm font-black text-primary">
+                          {a.score} / {a.totalPossible}
+                        </span>
                         <span className="text-[7px] text-slate-300">verified raw score</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                       <button
+                      <button
                         onClick={() => setViewingSnaps(a.id)}
                         className={cn(
                           "px-3 py-1 rounded-full text-[8px] font-black flex items-center gap-1.5 mx-auto transition-all",
-                          trustScore < 80 ? "bg-rose-50 text-rose-500 hover:bg-rose-100" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                          trustScore < 80
+                            ? "bg-rose-50 text-rose-500 hover:bg-rose-100"
+                            : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
                         )}
-                       >
-                         <Eye className="w-3 h-3" />
-                         {Math.round(trustScore)}% TRUST
-                       </button>
+                      >
+                        <Eye className="w-3 h-3" />
+                        {Math.round(trustScore)}% TRUST
+                      </button>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="inline-flex items-center gap-2">
@@ -122,10 +216,12 @@ export const ResultsManager: React.FC<ResultsManagerProps> = ({
               })}
               {completedAttempts.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="p-24 text-center opacity-10">
-                    <Award className="w-16 h-16 mx-auto mb-2" />
-                    <p className="text-1xl font-black ">No completed exams</p>
-                    <p className="text-xs font-bold mt-2">Results will appear here for verification once candidates submit.</p>
+                  <td colSpan={4} className="p-24 text-center opacity-40">
+                    <Award className="w-16 h-16 mx-auto mb-2 text-primary" />
+                    <p className="text-1xl font-black text-slate-700">No completed exams yet</p>
+                    <p className="text-xs font-bold mt-2 text-slate-400">
+                      Results will appear here for verification once candidates submit.
+                    </p>
                   </td>
                 </tr>
               )}
