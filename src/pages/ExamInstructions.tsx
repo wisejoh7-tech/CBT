@@ -44,17 +44,18 @@ export default function ExamInstructions() {
           }
 
           if (filtered.length === 0) {
+            const activeExams = allExams.filter(e => e.isActive !== false);
             const subjectNames = profile?.subjectCombination || [];
+
+            if (activeExams.length > 0) {
+              filtered = [...activeExams];
+            }
+
             if (subjectNames.length > 0) {
-              const matchedExams: Exam[] = [];
               for (const s of subjectNames) {
-                const matched = allExams.find(e => isSubjectMatch(s, e.subject));
-                if (matched) {
-                  if (!matchedExams.some(e => e.id === matched.id)) {
-                    matchedExams.push(matched);
-                  }
-                } else {
-                  matchedExams.push({
+                const matched = filtered.some(e => isSubjectMatch(s, e.subject));
+                if (!matched) {
+                  filtered.push({
                     id: `virtual-${encodeURIComponent(s)}`,
                     title: `${s} Module`,
                     description: `${s} Examination Module`,
@@ -67,16 +68,10 @@ export default function ExamInstructions() {
                   });
                 }
               }
-              filtered = matchedExams;
             }
           }
 
-          // Fallback 1: Active exams
-          if (filtered.length === 0) {
-            filtered = allExams.filter(e => e.isActive !== false);
-          }
-
-          // Fallback 2: All exams in system
+          // Fallback: All exams in system
           if (filtered.length === 0) {
             filtered = allExams;
           }

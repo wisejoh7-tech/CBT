@@ -261,17 +261,19 @@ export default function ExamPlayer() {
         }
 
         if (filteredExams.length === 0) {
+          const activeExams = allExams.filter((e: any) => e.isActive !== false);
           const subjectNames = profile.subjectCombination || [];
+
+          if (activeExams.length > 0) {
+            filteredExams = [...activeExams];
+          }
+
+          // Also ensure any subjects in candidate's combination without active exam get virtual module
           if (subjectNames.length > 0) {
-            const matchedExams: any[] = [];
             for (const s of subjectNames) {
-              const matched = allExams.find((e: any) => isSubjectMatch(s, e.subject));
-              if (matched) {
-                if (!matchedExams.some(e => e.id === matched.id)) {
-                  matchedExams.push(matched);
-                }
-              } else {
-                matchedExams.push({
+              const matched = filteredExams.some(e => isSubjectMatch(s, e.subject));
+              if (!matched) {
+                filteredExams.push({
                   id: `virtual-${encodeURIComponent(s)}`,
                   title: `${s} Module`,
                   subject: s,
@@ -281,16 +283,10 @@ export default function ExamPlayer() {
                 });
               }
             }
-            filteredExams = matchedExams;
           }
         }
 
-        // Fallback 1: Show active exams
-        if (filteredExams.length === 0) {
-          filteredExams = allExams.filter((e: any) => e.isActive !== false);
-        }
-
-        // Fallback 2: Show all exams
+        // Fallback: Show all exams
         if (filteredExams.length === 0) {
           filteredExams = allExams;
         }

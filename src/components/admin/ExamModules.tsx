@@ -22,32 +22,32 @@ export const ExamModules: React.FC<ExamModulesProps> = ({
   handleReleaseAllSubjects,
 }) => {
   return (
-    <div className="space-y-4 text-xs font-medium max-w-4xl mx-auto">
-      <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-primary/5">
-        <div className="flex items-center gap-3">
-           <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center text-primary shadow-inner">
+    <div className="space-y-4 text-xs font-medium max-w-4xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-primary/5">
+        <div className="flex items-center gap-3 min-w-0">
+           <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center text-primary shadow-inner shrink-0">
               <Activity className="w-4 h-4" />
            </div>
-           <div>
-              <h3 className="text-base font-black tracking-tight">Assessment Modules</h3>
-              <p className="text-[11px] font-bold text-slate-500">Managing {exams.length} exam containers</p>
+           <div className="min-w-0">
+              <h3 className="text-base font-black tracking-tight truncate">Assessment Modules</h3>
+              <p className="text-[11px] font-bold text-slate-500 truncate">Managing {exams.length} exam containers</p>
            </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {handleReleaseAllSubjects && (
-            <Button onClick={handleReleaseAllSubjects} className="h-8 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black tracking-widest uppercase text-[9px] shadow-md shadow-emerald-600/20 hover:scale-105 transition-all">
-              <Send className="w-3.5 h-3.5 mr-1.5" /> Release All Subjects
+            <Button onClick={handleReleaseAllSubjects} className="h-8 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black tracking-widest uppercase text-[9px] shadow-md shadow-emerald-600/20 hover:scale-105 transition-all flex-1 sm:flex-none">
+              <Send className="w-3.5 h-3.5 mr-1.5 shrink-0" /> Release All Subjects
             </Button>
           )}
-          <Button onClick={() => setShowAddExam(true)} className="h-8 px-4 rounded-xl bg-primary text-white font-black tracking-widest uppercase text-[9px] shadow-md shadow-primary/20 hover:scale-105 transition-all">
-            <PlusCircle className="w-3.5 h-3.5 mr-1.5" /> New Assessment
+          <Button onClick={() => setShowAddExam(true)} className="h-8 px-4 rounded-xl bg-primary text-white font-black tracking-widest uppercase text-[9px] shadow-md shadow-primary/20 hover:scale-105 transition-all flex-1 sm:flex-none">
+            <PlusCircle className="w-3.5 h-3.5 mr-1.5 shrink-0" /> New Assessment
           </Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-[24px] border border-primary/5 overflow-hidden shadow-xl">
-        <div className="max-h-[450px] overflow-y-auto custom-scrollbar">
-          <table className="w-full text-left">
+      <div className="bg-white rounded-[24px] border border-primary/5 overflow-hidden shadow-xl w-full">
+        <div className="max-h-[450px] overflow-x-auto overflow-y-auto custom-scrollbar w-full">
+          <table className="w-full text-left min-w-[600px]">
             <thead className="bg-slate-50/50 border-b border-primary/5 sticky top-0 z-10 backdrop-blur-md">
               <tr className="text-xs font-black uppercase">
                 <th className="px-6 py-4">Assessment Title</th>

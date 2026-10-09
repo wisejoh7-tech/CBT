@@ -20,32 +20,32 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({
   handleReleaseAllSubjects,
 }) => {
   return (
-    <div className="space-y-4 text-sm font-medium max-w-3xl mx-auto">
-      <div className="flex justify-between items-center bg-white p-5 rounded-3xl shadow-sm border border-primary/5">
-        <div className="flex items-center gap-4">
-           <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary shadow-inner">
+    <div className="space-y-4 text-sm font-medium max-w-3xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-5 rounded-3xl shadow-sm border border-primary/5">
+        <div className="flex items-center gap-4 min-w-0">
+           <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary shadow-inner shrink-0">
               <BookMarked className="w-5 h-5" />
            </div>
-           <div>
-              <h3 className="text-xl font-black tracking-tighter ">Curriculum</h3>
-              <p className="text-[13px] font-black ">Managing {offeredSubjects.length} subjects</p>
+           <div className="min-w-0">
+              <h3 className="text-xl font-black tracking-tighter truncate">Curriculum</h3>
+              <p className="text-[13px] font-black truncate">Managing {offeredSubjects.length} subjects</p>
            </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {handleReleaseAllSubjects && (
-            <Button onClick={handleReleaseAllSubjects} className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black tracking-widest text-[10px] shadow-lg shadow-emerald-600/20 hover:scale-105 transition-all">
-              <Send className="w-3.5 h-3.5 mr-2" /> Release All to Exam Player
+            <Button onClick={handleReleaseAllSubjects} className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black tracking-widest text-[10px] shadow-lg shadow-emerald-600/20 hover:scale-105 transition-all flex-1 sm:flex-none">
+              <Send className="w-3.5 h-3.5 mr-2 shrink-0" /> Release All to Exam Player
             </Button>
           )}
-          <Button onClick={() => setShowAddSubject(true)} className="h-10 px-5 rounded-xl bg-primary text-white font-black tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
-            <PlusCircle className="w-3.5 h-3.5 mr-2" /> Add Subject
+          <Button onClick={() => setShowAddSubject(true)} className="h-10 px-5 rounded-xl bg-primary text-white font-black tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all flex-1 sm:flex-none">
+            <PlusCircle className="w-3.5 h-3.5 mr-2 shrink-0" /> Add Subject
           </Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-[28px] border border-primary/5 overflow-hidden shadow-xl">
-        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-          <table className="w-full text-left">
+      <div className="bg-white rounded-[28px] border border-primary/5 overflow-hidden shadow-xl w-full">
+        <div className="max-h-[400px] overflow-x-auto overflow-y-auto custom-scrollbar w-full">
+          <table className="w-full text-left min-w-[500px]">
             <thead className="bg-slate-50/50 border-b border-primary/5 sticky top-0 z-10 backdrop-blur-md">
               <tr className="text-[14px] font-black  ">
                 <th className="px-6 py-4">Identification</th>

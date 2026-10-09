@@ -190,8 +190,8 @@ export default function CandidateDashboard() {
                        {/* Biographic Profile Table */}
                        <div className="space-y-3">
                           <p className="text-[10px] sm:text-[11px] font-black text-primary/40 tracking-[0.2em] uppercase">Biographic Profile</p>
-                          <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-                             <table className="w-full border-collapse text-xs sm:text-sm text-left">
+                          <div className="border border-slate-200/80 rounded-2xl overflow-x-auto shadow-sm w-full">
+                             <table className="w-full border-collapse text-xs sm:text-sm text-left min-w-[300px]">
                                 <thead>
                                    <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black tracking-wider text-slate-500 uppercase">
                                       <th className="p-3 sm:p-3.5 w-1/3 border-r border-slate-200/60">Field</th>
@@ -235,8 +235,8 @@ export default function CandidateDashboard() {
                        {/* Curriculum Selection Table */}
                        <div className="space-y-3">
                           <p className="text-[10px] sm:text-[11px] font-black text-primary/40 tracking-[0.2em] uppercase">Curriculum Selection</p>
-                          <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-                             <table className="w-full border-collapse text-xs sm:text-sm text-left">
+                          <div className="border border-slate-200/80 rounded-2xl overflow-x-auto shadow-sm w-full">
+                             <table className="w-full border-collapse text-xs sm:text-sm text-left min-w-[280px]">
                                 <thead>
                                    <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black tracking-wider text-slate-500 uppercase">
                                       <th className="p-3 sm:p-3.5 w-16 text-center border-r border-slate-200/60">#</th>
@@ -321,8 +321,8 @@ export default function CandidateDashboard() {
                    <h3 className="font-black text-[10px] sm:text-xs tracking-[0.2em] uppercase">Exam Schedule</h3>
                  </div>
 
-                 <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-                    <table className="w-full border-collapse text-xs sm:text-sm text-left">
+                 <div className="border border-slate-200/80 rounded-2xl overflow-x-auto shadow-sm w-full">
+                    <table className="w-full border-collapse text-xs sm:text-sm text-left min-w-[280px]">
                        <thead>
                           <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black tracking-wider text-slate-500 uppercase">
                              <th className="p-3 w-1/3 border-r border-slate-200/60">Schedule</th>
@@ -364,8 +364,8 @@ export default function CandidateDashboard() {
 
                 <div className="relative z-10">
                   {attempts.length === 0 ? (
-                    <div className="border border-white/10 rounded-2xl overflow-hidden">
-                      <table className="w-full border-collapse text-xs text-left">
+                    <div className="border border-white/10 rounded-2xl overflow-x-auto w-full">
+                      <table className="w-full border-collapse text-xs text-left min-w-[260px]">
                         <thead>
                           <tr className="bg-white/5 border-b border-white/10 text-[9px] font-black tracking-wider text-white/40 uppercase">
                             <th className="p-3">Session</th>
@@ -380,8 +380,8 @@ export default function CandidateDashboard() {
                       </table>
                     </div>
                   ) : (
-                    <div className="border border-white/10 rounded-2xl overflow-hidden">
-                      <table className="w-full border-collapse text-xs text-left">
+                    <div className="border border-white/10 rounded-2xl overflow-x-auto w-full">
+                      <table className="w-full border-collapse text-xs text-left min-w-[260px]">
                         <thead>
                           <tr className="bg-white/5 border-b border-white/10 text-[9px] font-black tracking-wider text-white/40 uppercase">
                             <th className="p-3">Session Score</th>

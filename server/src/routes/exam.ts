@@ -227,6 +227,68 @@ router.post("/attempts/:id/release", authenticateJWT, authorizeRoles("admin", "s
   }
 });
 
+// Public Result Check for Candidate Slip / Result Checker
+router.post("/public/check-result", async (req, res) => {
+  const { examNumber, attemptId } = req.body;
+  if (!examNumber) return res.status(400).json({ message: "Examination Number is required" });
+
+  try {
+    const candidateRepo = AppDataSource.getRepository(Candidate);
+    const attemptRepo = AppDataSource.getRepository(Attempt);
+
+    const candidate = await candidateRepo.createQueryBuilder("c")
+      .where("LOWER(c.examNumber) = LOWER(:examNumber)", { examNumber: examNumber.trim() })
+      .getOne();
+
+    if (!candidate) {
+      return res.status(404).json({ message: "Candidate record not found with provided Examination Number" });
+    }
+
+    const identifiers = Array.from(new Set([
+      candidate.examNumber?.toLowerCase(),
+      candidate.id?.toLowerCase(),
+      candidate.email?.toLowerCase()
+    ].filter(Boolean)));
+
+    let attemptQuery = attemptRepo.createQueryBuilder("a")
+      .where("LOWER(a.userId) IN (:...identifiers)", { identifiers })
+      .andWhere("a.status = :status", { status: 'completed' });
+
+    if (attemptId) {
+      attemptQuery = attemptQuery.andWhere("a.id = :attemptId", { attemptId });
+    }
+
+    const attempt = await attemptQuery.orderBy("a.completedAt", "DESC").getOne();
+
+    if (!attempt) {
+      return res.status(404).json({ message: "No completed examination session found for this candidate" });
+    }
+
+    if (!attempt.isReleased) {
+      return res.status(403).json({ message: "Result has not been released yet by administration." });
+    }
+
+    res.json({
+      candidate: {
+        id: candidate.id,
+        examNumber: candidate.examNumber,
+        fullName: candidate.fullName,
+        email: candidate.email,
+        phoneNumber: candidate.phoneNumber,
+        stateOfOrigin: candidate.stateOfOrigin,
+        lga: candidate.lga,
+        schoolAttended: candidate.schoolAttended,
+        faceUrl: candidate.faceUrl,
+        subjectCombination: candidate.subjectCombination
+      },
+      attempt
+    });
+  } catch (error: any) {
+    logger.error("Error in public result check:", error);
+    res.status(500).json({ message: "Failed to verify result", error: error.message });
+  }
+});
+
 // Create/Start attempt
 router.post("/attempt", authenticateJWT, async (req: any, res) => {
   const userId = req.user.examNumber || req.user.id;
@@ -311,27 +373,13 @@ router.post("/attempt/:id/submit", authenticateJWT, async (req: any, res) => {
     let questions: Question[] = [];
 
     if (attempt.examId === 'unified' as any) {
-      // For unified exams, fetch candidate profile to get subjects
-      const candidate = await AppDataSource.getRepository(Candidate).findOneBy({ examNumber: attempt.userId });
-      const subjectNames = candidate?.subjectCombination || [];
+      // For unified exams, fetch questions from all active exams
+      questions = await questionRepo.find({
+        where: { exam: { isActive: true } },
+        relations: { exam: true }
+      });
 
-      if (subjectNames.length > 0) {
-        // Fetch questions from exams matching subjects
-        questions = await questionRepo.find({
-          where: subjectNames.map(s => ({ exam: { subject: s } })),
-          relations: { exam: true }
-        });
-      }
-
-      // Fallback: If no questions found by subject combination, load questions from all active exams
-      if (questions.length === 0) {
-        questions = await questionRepo.find({
-          where: { exam: { isActive: true } },
-          relations: { exam: true }
-        });
-      }
-
-      // Secondary Fallback: Load all questions from any exam
+      // Fallback: Load all questions from any exam
       if (questions.length === 0) {
         questions = await questionRepo.find({
           relations: { exam: true }
