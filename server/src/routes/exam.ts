@@ -150,6 +150,71 @@ router.post("/:id/ai-generate", authenticateJWT, authorizeRoles("admin", "super_
 
 import { sendSMS } from "../lib/sms";
 
+/**
+ * Helper to find candidate for a given attempt, matching by examNumber, id, or email.
+ */
+export async function findCandidateForAttempt(userId: string): Promise<Candidate | null> {
+  if (!userId) return null;
+  const cleanId = userId.trim();
+  const candidateRepo = AppDataSource.getRepository(Candidate);
+
+  return await candidateRepo.createQueryBuilder("c")
+    .where("LOWER(TRIM(c.examNumber)) = LOWER(:userId)", { userId: cleanId })
+    .orWhere("LOWER(TRIM(c.id)) = LOWER(:userId)", { userId: cleanId })
+    .orWhere("LOWER(TRIM(c.email)) = LOWER(:userId)", { userId: cleanId })
+    .getOne();
+}
+
+/**
+ * Dispatches email and SMS notifications to a candidate upon result release.
+ */
+export async function sendResultReleaseNotifications(candidate: Candidate, attempt: Attempt): Promise<{ emailSent: boolean; smsSent: boolean }> {
+  let emailSent = false;
+  let smsSent = false;
+
+  const scoreMsg = `VIVI CBT: Hello ${candidate.fullName}, your exam results have been released. Score: ${attempt.score}/${attempt.totalPossible}. Visit the portal to print your slip.`;
+
+  // 1. Send Email Notification
+  if (candidate.email) {
+    try {
+      emailSent = await sendEmailSafely({
+        to: candidate.email,
+        subject: "OFFICIAL EXAM RESULT RELEASED",
+        html: `
+          <div style="font-family: sans-serif; padding: 20px; color: #333;">
+            <h2 style="color: #0EA5E9;">Result Notification</h2>
+            <p>Hello <b>${candidate.fullName}</b>,</p>
+            <p>Your performance record for the VIVI Standard Examination has been verified and released.</p>
+            <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0;">
+              <p style="margin: 0; font-size: 14px; color: #64748b;">AGGREGATE SCORE</p>
+              <p style="margin: 5px 0 0 0; font-size: 32px; font-weight: 900; color: #0EA5E9;">${attempt.score} / ${attempt.totalPossible}</p>
+            </div>
+            <p>You can now log in to your candidate dashboard to view the full breakdown and print your official result slip.</p>
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 40px;">&copy; 2026 VIVI CBT Systems. This is an automated security notification.</p>
+          </div>
+        `
+      });
+    } catch (emailErr) {
+      logger.error(`Failed to send result email to ${candidate.email}:`, emailErr);
+    }
+  } else {
+    logger.warn(`Candidate ${candidate.fullName} (${candidate.examNumber}) has no email address configured.`);
+  }
+
+  // 2. Send Phone SMS Notification
+  if (candidate.phoneNumber) {
+    try {
+      smsSent = await sendSMS(candidate.phoneNumber, scoreMsg);
+    } catch (smsErr) {
+      logger.error(`Failed to send result SMS to ${candidate.phoneNumber}:`, smsErr);
+    }
+  } else {
+    logger.warn(`Candidate ${candidate.fullName} (${candidate.examNumber}) has no phone number configured.`);
+  }
+
+  return { emailSent, smsSent };
+}
+
 // --- ATTEMPT ROUTES ---
 
 // Get my attempts
@@ -191,42 +256,16 @@ router.post("/attempts/release-all", authenticateJWT, authorizeRoles("admin", "s
       await attemptRepo.save(attempt);
       releasedCount++;
 
-      const candidate = await candidateRepo.findOneBy({ examNumber: attempt.userId });
+      const candidate = await findCandidateForAttempt(attempt.userId);
       if (candidate) {
         if (candidate.assignedExamId) {
           candidate.assignedExamId = null as any;
           await candidateRepo.save(candidate);
         }
 
-        const scoreMsg = `VIVI CBT: Hello ${candidate.fullName}, your exam results have been released. Score: ${attempt.score}/${attempt.totalPossible}. Visit the portal to print your slip.`;
-
-        if (candidate.email) {
-          try {
-            await sendEmailSafely({
-              to: candidate.email,
-              subject: "OFFICIAL EXAM RESULT RELEASED",
-              html: `
-                <div style="font-family: sans-serif; padding: 20px; color: #333;">
-                  <h2 style="color: #0EA5E9;">Result Notification</h2>
-                  <p>Hello <b>${candidate.fullName}</b>,</p>
-                  <p>Your performance record for the VIVI Standard Examination has been verified and released.</p>
-                  <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0;">
-                    <p style="margin: 0; font-size: 14px; color: #64748b;">AGGREGATE SCORE</p>
-                    <p style="margin: 5px 0 0 0; font-size: 32px; font-weight: 900; color: #0EA5E9;">${attempt.score} / ${attempt.totalPossible}</p>
-                  </div>
-                  <p>You can now log in to your candidate dashboard to view the full breakdown and print your official result slip.</p>
-                  <p style="font-size: 12px; color: #94a3b8; margin-top: 40px;">&copy; 2026 VIVI CBT Systems. This is an automated security notification.</p>
-                </div>
-              `
-            });
-          } catch (emailErr) {
-            logger.error(`Failed to send result email to ${candidate.email}:`, emailErr);
-          }
-        }
-
-        if (candidate.phoneNumber) {
-          await sendSMS(candidate.phoneNumber, scoreMsg);
-        }
+        await sendResultReleaseNotifications(candidate, attempt);
+      } else {
+        logger.warn(`No candidate record found for attempt ${attempt.id} (userId: ${attempt.userId}) during batch release.`);
       }
     }
 
@@ -237,7 +276,7 @@ router.post("/attempts/release-all", authenticateJWT, authorizeRoles("admin", "s
       userId: (req as any).user?.id
     });
 
-    res.json({ message: `Successfully released ${releasedCount} result(s).`, count: releasedCount });
+    res.json({ message: `Successfully released ${releasedCount} result(s). Notifications dispatched via email and phone.`, count: releasedCount });
   } catch (error: any) {
     logger.error("Batch release results error:", error);
     res.status(500).json({ message: "Failed to release all results", error: error.message });
@@ -259,7 +298,7 @@ router.post("/attempts/:id/release", authenticateJWT, authorizeRoles("admin", "s
     await attemptRepo.save(attempt);
 
     // Fetch candidate for notifications and clear assigned active exam
-    const candidate = await candidateRepo.findOneBy({ examNumber: attempt.userId });
+    const candidate = await findCandidateForAttempt(attempt.userId);
 
     if (candidate) {
       if (candidate.assignedExamId) {
@@ -267,40 +306,12 @@ router.post("/attempts/:id/release", authenticateJWT, authorizeRoles("admin", "s
         await candidateRepo.save(candidate);
       }
 
-      const scoreMsg = `VIVI CBT: Hello ${candidate.fullName}, your exam results have been released. Score: ${attempt.score}/${attempt.totalPossible}. Visit the portal to print your slip.`;
-
-      // Send Email
-      if (candidate.email) {
-        try {
-          await sendEmailSafely({
-            to: candidate.email,
-            subject: "OFFICIAL EXAM RESULT RELEASED",
-            html: `
-              <div style="font-family: sans-serif; padding: 20px; color: #333;">
-                <h2 style="color: #0EA5E9;">Result Notification</h2>
-                <p>Hello <b>${candidate.fullName}</b>,</p>
-                <p>Your performance record for the VIVI Standard Examination has been verified and released.</p>
-                <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0;">
-                  <p style="margin: 0; font-size: 14px; color: #64748b;">AGGREGATE SCORE</p>
-                  <p style="margin: 5px 0 0 0; font-size: 32px; font-weight: 900; color: #0EA5E9;">${attempt.score} / ${attempt.totalPossible}</p>
-                </div>
-                <p>You can now log in to your candidate dashboard to view the full breakdown and print your official result slip.</p>
-                <p style="font-size: 12px; color: #94a3b8; margin-top: 40px;">&copy; 2026 VIVI CBT Systems. This is an automated security notification.</p>
-              </div>
-            `
-          });
-        } catch (emailErr) {
-          logger.error("Failed to send result email:", emailErr);
-        }
-      }
-
-      // Send SMS
-      if (candidate.phoneNumber) {
-        await sendSMS(candidate.phoneNumber, scoreMsg);
-      }
+      await sendResultReleaseNotifications(candidate, attempt);
+    } else {
+      logger.warn(`No candidate record found for attempt ${attempt.id} (userId: ${attempt.userId}) during release.`);
     }
 
-    res.json({ message: "Results released and notifications dispatched." });
+    res.json({ message: "Results released and notifications dispatched via email and phone number." });
   } catch (error: any) {
     res.status(500).json({ message: "Failed to release results", error: error.message });
   }
