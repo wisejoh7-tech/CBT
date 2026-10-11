@@ -391,8 +391,11 @@ router.post("/candidate/login-email", async (req, res) => {
 
     const { password: _, ...candidateWithoutPassword } = candidate;
     res.json({ token, profile: candidateWithoutPassword });
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+  } catch (error: any) {
+    logger.error("Candidate email login error:", error);
+    res.status(500).json({
+      message: "Internal server error during candidate email login"
+    });
   }
 });
 
@@ -519,8 +522,8 @@ router.post("/login", async (req, res) => {
 
     res.json({ token, user: { id: user.id, email: user.email, role: user.role, displayName: user.displayName } });
   } catch (error: any) {
-    console.error("Staff login error:", error);
-    res.status(500).json({ message: "Internal server error", error: error.message });
+    logger.error("Staff login error:", error);
+    res.status(500).json({ message: "Internal server error during staff login" });
   }
 });
 
@@ -619,8 +622,11 @@ router.post("/candidate-login", async (req, res) => {
 
     const { password: _, ...candidateWithoutPassword } = candidate;
     res.json({ token, profile: candidateWithoutPassword });
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+  } catch (error: any) {
+    logger.error("Candidate login error:", error);
+    res.status(500).json({
+      message: "Internal server error during candidate login"
+    });
   }
 });
 
