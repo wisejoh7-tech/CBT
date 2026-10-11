@@ -229,11 +229,16 @@ router.get("/attempts/my", authenticateJWT, async (req: any, res) => {
 
 // Get all attempts (Admin)
 router.get("/attempts/all", authenticateJWT, authorizeRoles("admin", "super_admin", "reg_admin"), async (req, res) => {
-  const attempts = await AppDataSource.getRepository(Attempt).find({
-    order: { startedAt: "DESC" },
-    take: 500 // Limit for performance
-  });
-  res.json(attempts);
+  try {
+    const attempts = await AppDataSource.getRepository(Attempt).find({
+      order: { startedAt: "DESC" },
+      take: 500 // Limit for performance
+    });
+    res.json(attempts || []);
+  } catch (error: any) {
+    logger.error("Fetch all attempts error:", error);
+    res.status(500).json({ message: "Failed to fetch exam attempts", error: error.message || "Unknown error" });
+  }
 });
 
 // Release All Completed Results

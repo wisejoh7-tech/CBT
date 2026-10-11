@@ -127,11 +127,12 @@ router.get("/summary", authenticateJWT, authorizeRoles("admin", "super_admin"), 
     res.json({
       totalExams,
       totalAttempts,
-      averageScore: parseFloat(avgScoreResult.avg || 0).toFixed(2),
+      averageScore: parseFloat(avgScoreResult?.avg || 0).toFixed(2),
       passRate: totalAttempts > 0 ? ((passCount / totalAttempts) * 100).toFixed(2) : 0,
     });
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error", error });
+  } catch (error: any) {
+    console.error("Analytics summary error:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message || "Unknown error" });
   }
 });
 
@@ -146,9 +147,10 @@ router.get("/exam-performance", authenticateJWT, authorizeRoles("admin", "super_
       .groupBy("attempt.examId")
       .getRawMany();
 
-    res.json(performance);
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+    res.json(performance || []);
+  } catch (error: any) {
+    console.error("Exam performance query error:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message || "Unknown error" });
   }
 });
 

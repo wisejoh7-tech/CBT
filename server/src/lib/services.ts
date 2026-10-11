@@ -3,7 +3,7 @@ import "reflect-metadata";
 
 import { createClient } from "redis";
 import { createAdapter } from "@socket.io/redis-adapter";
-import nodemailer from "nodemailer";
+import nodemailer, { SendMailOptions } from "nodemailer";
 import { Resend } from "resend";
 import { config } from "./config"; // named import (matches src/lib/config.ts)
 import { logger } from "./logger";
@@ -14,9 +14,9 @@ const memoryStore = new Map<string, string>();
 const realRedisClient = createClient({
   url: config.redisUrl,
   socket: {
-    tls: config.redisUrl?.startsWith("rediss://"),
+    ...(config.redisUrl?.startsWith("rediss://") ? { tls: true } : {}),
     rejectUnauthorized: false,
-    reconnectStrategy: (retries) => {
+    reconnectStrategy: (retries: number) => {
       if (retries > 3) {
         // Stop retrying after 3 failures to prevent console spam
         return new Error("Redis reconnection exhausted");
@@ -113,13 +113,13 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendEmailSafely = async (options: nodemailer.SendMailOptions): Promise<boolean> => {
+export const sendEmailSafely = async (options: SendMailOptions): Promise<boolean> => {
   const recipient = Array.isArray(options.to)
-    ? options.to.map((item) => (typeof item === "string" ? item : item.address)).join(", ")
+    ? options.to.map((item: any) => (typeof item === "string" ? item : item.address)).join(", ")
     : typeof options.to === "string"
       ? options.to
       : options.to && typeof options.to === "object" && "address" in options.to
-        ? options.to.address
+        ? (options.to as any).address
         : "";
 
   // Strategy 1: Resend HTTP API SDK
@@ -130,7 +130,7 @@ export const sendEmailSafely = async (options: nodemailer.SendMailOptions): Prom
         config.resendFromEmail ||
         "VIVI CBT Support <onboarding@resend.dev>";
 
-      const recipients = recipient ? recipient.split(",").map((s) => s.trim()) : [];
+      const recipients = recipient ? recipient.split(",").map((s: string) => s.trim()) : [];
 
       const { data, error } = await resend.emails.send({
         from: fromAddress,
