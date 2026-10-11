@@ -15,6 +15,10 @@ const router = Router();
 
 export async function ensureDefaultAdmin(): Promise<User | null> {
   try {
+    if (!AppDataSource.isInitialized) {
+      logger.warn("Database not initialized yet; skipping ensureDefaultAdmin check.");
+      return null;
+    }
     const userRepository = AppDataSource.getRepository(User);
     let defaultAdmin = await userRepository.createQueryBuilder("u")
       .where("LOWER(u.email) = LOWER(:email)", { email: "admin@vivicbt.com" })
@@ -34,8 +38,8 @@ export async function ensureDefaultAdmin(): Promise<User | null> {
       console.log("🌱 Auto-seeded default admin: admin@vivicbt.com");
     }
     return defaultAdmin;
-  } catch (seedErr) {
-    console.error("Auto-seed error for default admin:", seedErr);
+  } catch (seedErr: any) {
+    logger.error("Auto-seed error for default admin:", seedErr);
     return null;
   }
 }
@@ -391,8 +395,9 @@ router.post("/candidate/login-email", async (req, res) => {
 
     const { password: _, ...candidateWithoutPassword } = candidate;
     res.json({ token, profile: candidateWithoutPassword });
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+  } catch (error: any) {
+    logger.error("Candidate login email error:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message || "Unknown error" });
   }
 });
 
@@ -421,8 +426,9 @@ router.post("/register", async (req, res) => {
 
     await userRepository.save(user);
     res.status(201).json({ message: "User registered successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error", error });
+  } catch (error: any) {
+    logger.error("Staff registration error:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message || "Unknown error" });
   }
 });
 
@@ -519,8 +525,8 @@ router.post("/login", async (req, res) => {
 
     res.json({ token, user: { id: user.id, email: user.email, role: user.role, displayName: user.displayName } });
   } catch (error: any) {
-    console.error("Staff login error:", error);
-    res.status(500).json({ message: "Internal server error", error: error.message });
+    logger.error("Staff login error:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message || "Unknown error" });
   }
 });
 
@@ -619,28 +625,39 @@ router.post("/candidate-login", async (req, res) => {
 
     const { password: _, ...candidateWithoutPassword } = candidate;
     res.json({ token, profile: candidateWithoutPassword });
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+  } catch (error: any) {
+    logger.error("Candidate login error:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message || "Unknown error" });
   }
 });
 
-// Staff Management (Super Admin only)
-router.get("/staff", async (req, res) => {
-  const userRepository = AppDataSource.getRepository(User);
-  const staff = await userRepository.find({
-    where: [
-      { role: "admin" },
-      { role: "reg_admin" },
-      { role: "super_admin" }
-    ]
-  });
-  res.json(staff);
+// Staff Management (Super Admin / Admin only)
+router.get("/staff", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+  try {
+    const userRepository = AppDataSource.getRepository(User);
+    const staff = await userRepository.find({
+      where: [
+        { role: "admin" },
+        { role: "reg_admin" },
+        { role: "super_admin" }
+      ]
+    });
+    res.json(staff);
+  } catch (error: any) {
+    logger.error("Fetch staff list error:", error);
+    res.status(500).json({ message: "Failed to fetch staff list", error: error.message || "Unknown error" });
+  }
 });
 
-router.delete("/staff/:id", async (req, res) => {
-  const userRepository = AppDataSource.getRepository(User);
-  await userRepository.delete(req.params.id as any);
-  res.status(204).send();
+router.delete("/staff/:id", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+  try {
+    const userRepository = AppDataSource.getRepository(User);
+    await userRepository.delete(req.params.id as any);
+    res.status(204).send();
+  } catch (error: any) {
+    logger.error("Delete staff error:", error);
+    res.status(500).json({ message: "Failed to delete staff member", error: error.message || "Unknown error" });
+  }
 });
 
 // Public Slip Download (for Email Links)
@@ -884,8 +901,9 @@ router.post("/forgot-password", async (req, res) => {
         : "Reset token generated. If email delivery is unavailable, please use the token provided below.",
       token: (config.NODE_ENV !== "production" || !mailSent) ? token : undefined,
     });
-  } catch (error) {
-    res.status(500).json({ message: "Failed to process request", error });
+  } catch (error: any) {
+    logger.error("Forgot password error:", error);
+    res.status(500).json({ message: "Failed to process request", error: error.message || "Unknown error" });
   }
 });
 
@@ -928,8 +946,9 @@ router.post("/reset-password", async (req, res) => {
     await redisClient.del(`reset_token:${cleanEmail}`);
 
     res.json({ message: "Password reset successful. You can now log in." });
-  } catch (error) {
-    res.status(500).json({ message: "Failed to reset password", error });
+  } catch (error: any) {
+    logger.error("Reset password error:", error);
+    res.status(500).json({ message: "Failed to reset password", error: error.message || "Unknown error" });
   }
 });
 
