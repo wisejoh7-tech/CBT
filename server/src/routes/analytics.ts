@@ -132,7 +132,7 @@ router.get("/summary", authenticateJWT, authorizeRoles("admin", "super_admin"), 
     });
   } catch (error: any) {
     console.error("Analytics summary error:", error);
-    res.status(500).json({ message: "Internal server error", error: error.message || "Unknown error" });
+    res.status(500).json({ message: error.message || "Failed to load analytics summary.", error: error.message || "Unknown error" });
   }
 });
 

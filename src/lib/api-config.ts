@@ -97,6 +97,13 @@ export function getFriendlyErrorMessage(err: any): string {
     return "Unable to connect to the server. Please check your internet connection or try again later.";
   }
 
+  if (
+    msg.toLowerCase().includes("internal server error") ||
+    msg.toLowerCase().includes("internalservererror")
+  ) {
+    return "A temporary server error occurred. Please try again or contact support if the issue persists.";
+  }
+
   return msg;
 }
 
@@ -133,9 +140,20 @@ export async function safeJsonResponse<T = any>(res: Response): Promise<T> {
   }
 
   if (!res.ok) {
-    let rawError =
-      (parsed && typeof parsed === "object" && (parsed.message || parsed.error)) ||
-      `HTTP Error ${res.status}: ${res.statusText || "Server error"}`;
+    let rawError: string | undefined;
+    if (parsed && typeof parsed === "object") {
+      if (parsed.message && !parsed.message.toLowerCase().includes("internal server error")) {
+        rawError = parsed.message;
+      } else if (parsed.error && typeof parsed.error === "string") {
+        rawError = parsed.error;
+      } else if (parsed.message) {
+        rawError = parsed.message;
+      }
+    }
+    if (!rawError) {
+      rawError = `HTTP Error ${res.status}: ${res.statusText || "Server error"}`;
+    }
+
     if (parsed && parsed.errors && typeof parsed.errors === 'object') {
       const fieldErrors = Object.entries(parsed.errors)
         .map(([field, errs]) => `${field}: ${Array.isArray(errs) ? errs.join(', ') : errs}`)
