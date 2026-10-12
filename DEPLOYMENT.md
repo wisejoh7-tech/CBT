@@ -12,7 +12,9 @@
 | `JWT_SECRET` | Yes | - | Secret string used for signing and verifying JWT tokens |
 | `CORS_ORIGIN` | Recommended | - | Allowed frontend origin URL (e.g., `https://my-exam.onrender.com`) |
 | `ALLOWED_ORIGINS` | Optional | - | Comma-separated list of additional allowed origins |
-| `INITIAL_ADMIN_PASSWORD` | Optional | `admin123` | Password for initial seeded super admin account |
+| `INITIAL_ADMIN_EMAIL` | Optional | `admin@vivicbt.com` | Email or username for seeded super admin account (aliases: `ADMIN_EMAIL`, `INITIAL_ADMIN_USERNAME`, `ADMIN_USERNAME`) |
+| `INITIAL_ADMIN_PASSWORD` | Optional | `admin123` | Password for seeded super admin account (aliases: `ADMIN_PASSWORD`) |
+| `INITIAL_ADMIN_NAME` | Optional | `System Master` | Display name for seeded super admin account (aliases: `ADMIN_NAME`, `INITIAL_ADMIN_DISPLAY_NAME`, `ADMIN_DISPLAY_NAME`) |
 | `RESEND_API_KEY` | Optional | - | Resend API key (e.g., `re_123456789`) |
 | `RESEND_FROM_EMAIL` | Optional | - | Resend sender address (e.g., `VIVI CBT Support <onboarding@resend.dev>`) |
 | `MAIL_HOST` | Optional | - | SMTP server hostname (e.g., `smtp.resend.com` or `smtp.gmail.com`) |

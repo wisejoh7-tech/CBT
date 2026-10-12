@@ -21,7 +21,7 @@ import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
 import { User } from "./entities/User";
 import { Subject } from "./entities/Subject";
-import authRoutes from "./routes/auth";
+import authRoutes, { ensureDefaultAdmin } from "./routes/auth";
 import examRoutes from "./routes/exam";
 import analyticsRoutes from "./routes/analytics";
 import centerRoutes from "./routes/center";
@@ -273,19 +273,8 @@ async function initializeServices() {
         await AppDataSource.initialize();
         console.log("✅ Postgres Connected Successfully.");
 
-        // Seed Default Admin if missing
-        const userRepo = AppDataSource.getRepository(User);
-        const adminUser = await userRepo.findOneBy({ email: "admin@vivicbt.com" });
-        if (!adminUser) {
-          const hashedPassword = await bcrypt.hash(process.env.INITIAL_ADMIN_PASSWORD || "admin123", 10);
-          await userRepo.save(userRepo.create({
-            email: "admin@vivicbt.com",
-            password: hashedPassword,
-            displayName: "System Master",
-            role: "super_admin",
-          }));
-          console.log("🌱 Default Admin Seeded.");
-        }
+        // Ensure default or configured Admin account exists
+        await ensureDefaultAdmin();
         break;
       } catch (err: any) {
         dbRetries++;

@@ -81,8 +81,9 @@ export default function AdminAuth() {
           <Card className="rounded-[24px] border border-white/10 bg-slate-800/80 backdrop-blur-xl shadow-2xl overflow-hidden">
             <CardContent className="p-6">
               <div className="mb-4 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-center">
-                <p className="text-[8px] font-black text-primary uppercase tracking-widest">Default Admin Login</p>
-                <p className="text-[10px] font-mono text-slate-300 mt-0.5">admin@vivicbt.com / admin123</p>
+                <p className="text-[8px] font-black text-primary uppercase tracking-widest">Admin Login Credentials</p>
+                <p className="text-[10px] font-mono text-slate-300 mt-0.5">Configured via Render Environment Variables</p>
+                <p className="text-[9px] font-mono text-slate-400 mt-0.5">(Default: admin@vivicbt.com / admin123)</p>
               </div>
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 <div className="space-y-1">
