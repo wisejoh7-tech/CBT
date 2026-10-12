@@ -397,7 +397,7 @@ router.post("/candidate/login-email", async (req, res) => {
     res.json({ token, profile: candidateWithoutPassword });
   } catch (error: any) {
     logger.error("Candidate login email error:", error);
-    res.status(500).json({ message: "Internal server error", error: error.message || "Unknown error" });
+    res.status(500).json({ message: error.message || "Candidate login failed. Please try again.", error: error.message || "Unknown error" });
   }
 });
 
@@ -428,7 +428,7 @@ router.post("/register", async (req, res) => {
     res.status(201).json({ message: "User registered successfully" });
   } catch (error: any) {
     logger.error("Staff registration error:", error);
-    res.status(500).json({ message: "Internal server error", error: error.message || "Unknown error" });
+    res.status(500).json({ message: error.message || "Staff registration failed. Please try again.", error: error.message || "Unknown error" });
   }
 });
 
@@ -526,7 +526,7 @@ router.post("/login", async (req, res) => {
     res.json({ token, user: { id: user.id, email: user.email, role: user.role, displayName: user.displayName } });
   } catch (error: any) {
     logger.error("Staff login error:", error);
-    res.status(500).json({ message: "Internal server error", error: error.message || "Unknown error" });
+    res.status(500).json({ message: error.message || "Staff login failed. Please try again.", error: error.message || "Unknown error" });
   }
 });
 
@@ -627,7 +627,7 @@ router.post("/candidate-login", async (req, res) => {
     res.json({ token, profile: candidateWithoutPassword });
   } catch (error: any) {
     logger.error("Candidate login error:", error);
-    res.status(500).json({ message: "Internal server error", error: error.message || "Unknown error" });
+    res.status(500).json({ message: error.message || "Candidate login failed. Please try again.", error: error.message || "Unknown error" });
   }
 });
 

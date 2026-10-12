@@ -334,14 +334,15 @@ initializeServices();
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(`Runtime Error: ${err.message}`);
   const statusCode = err.status || err.statusCode || 500;
+  const errorMessage = err.message || "An internal server error occurred. Please try again or contact support.";
   if (isApiRequest(req)) {
     return res.status(statusCode).json({
       error: err.name || "InternalServerError",
-      message: err.message || "Internal Server Error"
+      message: errorMessage
     });
   }
   res.status(statusCode).json({
     error: err.name || "InternalServerError",
-    message: err.message || "Internal Server Error"
+    message: errorMessage
   });
 });
