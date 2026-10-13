@@ -65,7 +65,7 @@
        Location in code: src/index.css -> line 68 -> --cbt-bg-image
        You can replace this URL with any image path or local picture file!
        ===================================================================== */
-    --cbt-bg-image: url('/hospital-bg.png');
+    --cbt-bg-image: url('/cbt-bg.jpg');
 
     --background: oklch(1 0 0);
     --foreground: oklch(0.3 0.14 250);
