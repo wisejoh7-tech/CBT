@@ -386,7 +386,13 @@ router.post("/candidate/login-email", async (req, res) => {
     const { email, password } = validation.data;
     let cleanIdentifier = email.trim().toLowerCase();
     const adminEmail = getAdminEmail();
-    if (cleanIdentifier === "admin" || cleanIdentifier === adminEmail) {
+    if (
+      cleanIdentifier === "admin" ||
+      cleanIdentifier === "admin@vivicbt.com" ||
+      cleanIdentifier === "superadmin" ||
+      cleanIdentifier === "administrator" ||
+      cleanIdentifier === adminEmail
+    ) {
       cleanIdentifier = adminEmail;
     }
 
@@ -395,7 +401,7 @@ router.post("/candidate/login-email", async (req, res) => {
     const candidateRepository = AppDataSource.getRepository(Candidate);
 
     const candidate = await candidateRepository.createQueryBuilder("c")
-      .where("LOWER(c.email) = LOWER(:identifier) OR LOWER(c.examNumber) = LOWER(:identifier)", { identifier: cleanIdentifier })
+      .where("LOWER(TRIM(c.email)) = LOWER(TRIM(:identifier)) OR LOWER(TRIM(c.examNumber)) = LOWER(TRIM(:identifier))", { identifier: cleanIdentifier })
       .addSelect("c.password")
       .addSelect("c.pin")
       .getOne();
@@ -404,7 +410,7 @@ router.post("/candidate/login-email", async (req, res) => {
       // Fallback: Check staff/admin User repository if candidate account is not found
       const userRepository = AppDataSource.getRepository(User);
       let user = await userRepository.createQueryBuilder("u")
-        .where("LOWER(u.email) = LOWER(:identifier) OR LOWER(u.displayName) = LOWER(:identifier)", { identifier: cleanIdentifier })
+        .where("LOWER(TRIM(u.email)) = LOWER(TRIM(:identifier)) OR LOWER(TRIM(u.displayName)) = LOWER(TRIM(:identifier)) OR LOWER(TRIM(u.examNumber)) = LOWER(TRIM(:identifier))", { identifier: cleanIdentifier })
         .addSelect("u.password")
         .getOne();
 
@@ -516,7 +522,13 @@ router.post("/login", async (req, res) => {
     const { email, password } = validation.data;
     let cleanEmail = email.trim().toLowerCase();
     const adminEmail = getAdminEmail();
-    if (cleanEmail === "admin" || cleanEmail === adminEmail) {
+    if (
+      cleanEmail === "admin" ||
+      cleanEmail === "admin@vivicbt.com" ||
+      cleanEmail === "superadmin" ||
+      cleanEmail === "administrator" ||
+      cleanEmail === adminEmail
+    ) {
       cleanEmail = adminEmail;
     }
 
@@ -525,7 +537,7 @@ router.post("/login", async (req, res) => {
     const userRepository = AppDataSource.getRepository(User);
 
     let user = await userRepository.createQueryBuilder("u")
-      .where("LOWER(u.email) = LOWER(:email) OR LOWER(u.displayName) = LOWER(:email)", { email: cleanEmail })
+      .where("LOWER(TRIM(u.email)) = LOWER(TRIM(:email)) OR LOWER(TRIM(u.displayName)) = LOWER(TRIM(:email)) OR LOWER(TRIM(u.examNumber)) = LOWER(TRIM(:email))", { email: cleanEmail })
       .addSelect("u.password")
       .getOne();
 
@@ -611,7 +623,13 @@ router.post("/candidate-login", async (req, res) => {
 
     let cleanExamNumber = examNumber.trim().toLowerCase();
     const adminEmail = getAdminEmail();
-    if (cleanExamNumber === "admin" || cleanExamNumber === adminEmail) {
+    if (
+      cleanExamNumber === "admin" ||
+      cleanExamNumber === "admin@vivicbt.com" ||
+      cleanExamNumber === "superadmin" ||
+      cleanExamNumber === "administrator" ||
+      cleanExamNumber === adminEmail
+    ) {
       cleanExamNumber = adminEmail;
     }
 
@@ -621,7 +639,7 @@ router.post("/candidate-login", async (req, res) => {
 
     // Case-insensitive search for exam number or email
     const candidate = await candidateRepository.createQueryBuilder("candidate")
-      .where("LOWER(candidate.examNumber) = LOWER(:identifier) OR LOWER(candidate.email) = LOWER(:identifier)", { identifier: cleanExamNumber })
+      .where("LOWER(TRIM(candidate.examNumber)) = LOWER(TRIM(:identifier)) OR LOWER(TRIM(candidate.email)) = LOWER(TRIM(:identifier))", { identifier: cleanExamNumber })
       .addSelect("candidate.password")
       .addSelect("candidate.pin")
       .getOne();
@@ -630,7 +648,7 @@ router.post("/candidate-login", async (req, res) => {
       // Fallback: check User repository if candidate is staff/admin
       const userRepository = AppDataSource.getRepository(User);
       const user = await userRepository.createQueryBuilder("u")
-        .where("LOWER(u.email) = LOWER(:identifier)", { identifier: cleanExamNumber })
+        .where("LOWER(TRIM(u.email)) = LOWER(TRIM(:identifier)) OR LOWER(TRIM(u.displayName)) = LOWER(TRIM(:identifier)) OR LOWER(TRIM(u.examNumber)) = LOWER(TRIM(:identifier))", { identifier: cleanExamNumber })
         .addSelect("u.password")
         .getOne();
 
