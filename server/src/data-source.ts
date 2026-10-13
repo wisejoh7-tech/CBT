@@ -17,6 +17,10 @@ import { SeatSubscriber } from "./subscribers/SeatSubscriber";
 import { ExamSubscriber } from "./subscribers/ExamSubscriber";
 import { CandidateSubscriber } from "./subscribers/CandidateSubscriber";
 
+// Migrations
+import { InitialMigration1717750000000 } from "./migrations/1717750000000-InitialMigration";
+import { UpdateEntities1786523765590 } from "./migrations/1786523765590-UpdateEntities";
+
 if (!config.dbUrl && !config.db.host) {
   console.warn("⚠️ WARN: Neither DATABASE_URL nor DB_HOST is defined in environment variables.");
 } else if (config.dbUrl) {
@@ -43,7 +47,7 @@ export const AppDataSource = new DataSource({
   username: !config.dbUrl ? (config.db.user || "postgres") : undefined,
   password: !config.dbUrl ? (config.db.pass || "") : undefined,
   database: !config.dbUrl ? (config.db.name || "postgres") : undefined,
-  synchronize: config.NODE_ENV !== "production",
+  synchronize: config.NODE_ENV !== "production" && !isCloudPostgres,
   logging: config.NODE_ENV !== "production",
   ssl: isCloudPostgres ? { rejectUnauthorized: false } : undefined,
   extra: {
@@ -52,8 +56,8 @@ export const AppDataSource = new DataSource({
     connectionTimeoutMillis: 30000,
   },
   entities: [User, Candidate, Exam, Question, Attempt, Seat, Log, Subject],
-  migrations: [],
-  migrationsRun: false,
+  migrations: [InitialMigration1717750000000, UpdateEntities1786523765590],
+  migrationsRun: true,
   subscribers: [
     SeatSubscriber,
     ExamSubscriber,
