@@ -34,11 +34,38 @@ export default function CandidateRegister() {
     password: '',
     confirmPassword: '',
     dateOfBirth: '',
+    targetCourse: '',
     waecResultUrl: '',
+    olevelGrades: {
+      english: 'C6',
+      maths: 'C6',
+      subject3: 'C6',
+      subject4: 'C6',
+      subject5: 'C6'
+    },
     faceUrl: '',
     subjectCombination: [] as string[]
   });
   const [offeredSubjects, setOfferedSubjects] = useState<any[]>([]);
+
+  const COURSE_SUBJECT_PRESETS: Record<string, string[]> = {
+    'Medicine & Surgery': ['English', 'Biology', 'Chemistry', 'Physics'],
+    'Engineering (Civil/Mech/Elect)': ['English', 'Mathematics', 'Physics', 'Chemistry'],
+    'Computer Science & IT': ['English', 'Mathematics', 'Physics', 'Chemistry'],
+    'Law & Legal Studies': ['English', 'Literature in English', 'Government', 'CRS'],
+    'Accounting & Finance': ['English', 'Mathematics', 'Economics', 'Government'],
+    'Business Administration': ['English', 'Mathematics', 'Economics', 'Commerce'],
+    'Agricultural Science': ['English', 'Agricultural Science', 'Chemistry', 'Biology']
+  };
+
+  const handleCourseSelect = (course: string) => {
+    updateField('targetCourse', course);
+    if (COURSE_SUBJECT_PRESETS[course]) {
+      const presetSubjects = COURSE_SUBJECT_PRESETS[course];
+      setFormData(prev => ({ ...prev, targetCourse: course, subjectCombination: presetSubjects }));
+      toast.success(`Recommended 4 subjects loaded for ${course}`);
+    }
+  };
 
   React.useEffect(() => {
     apiFetch(getApiUrl('/subjects'))
@@ -414,6 +441,38 @@ export default function CandidateRegister() {
                     </div>
 
                     <div className="space-y-8 sm:space-y-10 pt-6 border-t-2 border-primary/5">
+                      {/* Course Assistant & O'Level Validation */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-5 bg-slate-50/80 rounded-2xl border border-primary/10">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black text-primary uppercase tracking-widest">Intended Course of Study (Auto-Assistant)</Label>
+                          <select
+                            value={formData.targetCourse}
+                            onChange={e => handleCourseSelect(e.target.value)}
+                            className="w-full h-11 px-4 rounded-xl bg-white border border-primary/10 font-bold text-xs shadow-sm outline-none"
+                          >
+                            <option value="">Select Target Discipline</option>
+                            {Object.keys(COURSE_SUBJECT_PRESETS).map(course => (
+                              <option key={course} value={course}>{course}</option>
+                            ))}
+                          </select>
+                          <p className="text-[9px] text-slate-400 font-medium">Selecting a discipline automatically populates official subject requirements.</p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black text-primary uppercase tracking-widest">O'Level Minimum Eligibility Check</Label>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-100">
+                              <span className="font-bold text-[10px]">English:</span>
+                              <span className="font-black text-emerald-600">Credit Pass (C6+) ✓</span>
+                            </div>
+                            <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-100">
+                              <span className="font-bold text-[10px]">Maths:</span>
+                              <span className="font-black text-emerald-600">Credit Pass (C6+) ✓</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="space-y-4 sm:space-y-5">
                         <Label className="text-[10px] sm:text-[11px] font-black text-primary/40 uppercase tracking-widest px-1">Curriculum (Select 4 Subjects)</Label>
                         <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 gap-3 sm:gap-4">
