@@ -13,32 +13,41 @@ import { authenticateJWT, authorizeRoles } from "../middleware/auth";
 
 const router = Router();
 
+function cleanEnvVal(val: string | undefined): string {
+  if (!val) return "";
+  let str = val.trim();
+  if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+    str = str.slice(1, -1).trim();
+  }
+  return str;
+}
+
 export function getAdminEmail(): string {
-  return (
+  const envVal =
     process.env.INITIAL_ADMIN_EMAIL ||
     process.env.ADMIN_EMAIL ||
     process.env.INITIAL_ADMIN_USERNAME ||
     process.env.ADMIN_USERNAME ||
-    "admin@vivicbt.com"
-  ).trim().toLowerCase();
+    "admin@vivicbt.com";
+  return cleanEnvVal(envVal).toLowerCase();
 }
 
 export function getAdminPassword(): string {
-  return (
+  const envVal =
     process.env.INITIAL_ADMIN_PASSWORD ||
     process.env.ADMIN_PASSWORD ||
-    "admin123"
-  ).trim();
+    "admin123";
+  return cleanEnvVal(envVal);
 }
 
 export function getAdminName(): string {
-  return (
+  const envVal =
     process.env.INITIAL_ADMIN_NAME ||
     process.env.INITIAL_ADMIN_DISPLAY_NAME ||
     process.env.ADMIN_NAME ||
     process.env.ADMIN_DISPLAY_NAME ||
-    "System Master"
-  ).trim();
+    "System Master";
+  return cleanEnvVal(envVal);
 }
 
 export async function ensureDefaultAdmin(): Promise<User | null> {
@@ -84,14 +93,16 @@ export async function ensureDefaultAdmin(): Promise<User | null> {
       await userRepository.save(defaultAdmin);
       console.log(`🌱 Auto-seeded default admin: ${adminEmail}`);
     } else {
-      // Sync password if explicitly configured in environment variables and changed
-      const isConfiguredPasswordSet = Boolean(process.env.INITIAL_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD);
-      if (isConfiguredPasswordSet && defaultAdmin.password) {
+      // Ensure admin password and details sync to configured environment values
+      if (defaultAdmin.password) {
         const isPasswordMatching = await bcrypt.compare(adminPassword, defaultAdmin.password);
         if (!isPasswordMatching) {
           defaultAdmin.password = await bcrypt.hash(adminPassword, 10);
+          if (adminName && defaultAdmin.displayName !== adminName) {
+            defaultAdmin.displayName = adminName;
+          }
           await userRepository.save(defaultAdmin);
-          console.log(`🌱 Updated admin password for ${adminEmail} from environment variable.`);
+          console.log(`🌱 Synced admin password/credentials for ${adminEmail} from environment variable.`);
         }
       }
     }
