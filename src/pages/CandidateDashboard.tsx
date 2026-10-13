@@ -222,9 +222,6 @@ export default function CandidateDashboard() {
           <h1 className="font-black text-base sm:text-lg tracking-tighter text-primary truncate max-w-[120px] sm:max-w-none">Portal</h1>
         </div>
         <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
-          <button onClick={() => navigate('/doctors')} className="text-[10px] sm:text-[11px] font-black text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg transition-colors">DOCTORS</button>
-          <button onClick={() => navigate('/physiotherapy')} className="text-[10px] sm:text-[11px] font-black text-teal-700 hover:text-teal-800 bg-teal-50 px-2.5 py-1 rounded-lg transition-colors">PHYSIOTHERAPY</button>
-          <button onClick={() => navigate('/pharmacy')} className="text-[10px] sm:text-[11px] font-black text-indigo-700 hover:text-indigo-800 bg-indigo-50 px-2.5 py-1 rounded-lg transition-colors">PHARMACY</button>
           <button onClick={() => navigate('/')} className="text-[10px] sm:text-[12px] font-black text-primary/40 hover:text-primary transition-colors flex items-center gap-1.5 sm:gap-2 tracking-widest">
             <HomeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden xs:inline">HOME</span>
           </button>

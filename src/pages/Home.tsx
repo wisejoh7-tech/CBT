@@ -64,13 +64,6 @@ export default function Home() {
         <div className="hidden md:flex items-center gap-4 flex-wrap justify-end">
           {[
             { label: 'HOME', path: '/' },
-            { label: 'DOCTORS', path: '/doctors' },
-            { label: 'NURSES', path: '/nurses' },
-            { label: 'PHARMACY', path: '/pharmacy' },
-            { label: 'LAB', path: '/lab' },
-            { label: 'RADIOLOGY', path: '/radiology' },
-            { label: 'RECORDS', path: '/records' },
-            { label: 'PHYSIOTHERAPY', path: '/physiotherapy' },
             { label: 'LOGIN', path: '/candidate-login' },
             { label: 'REGISTER', path: '/candidate-register' },
             { label: 'RESULTS', path: '/results' }
@@ -107,13 +100,6 @@ export default function Home() {
             >
               {[
                 { label: 'Home', path: '/' },
-                { label: 'Doctors', path: '/doctors' },
-                { label: 'Nurses', path: '/nurses' },
-                { label: 'Pharmacy', path: '/pharmacy' },
-                { label: 'Lab', path: '/lab' },
-                { label: 'Radiology', path: '/radiology' },
-                { label: 'Records', path: '/records' },
-                { label: 'Physiotherapy', path: '/physiotherapy' },
                 { label: 'Login', path: '/candidate-login' },
                 { label: 'Register', path: '/candidate-register' },
                 { label: 'Results', path: '/results' }
