@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { cn } from '@/src/lib/utils/utils';
+import { QRCodeSVG } from '@/src/components/QRCodeSVG';
 
 export default function ResultSlip({ isVerification = false }: { isVerification?: boolean }) {
   const { examNumber } = useParams<{ examNumber: string }>();
@@ -287,13 +288,13 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
               <p className="text-[8px] font-black opacity-30">Digital Verification Signature</p>
               <p className="font-mono text-[7px] opacity-50">{unifiedAttempt.id}</p>
            </div>
-           <div className="text-right">
-              <img
-                 src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${window.location.origin}/verify/${candidate.examNumber}`}
-                 className="w-16 h-16 ml-auto mb-2 grayscale opacity-80"
-                 alt="Verification QR"
+           <div className="text-right flex flex-col items-end">
+              <QRCodeSVG
+                 value={`${window.location.origin}/verify/${candidate.examNumber}?attemptId=${unifiedAttempt.id}`}
+                 size={80}
+                 className="w-16 h-16 mb-1"
               />
-              <p className="text-[7px] font-black opacity-30">Scan to Verify Authenticity</p>
+              <p className="text-[7px] font-black opacity-40">Scan to Verify Authenticity</p>
            </div>
         </div>
       </div>

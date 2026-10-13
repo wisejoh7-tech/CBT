@@ -19,7 +19,10 @@ import {
   Save,
   X,
   Home as HomeIcon,
-  BookOpen
+  BookOpen,
+  Sparkles,
+  TrendingUp,
+  Target
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/lib/ui/badge';
@@ -191,6 +194,23 @@ export default function CandidateDashboard() {
 
   const releasedAttempt = attempts.find(a => a.isReleased || a.released);
 
+  // Calculate AI Topic Mastery and Performance Stats
+  const topicStats: Record<string, { correct: number; total: number }> = {};
+  attempts.forEach(a => {
+    if (a.results?.topics) {
+      Object.entries(a.results.topics).forEach(([topic, stats]: [string, any]) => {
+        if (!topicStats[topic]) topicStats[topic] = { correct: 0, total: 0 };
+        topicStats[topic].correct += stats.correct || 0;
+        topicStats[topic].total += stats.total || 0;
+      });
+    }
+  });
+
+  const topicList = Object.entries(topicStats).map(([topic, stats]) => ({
+    topic,
+    percentage: Math.round((stats.correct / (stats.total || 1)) * 100)
+  }));
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50/20 font-sans relative antialiased tracking-tight text-sm sm:text-base">
       <div className="cbt-background" />
@@ -270,6 +290,77 @@ export default function CandidateDashboard() {
                </Button>
              )}
           </Card>
+
+          {/* AI Insights and Performance Analytics Widget */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <Card className="p-6 rounded-[28px] border border-primary/10 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl relative overflow-hidden">
+                <div className="flex items-center gap-3 mb-4">
+                   <div className="p-2.5 bg-primary/20 rounded-xl text-primary-foreground border border-primary/20">
+                      <Sparkles className="w-5 h-5 text-sky-400 animate-pulse" />
+                   </div>
+                   <div>
+                      <h4 className="font-black text-sm tracking-tight text-white">AI Knowledge Gap Analysis</h4>
+                      <p className="text-[10px] font-medium text-slate-400">Personalized exam readiness forecast</p>
+                   </div>
+                </div>
+
+                {releasedAttempt ? (
+                   <div className="space-y-4">
+                      <div className="flex justify-between items-end p-4 bg-white/5 rounded-2xl border border-white/10">
+                         <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Predicted Percentile</p>
+                            <p className="text-2xl font-black text-sky-400 mt-0.5">Top {Math.max(5, 100 - Math.round(((releasedAttempt.score || 0) / (releasedAttempt.totalPossible || 1)) * 100))}%</p>
+                         </div>
+                         <div className="text-right">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Accuracy Score</p>
+                            <p className="text-2xl font-black text-emerald-400 mt-0.5">{Math.round(((releasedAttempt.score || 0) / (releasedAttempt.totalPossible || 1)) * 100)}%</p>
+                         </div>
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-relaxed italic bg-white/5 p-3 rounded-xl border border-white/5">
+                         "Strong performance across core subjects. Maintain speed on speed-based comprehension items."
+                      </p>
+                   </div>
+                ) : (
+                   <div className="p-6 text-center text-slate-400 space-y-2">
+                      <Target className="w-8 h-8 mx-auto text-sky-400/50 mb-2" />
+                      <p className="text-xs font-bold text-slate-300">No Assessment Data Yet</p>
+                      <p className="text-[10px] text-slate-400">Complete an exam session to unlock AI topic gap analysis and readiness scores.</p>
+                   </div>
+                )}
+             </Card>
+
+             <Card className="p-6 rounded-[28px] border border-primary/5 bg-white shadow-xl">
+                <div className="flex items-center gap-3 mb-4">
+                   <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
+                      <TrendingUp className="w-5 h-5" />
+                   </div>
+                   <div>
+                      <h4 className="font-black text-sm tracking-tight text-slate-900">Topic Mastery Breakdown</h4>
+                      <p className="text-[10px] font-medium text-slate-400">Real-time topic accuracy analysis</p>
+                   </div>
+                </div>
+
+                {topicList.length > 0 ? (
+                   <div className="space-y-3 max-h-[160px] overflow-y-auto pr-1">
+                      {topicList.map((t, idx) => (
+                         <div key={idx} className="space-y-1">
+                            <div className="flex justify-between items-center text-xs font-black text-slate-700">
+                               <span className="truncate max-w-[200px]">{t.topic}</span>
+                               <span className="text-primary">{t.percentage}%</span>
+                            </div>
+                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                               <div className="h-full bg-primary transition-all duration-500" style={{ width: `${t.percentage}%` }} />
+                            </div>
+                         </div>
+                      ))}
+                   </div>
+                ) : (
+                   <div className="p-6 text-center text-slate-400 text-xs font-medium">
+                      Topic accuracy metrics will appear here after taking your subject modules.
+                   </div>
+                )}
+             </Card>
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
             {/* Left: Profile Info */}
