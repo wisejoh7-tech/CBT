@@ -296,18 +296,8 @@ async function initializeServices() {
           console.warn("⚠️ Local container storage is ephemeral on cloud hosting (Render/ECS). Data will reset on re-deploy.");
         }
 
-        // Seed Default Admin if missing
-        const adminUser = await userRepo.findOneBy({ email: "admin@vivicbt.com" });
-        if (!adminUser) {
-          const hashedPassword = await bcrypt.hash(process.env.INITIAL_ADMIN_PASSWORD || "admin123", 10);
-          await userRepo.save(userRepo.create({
-            email: "admin@vivicbt.com",
-            password: hashedPassword,
-            displayName: "System Master",
-            role: "super_admin",
-          }));
-          console.log("🌱 Default Admin Seeded.");
-        }
+        // Seed or sync default/configured admin account
+        await ensureDefaultAdmin();
         break;
       } catch (err: any) {
         dbRetries++;
