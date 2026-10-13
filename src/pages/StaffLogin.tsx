@@ -81,8 +81,8 @@ export default function StaffLogin() {
             <div className="w-16 h-16 bg-white border-4 border-primary rounded-[20px] flex items-center justify-center mx-auto mb-6 shadow-xl">
               <ShieldCheck className="w-10 h-10 text-primary" />
             </div>
-            <h1 className="text-1xl font-black tracking-tighter text-white leading-none mb-2">STAFF LOGIN</h1>
-
+            <h1 className="text-2xl font-black tracking-tighter text-primary leading-none mb-2 uppercase">STAFF LOGIN</h1>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/60">Portal Authorization Required</p>
           </div>
 
           <div className="p-1.5 bg-primary/10 rounded-[28px]">
