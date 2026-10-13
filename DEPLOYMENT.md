@@ -101,6 +101,59 @@ If the application is running without a persistent managed database URL (`DATABA
 > **Troubleshooting "Publish directory dist does not exist!":**
 > If Render shows `Empty build command; skipping build`, or fails to create `dist`, ensure the **Build Command** field in Render settings is explicitly set to `pnpm install && pnpm run build` (or `npm install && npm run build`) so that dependencies are installed and the `dist` directory is generated before publishing.
 
+---
+
+## HTTPS & Custom Domain Setup Guide
+
+To ensure student credentials, JWT tokens, and live examination sessions are transmitted securely over HTTPS, follow one of the setups below:
+
+### Option 1: Render (Fully Managed Automatic SSL)
+1. In the **Render Dashboard**, select your service -> **Settings** -> **Custom Domains**.
+2. Click **Add Custom Domain** and enter your domain name (e.g. `cbt.yourschool.edu.ng`).
+3. Add a `CNAME` record in your domain DNS settings pointing to your Render application hostname (e.g. `my-exam.onrender.com`).
+4. Render automatically issues a Let's Encrypt TLS certificate and forces HTTPS redirection.
+5. Update your backend `CORS_ORIGIN` and frontend `VITE_API_URL` environment variables to your new custom domain URL.
+
+### Option 2: Cloudflare (Free Proxy & Managed SSL)
+1. Add your domain to Cloudflare and update your domain registrar nameservers to Cloudflare.
+2. In Cloudflare DNS, add a `CNAME` record for your subdomain (`cbt`) pointing to your server/Render URL, with **Proxy status** set to **Proxied (Orange Cloud)**.
+3. Under **SSL/TLS** -> **Overview**, set encryption mode to **Full** or **Full (strict)**.
+4. Under **SSL/TLS** -> **Edge Certificates**, toggle **Always Use HTTPS** to `On`.
+
+### Option 3: VPS with Docker, Nginx & Certbot
+1. Point an `A` record for your domain to your VPS IP address.
+2. Request an SSL certificate using Certbot:
+   ```bash
+   sudo certbot --nginx -d cbt.yourschool.edu.ng
+   ```
+3. Ensure Nginx configuration includes HTTP -> HTTPS redirection and proxies port 443 to the backend port (e.g. `10000`):
+   ```nginx
+   server {
+       listen 80;
+       server_name cbt.yourschool.edu.ng;
+       return 301 https://$host$request_uri;
+   }
+
+   server {
+       listen 443 ssl http2;
+       server_name cbt.yourschool.edu.ng;
+
+       ssl_certificate /etc/letsencrypt/live/cbt.yourschool.edu.ng/fullchain.pem;
+       ssl_certificate_key /etc/letsencrypt/live/cbt.yourschool.edu.ng/privkey.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:10000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_set_header Host $host;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+   }
+   ```
+
+---
+
 ## Troubleshooting Firebase Admin & Render Port Scans
 
 ### Error: `Firebase Admin initialization error: Failed to parse private key: Error: Invalid PEM formatted message.`
