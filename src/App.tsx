@@ -26,6 +26,13 @@ import About from '@/src/pages/About';
 import Contact from '@/src/pages/Contact';
 import Terms from '@/src/pages/Terms';
 import Privacy from '@/src/pages/Privacy';
+import Doctors from '@/src/pages/Doctors';
+import Nurses from '@/src/pages/Nurses';
+import Pharmacy from '@/src/pages/Pharmacy';
+import Lab from '@/src/pages/Lab';
+import Radiology from '@/src/pages/Radiology';
+import Records from '@/src/pages/Records';
+import Physiotherapy from '@/src/pages/Physiotherapy';
 
 const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) => {
   const { user, profile, loading } = useAuth();
@@ -149,6 +156,13 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/doctors" element={<Doctors />} />
+            <Route path="/nurses" element={<Nurses />} />
+            <Route path="/pharmacy" element={<Pharmacy />} />
+            <Route path="/lab" element={<Lab />} />
+            <Route path="/radiology" element={<Radiology />} />
+            <Route path="/records" element={<Records />} />
+            <Route path="/physiotherapy" element={<Physiotherapy />} />
             <Route path="/exam-slip/:examNumber" element={<ProtectedRoute><ExamSlip /></ProtectedRoute>} />
             <Route path="/results" element={<ResultChecker />} />
             <Route path="/result-slip/:examNumber" element={<ResultSlip />} />
