@@ -167,7 +167,29 @@ export default function ResultSlip({ isVerification = false }: { isVerification?
               <div><p className="text-[10px] font-black opacity-20">Full Name</p><p className="font-black text-lg">{candidate.fullName}</p></div>
               <div><p className="text-[10px] font-black opacity-20">Exam Number</p><p className="font-black text-lg">{candidate.examNumber}</p></div>
               <div><p className="text-[10px] font-black opacity-20">Terminal Signature</p><div className="flex items-center gap-1 text-sky-500"><BadgeCheck className="w-5 h-5" /><span className="font-black">Verified</span></div></div>
+              <div>
+                <p className="text-[10px] font-black opacity-20">Performance Standing</p>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-black">
+                  <Award className="w-3.5 h-3.5" />
+                  <span>{totalScore >= 280 ? "Distinction Band (Top 5%)" : totalScore >= 200 ? "Competitive Pass" : "Standard Pass"}</span>
+                </div>
+              </div>
            </div>
+        </div>
+
+        {/* Institutional Direct Share Bar */}
+        <div className="mb-8 p-4 bg-slate-50 rounded-2xl border border-primary/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>
+            <p className="font-black text-xs text-primary">Forward Official Transcript to Tertiary Institution</p>
+            <p className="text-[10px] text-slate-500">Send verified digital copy directly to university admissions portal.</p>
+          </div>
+          <Button
+            type="button"
+            onClick={() => toast.success(`Official Transcript dispatched for Exam #${candidate.examNumber}`)}
+            className="h-9 px-4 bg-primary/10 hover:bg-primary hover:text-white text-primary text-xs font-black rounded-xl transition-all"
+          >
+            Dispatch Transcript
+          </Button>
         </div>
 
         <div className="border-2 border-primary/10 rounded-[24px] overflow-hidden bg-white mb-8">

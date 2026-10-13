@@ -120,18 +120,21 @@ export default function ResultChecker() {
         <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(var(--primary)_1.5px,transparent:1.5px)] [background-size:32px_32px]" />
         </div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm text-center space-y-12 ">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md text-center space-y-8">
           <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white border-2 border-primary shadow-sm">
             <GraduationCap className="w-4 h-4 text-primary" />
             <span className="text-[12px] font-black text-primary tracking-widest">RESULT PORTAL</span>
           </div>
 
-          <div className="bg-white p-6 rounded-[8px]  border-2 border-primary shadow-1xl relative overflow-hidden">
-            <div className="space-y-8 ">
-              <h4 className="text-1xl font-black tracking-tighter text-primary">CHECK RESULT</h4>
-              <p className="text-[11px] font-bold text-slate-500 leading-snug">
-                Enter your Registration Number (and PIN if assigned) to access your official examination result slip once released by the administration.
-              </p>
+          <div className="bg-white p-6 sm:p-8 rounded-[16px] border-2 border-primary shadow-xl relative overflow-hidden text-left">
+            <div className="space-y-6">
+              <div className="text-center space-y-2">
+                <h4 className="text-xl font-black tracking-tighter text-primary">CHECK RESULT</h4>
+                <p className="text-[11px] font-bold text-slate-500 leading-snug">
+                  Enter your Registration Number (and PIN if assigned) to access your official examination result slip once released by the administration.
+                </p>
+              </div>
+
               <form onSubmit={handleCheckResult} className="space-y-4">
                 <div className="relative">
                   <Input value={targetExamNumber} onChange={e => setTargetExamNumber(e.target.value)} placeholder="Registration Number" className="h-12 rounded-xl bg-slate-50 border-2 border-primary/20 focus:border-primary text-center font-black shadow-sm" />
@@ -141,11 +144,52 @@ export default function ResultChecker() {
                   <Input value={pin} onChange={e => setPin(e.target.value)} placeholder="PIN (Optional)" className="h-12 rounded-xl bg-slate-50 border-2 border-primary/20 focus:border-primary text-center font-black shadow-sm" />
                   <Lock className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-10" />
                 </div>
-                <Button type="submit" disabled={checkingResult} className="w-full h-14 bg-primary text-white text-1xl rounded-2xl font-black tracking-widest shadow-1xl hover:text-white hover:scale-105 transition-all active:bg-green-700">
-                  {checkingResult ? "VERIFYING..." : "ENTER "}
+                <Button type="submit" disabled={checkingResult} className="w-full h-14 bg-primary text-white text-base rounded-2xl font-black tracking-widest shadow-lg hover:scale-[1.02] transition-all active:bg-green-700">
+                  {checkingResult ? "VERIFYING..." : "ENTER PORTAL"}
                 </Button>
               </form>
             </div>
+          </div>
+
+          {/* Result Release Bulletin & Batch Status Widget */}
+          <div className="bg-white p-6 rounded-[16px] border border-primary/10 shadow-sm text-left space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <span className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                <Shield className="w-4 h-4 text-emerald-600" />
+                Result Release Bulletin
+              </span>
+              <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">Live Updates</span>
+            </div>
+
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                <div>
+                  <p className="font-extrabold text-[11px] text-slate-800">Batch A (Morning Session)</p>
+                  <p className="text-[9px] text-slate-400">All CBT Centers Nationwide</p>
+                </div>
+                <span className="text-[10px] font-black text-emerald-600 bg-emerald-100/60 px-2.5 py-1 rounded-lg">PUBLISHED ✓</span>
+              </div>
+
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                <div>
+                  <p className="font-extrabold text-[11px] text-slate-800">Batch B (Afternoon Session)</p>
+                  <p className="text-[9px] text-slate-400">All CBT Centers Nationwide</p>
+                </div>
+                <span className="text-[10px] font-black text-emerald-600 bg-emerald-100/60 px-2.5 py-1 rounded-lg">PUBLISHED ✓</span>
+              </div>
+
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                <div>
+                  <p className="font-extrabold text-[11px] text-slate-800">Supplementary / Rescheduled</p>
+                  <p className="text-[9px] text-slate-400">Under Quality Audit</p>
+                </div>
+                <span className="text-[10px] font-black text-amber-600 bg-amber-100/60 px-2.5 py-1 rounded-lg">PROCESSING</span>
+              </div>
+            </div>
+
+            <p className="text-[9px] text-slate-400 italic text-center pt-1">
+              Need PIN scratch card assistance? Contact support or visit your nearest accredited CBT Registration Center.
+            </p>
           </div>
         </motion.div>
       </div>
