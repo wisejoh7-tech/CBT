@@ -4,7 +4,7 @@ import { Badge } from '@/lib/ui/badge';
 import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
 import { ScrollArea } from '@/lib/ui/scroll-area';
-import { MessageCircle, Send, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { MessageCircle, Send, ShieldAlert, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { Attempt, Candidate } from '@/src/types';
 import { cn } from '@/src/lib/utils/utils';
 
@@ -85,7 +85,13 @@ export const ProctoringSecurity: React.FC<ProctoringSecurityProps> = ({
 
                     <div className="flex gap-3">
                       <Button onClick={() => setViewingSnaps(s.id)} variant="ghost" className="flex-1 bg-slate-50 text-slate-500 h-9 text-[8px] font-black hover:bg-primary/5 hover:text-primary rounded-xl tracking-widest uppercase border border-slate-100">VIEW FEED</Button>
-                      <Button onClick={() => setActiveChatId(s.userId)} size="icon" className={cn("h-9 w-9 rounded-xl transition-all shadow-md", activeChatId === s.userId ? "bg-primary text-white" : "bg-primary/5 text-primary hover:bg-primary/10")}>
+                      <Button onClick={() => {
+                        setActiveChatId(s.userId);
+                        setNewMessage("PROCTOR WARNING: Security alert triggered on your terminal. Please focus on your exam screen.");
+                      }} size="sm" className="bg-amber-500 hover:bg-amber-600 text-white h-9 px-3 rounded-xl text-[8px] font-black tracking-widest uppercase border-none">
+                        <AlertTriangle className="w-3.5 h-3.5 mr-1" /> WARN
+                      </Button>
+                      <Button onClick={() => setActiveChatId(s.userId)} size="icon" className={cn("h-9 w-9 rounded-xl transition-all shadow-md shrink-0", activeChatId === s.userId ? "bg-primary text-white" : "bg-primary/5 text-primary hover:bg-primary/10")}>
                         <MessageCircle className="w-4 h-4" />
                       </Button>
                     </div>
