@@ -4,6 +4,7 @@ import { Candidate } from '@/src/types';
 import { Button } from '@/lib/ui/button';
 import { Printer, ArrowLeft, User, Monitor } from 'lucide-react';
 import { getApiUrl, safeJsonResponse, apiFetch } from '@/src/lib/api-config';
+import { QRCodeSVG } from '@/src/components/QRCodeSVG';
 
 export default function ExamSlip() {
   const { examNumber } = useParams<{ examNumber: string }>();
@@ -168,14 +169,14 @@ export default function ExamSlip() {
           </table>
         </div>
 
-        <div className="mt-6 flex justify-between items-center opacity-30">
-          <div className="text-[9px] font-black tracking-widest">
-            VERIFIED AT {candidate.createdAt ? new Date(candidate.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
+        <div className="mt-6 flex justify-between items-center pt-4 border-t border-primary/10">
+          <div className="text-[9px] font-black tracking-widest text-slate-400">
+            DIGITAL VERIFICATION AT {candidate.createdAt ? new Date(candidate.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
           </div>
-          <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${candidate.examNumber}`}
-            className="w-12 h-12 grayscale"
-            alt="Verification QR"
+          <QRCodeSVG
+            value={`${window.location.origin}/exam-slip/${candidate.examNumber}`}
+            size={70}
+            className="w-14 h-14"
           />
         </div>
       </div>

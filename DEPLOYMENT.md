@@ -69,6 +69,25 @@ VITE_SOCKET_URL=https://my-exam-backend.onrender.com
 
 ---
 
+## Why Registered Candidates & Staff Disappear On Push/Deploy
+
+When pushing code to GitHub, CI/CD pipelines (e.g. GitHub Actions to AWS ECS, Render Auto-Deploy, Railway) rebuild and redeploy application container instances.
+
+If the application is running without a persistent managed database URL (`DATABASE_URL`), or if `DATABASE_URL` points to `localhost` / internal container storage, the database container or process is recreated on each push. Consequently, all registered candidates, staff, and exam data stored inside the container local filesystem are destroyed upon deployment.
+
+### How To Fix & Ensure Data Persistence Across GitHub Pushes:
+
+1. **Use a Managed PostgreSQL Instance**:
+   - Create a cloud-managed PostgreSQL database (e.g., Render PostgreSQL, AWS RDS, Supabase, Neon, or Railway Postgres).
+2. **Set `DATABASE_URL` in Production Environment**:
+   - On **Render**: Go to your Backend Web Service -> **Environment** -> Add `DATABASE_URL` with your external Postgres connection string (`postgresql://user:pass@host:5432/dbname`).
+   - On **AWS ECS / GitHub Actions**: Ensure your Task Definition or Secrets store includes `DATABASE_URL` so that ECS tasks connect to external RDS/PostgreSQL.
+   - On **Docker / VPS**: Bind a Docker volume for `postgres_data` (as defined in `docker-compose.yml`) or connect to an external PostgreSQL server.
+3. **Automatic Schema Migrations**:
+   - The backend is configured with TypeORM automatic migrations (`migrationsRun: true`). Schema changes will safely apply without dropping tables or wiping candidates and staff records.
+
+---
+
 ## Deploying to Render (Static Site)
 
 1. Connect your repository on [Render](https://render.com).

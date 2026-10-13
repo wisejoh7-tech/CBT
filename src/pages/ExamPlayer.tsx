@@ -519,6 +519,13 @@ export default function ExamPlayer() {
   return (
     <div className="h-screen flex flex-col bg-slate-50/20 text-primary selection:bg-primary/10 relative max-w-full overflow-x-hidden">
       <div className="cbt-background" />
+
+      {/* Security Watermark Overlay */}
+      <div className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center opacity-[0.04] select-none rotate-[-25deg]">
+        <p className="text-4xl md:text-6xl font-black text-slate-900 tracking-widest text-center uppercase whitespace-nowrap">
+          {profile?.examNumber || 'CBT CANDIDATE'} • SECURE TERMINAL SESSION • {new Date().toLocaleTimeString()}
+        </p>
+      </div>
       <header className="h-14 px-3 sm:px-6 flex items-center justify-between border-b border-primary/10 bg-white sticky top-0 z-50">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2 sm:gap-2.5">

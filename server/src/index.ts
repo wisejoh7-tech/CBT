@@ -20,6 +20,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
 import { User } from "./entities/User";
+import { Candidate } from "./entities/Candidate";
 import { Subject } from "./entities/Subject";
 import authRoutes, { ensureDefaultAdmin } from "./routes/auth";
 import examRoutes from "./routes/exam";
@@ -273,8 +274,35 @@ async function initializeServices() {
         await AppDataSource.initialize();
         console.log("✅ Postgres Connected Successfully.");
 
-        // Ensure default or configured Admin account exists
-        await ensureDefaultAdmin();
+        // Diagnostic checks for persistence & DATABASE_URL
+        const candidateRepo = AppDataSource.getRepository(Candidate);
+        const userRepo = AppDataSource.getRepository(User);
+
+        const candidateCount = await candidateRepo.count();
+        const staffCount = await userRepo.count();
+
+        console.log(`[PERSISTENCE DIAGNOSTIC] Current Database Counts - Candidates: ${candidateCount}, Staff/Users: ${staffCount}`);
+
+        if (!process.env.DATABASE_URL) {
+          console.warn("⚠️ PERSISTENCE WARNING: DATABASE_URL environment variable is NOT set.");
+          console.warn("⚠️ Data registered on this instance will NOT persist across pushes/deploys unless connected to a managed external PostgreSQL instance!");
+        } else if (process.env.DATABASE_URL.includes("localhost") || process.env.DATABASE_URL.includes("127.0.0.1")) {
+          console.warn("⚠️ PERSISTENCE WARNING: DATABASE_URL is pointing to localhost.");
+          console.warn("⚠️ Local container storage is ephemeral on cloud hosting (Render/ECS). Data will reset on re-deploy.");
+        }
+
+        // Seed Default Admin if missing
+        const adminUser = await userRepo.findOneBy({ email: "admin@vivicbt.com" });
+        if (!adminUser) {
+          const hashedPassword = await bcrypt.hash(process.env.INITIAL_ADMIN_PASSWORD || "admin123", 10);
+          await userRepo.save(userRepo.create({
+            email: "admin@vivicbt.com",
+            password: hashedPassword,
+            displayName: "System Master",
+            role: "super_admin",
+          }));
+          console.log("🌱 Default Admin Seeded.");
+        }
         break;
       } catch (err: any) {
         dbRetries++;
