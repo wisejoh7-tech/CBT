@@ -22,7 +22,7 @@ import bcrypt from "bcryptjs";
 import { User } from "./entities/User";
 import { Candidate } from "./entities/Candidate";
 import { Subject } from "./entities/Subject";
-import authRoutes from "./routes/auth";
+import authRoutes, { ensureDefaultAdmin } from "./routes/auth";
 import examRoutes from "./routes/exam";
 import analyticsRoutes from "./routes/analytics";
 import centerRoutes from "./routes/center";

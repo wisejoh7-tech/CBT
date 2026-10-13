@@ -13,6 +13,34 @@ import { authenticateJWT, authorizeRoles } from "../middleware/auth";
 
 const router = Router();
 
+export function getAdminEmail(): string {
+  return (
+    process.env.INITIAL_ADMIN_EMAIL ||
+    process.env.ADMIN_EMAIL ||
+    process.env.INITIAL_ADMIN_USERNAME ||
+    process.env.ADMIN_USERNAME ||
+    "admin@vivicbt.com"
+  ).trim().toLowerCase();
+}
+
+export function getAdminPassword(): string {
+  return (
+    process.env.INITIAL_ADMIN_PASSWORD ||
+    process.env.ADMIN_PASSWORD ||
+    "admin123"
+  ).trim();
+}
+
+export function getAdminName(): string {
+  return (
+    process.env.INITIAL_ADMIN_NAME ||
+    process.env.INITIAL_ADMIN_DISPLAY_NAME ||
+    process.env.ADMIN_NAME ||
+    process.env.ADMIN_DISPLAY_NAME ||
+    "System Master"
+  ).trim();
+}
+
 export async function ensureDefaultAdmin(): Promise<User | null> {
   try {
     if (!AppDataSource.isInitialized) {
@@ -20,22 +48,52 @@ export async function ensureDefaultAdmin(): Promise<User | null> {
       return null;
     }
     const userRepository = AppDataSource.getRepository(User);
+    const adminEmail = getAdminEmail();
+    const adminPassword = getAdminPassword();
+    const adminName = getAdminName();
+
     let defaultAdmin = await userRepository.createQueryBuilder("u")
-      .where("LOWER(u.email) = LOWER(:email)", { email: "admin@vivicbt.com" })
+      .where("LOWER(u.email) = LOWER(:email)", { email: adminEmail })
       .addSelect("u.password")
       .getOne();
 
     if (!defaultAdmin) {
-      const initialPass = process.env.INITIAL_ADMIN_PASSWORD || "admin123";
-      const defaultHash = await bcrypt.hash(initialPass, 10);
+      // Check if an existing admin account with legacy email exists
+      let legacyAdmin = await userRepository.createQueryBuilder("u")
+        .where("LOWER(u.email) = LOWER(:email)", { email: "admin@vivicbt.com" })
+        .addSelect("u.password")
+        .getOne();
+
+      if (legacyAdmin && adminEmail !== "admin@vivicbt.com") {
+        legacyAdmin.email = adminEmail;
+        legacyAdmin.password = await bcrypt.hash(adminPassword, 10);
+        legacyAdmin.displayName = adminName;
+        legacyAdmin.role = "super_admin";
+        await userRepository.save(legacyAdmin);
+        console.log(`🌱 Migrated default admin account to configured email: ${adminEmail}`);
+        return legacyAdmin;
+      }
+
+      const defaultHash = await bcrypt.hash(adminPassword, 10);
       defaultAdmin = userRepository.create({
-        email: "admin@vivicbt.com",
+        email: adminEmail,
         password: defaultHash,
-        displayName: "System Master",
+        displayName: adminName,
         role: "super_admin",
       });
       await userRepository.save(defaultAdmin);
-      console.log("🌱 Auto-seeded default admin: admin@vivicbt.com");
+      console.log(`🌱 Auto-seeded default admin: ${adminEmail}`);
+    } else {
+      // Sync password if explicitly configured in environment variables and changed
+      const isConfiguredPasswordSet = Boolean(process.env.INITIAL_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD);
+      if (isConfiguredPasswordSet && defaultAdmin.password) {
+        const isPasswordMatching = await bcrypt.compare(adminPassword, defaultAdmin.password);
+        if (!isPasswordMatching) {
+          defaultAdmin.password = await bcrypt.hash(adminPassword, 10);
+          await userRepository.save(defaultAdmin);
+          console.log(`🌱 Updated admin password for ${adminEmail} from environment variable.`);
+        }
+      }
     }
     return defaultAdmin;
   } catch (seedErr: any) {
@@ -316,8 +374,9 @@ router.post("/candidate/login-email", async (req, res) => {
 
     const { email, password } = validation.data;
     let cleanIdentifier = email.trim().toLowerCase();
-    if (cleanIdentifier === "admin") {
-      cleanIdentifier = "admin@vivicbt.com";
+    const adminEmail = getAdminEmail();
+    if (cleanIdentifier === "admin" || cleanIdentifier === adminEmail) {
+      cleanIdentifier = adminEmail;
     }
 
     await ensureDefaultAdmin();
@@ -445,8 +504,9 @@ router.post("/login", async (req, res) => {
 
     const { email, password } = validation.data;
     let cleanEmail = email.trim().toLowerCase();
-    if (cleanEmail === "admin") {
-      cleanEmail = "admin@vivicbt.com";
+    const adminEmail = getAdminEmail();
+    if (cleanEmail === "admin" || cleanEmail === adminEmail) {
+      cleanEmail = adminEmail;
     }
 
     await ensureDefaultAdmin();
@@ -539,8 +599,9 @@ router.post("/candidate-login", async (req, res) => {
     }
 
     let cleanExamNumber = examNumber.trim().toLowerCase();
-    if (cleanExamNumber === "admin") {
-      cleanExamNumber = "admin@vivicbt.com";
+    const adminEmail = getAdminEmail();
+    if (cleanExamNumber === "admin" || cleanExamNumber === adminEmail) {
+      cleanExamNumber = adminEmail;
     }
 
     await ensureDefaultAdmin();
