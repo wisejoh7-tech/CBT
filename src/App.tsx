@@ -48,7 +48,7 @@ const ProtectedRoute = ({ children, adminOnly = false }: { children: React.React
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, profile, loading } = useAuth();
 
-  if (loading) return null;
+  if (loading) return <div className="flex items-center justify-center h-screen bg-slate-50 font-sans text-muted-foreground animate-pulse">Loading VIVI Portal...</div>;
 
   if (user && profile) {
     const isAnyAdmin = profile.role === 'admin' || profile.role === 'super_admin' || profile.role === 'reg_admin';
@@ -62,6 +62,56 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
   return <>{children}</>;
 };
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, ErrorBoundaryState> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Uncaught error in component tree:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center font-sans">
+          <div className="max-w-md w-full bg-white p-8 rounded-2xl border border-slate-200 shadow-xl space-y-4">
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">Something went wrong</h2>
+            <p className="text-xs text-slate-500 leading-relaxed font-medium">
+              An unexpected error occurred while loading this page. Please try reloading or return to the main portal.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="flex-1 h-10 bg-primary text-white text-xs font-black rounded-xl tracking-wider hover:opacity-90 transition-opacity"
+              >
+                Reload Page
+              </button>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="flex-1 h-10 bg-slate-100 text-slate-700 text-xs font-black rounded-xl tracking-wider hover:bg-slate-200 transition-colors"
+              >
+                Go Home
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
   useEffect(() => {
@@ -92,8 +142,9 @@ export default function App() {
   }, []);
 
   return (
-    <AuthProvider>
-      <SocketProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <SocketProvider>
         <BrowserRouter>
           <div className="min-h-screen relative">
             <div className="cbt-background" />
@@ -153,11 +204,13 @@ export default function App() {
             <Route path="/results" element={<ResultChecker />} />
             <Route path="/result-slip/:examNumber" element={<ResultSlip />} />
             <Route path="/verify/:examNumber" element={<ResultSlip isVerification />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Toaster position="top-center" />
         </div>
       </BrowserRouter>
       </SocketProvider>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
