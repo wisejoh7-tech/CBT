@@ -46,6 +46,14 @@ async function testResultReleaseNotificationPayload() {
   dummyAttempt.score = 88;
   dummyAttempt.totalPossible = 100;
   dummyAttempt.isReleased = true;
+  dummyAttempt.results = {
+    subjects: {
+      "English Language": { correct: 22, total: 25 },
+      "Mathematics": { correct: 20, total: 25 },
+      "Physics": { correct: 23, total: 25 },
+      "Chemistry": { correct: 23, total: 25 }
+    }
+  };
 
   console.log(`Candidate: ${dummyCandidate.fullName} (${dummyCandidate.email}, ${dummyCandidate.phoneNumber})`);
   console.log(`Attempt: ${dummyAttempt.id}, Score: ${dummyAttempt.score}/${dummyAttempt.totalPossible}`);
@@ -59,7 +67,20 @@ async function testResultReleaseNotificationPayload() {
 
   // Attempt notification execution safely
   const result = await sendResultReleaseNotifications(dummyCandidate, dummyAttempt);
-  console.log(`Notification trigger completed. Result:`, result);
+  console.log(`Notification trigger completed for candidate entity. Result:`, result);
+
+  // Test notification execution for User fallback format
+  const dummyUserCandidate = {
+    id: "user-uuid-789",
+    examNumber: "VIVI/2026/002",
+    fullName: "John Smith",
+    email: "john.smith@example.com",
+    phoneNumber: "09098765432"
+  };
+
+  const userResult = await sendResultReleaseNotifications(dummyUserCandidate, dummyAttempt);
+  console.log(`Notification trigger completed for user fallback candidate. Result:`, userResult);
+
   console.log("✅ Result release notification payload logic verified!");
 }
 
