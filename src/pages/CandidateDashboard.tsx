@@ -244,20 +244,16 @@ export default function CandidateDashboard() {
                    <h3 className="text-lg sm:text-xl font-black tracking-tight leading-none truncate">
                      {releasedAttempt
                        ? "Official Result Released"
-                       : dashboardData?.assignedExamId
-                       ? "Active Assessment"
-                       : "Ready for Exam?"}
+                       : "Candidate Portal"}
                    </h3>
                    <p className="text-[10px] sm:text-[11px] font-medium text-white/60 tracking-wide uppercase line-clamp-2">
                      {releasedAttempt
                        ? `Verified Raw Score: ${releasedAttempt.score} / ${releasedAttempt.totalPossible}`
-                       : dashboardData?.assignedExamId
-                       ? "Assessment has been initiated on your terminal."
-                       : "Proceed to terminal to begin session."}
+                       : "Welcome to your student registration portal."}
                    </p>
                 </div>
              </div>
-             {releasedAttempt ? (
+             {releasedAttempt && (
                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
                  <Button
                    onClick={() => handleDownloadResultPDF(releasedAttempt)}
@@ -272,22 +268,7 @@ export default function CandidateDashboard() {
                  >
                    <Printer className="w-4 h-4" /> PRINT RESULT SLIP
                  </Button>
-                 {dashboardData?.assignedExamId && (
-                   <Button
-                     onClick={() => navigate(`/instructions/${dashboardData.assignedExamId}`)}
-                     className="h-12 sm:h-14 w-full sm:w-auto px-6 sm:px-8 bg-white text-primary rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest shadow-xl active:scale-95 transition-all hover:bg-slate-50 border-none shrink-0"
-                   >
-                     START ASSIGNED EXAM
-                   </Button>
-                 )}
                </div>
-             ) : (
-               <Button
-                 onClick={() => navigate(dashboardData?.assignedExamId ? `/instructions/${dashboardData.assignedExamId}` : '/instructions/unified')}
-                 className="h-12 sm:h-14 w-full md:w-auto px-8 sm:px-10 bg-white text-primary rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest shadow-xl active:scale-95 transition-all hover:bg-slate-50 border-none shrink-0"
-               >
-                 {dashboardData?.assignedExamId ? "START ASSIGNED EXAM" : "Start Exam"}
-               </Button>
              )}
           </Card>
 
@@ -562,80 +543,6 @@ export default function CandidateDashboard() {
                  </Button>
               </Card>
 
-              {/* Result Record */}
-              <Card className="p-6 sm:p-8 rounded-[28px] sm:rounded-[32px] border border-primary/5 bg-slate-900 text-white shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full translate-x-1/2 -translate-y-1/2 blur-2xl" />
-                <div className="flex items-center gap-3 mb-6 sm:mb-8 relative z-10">
-                  <Award className="w-5 h-5 text-emerald-400" />
-                  <h3 className="font-black text-[10px] sm:text-xs tracking-[0.2em] uppercase">Academic Records</h3>
-                </div>
-
-                <div className="relative z-10">
-                  {attempts.length === 0 ? (
-                    <div className="border border-white/10 rounded-2xl overflow-x-auto w-full">
-                      <table className="w-full border-collapse text-xs text-left min-w-[260px]">
-                        <thead>
-                          <tr className="bg-white/5 border-b border-white/10 text-[9px] font-black tracking-wider text-white/40 uppercase">
-                            <th className="p-3">Session</th>
-                            <th className="p-3 text-right">Score</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td colSpan={2} className="p-6 text-center text-white/30 font-bold uppercase tracking-wider text-[10px]">No results yet</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="border border-white/10 rounded-2xl overflow-x-auto w-full">
-                      <table className="w-full border-collapse text-xs text-left min-w-[260px]">
-                        <thead>
-                          <tr className="bg-white/5 border-b border-white/10 text-[9px] font-black tracking-wider text-white/40 uppercase">
-                            <th className="p-3">Session Score</th>
-                            <th className="p-3 text-right">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/10 font-medium">
-                          {attempts.map(attempt => {
-                            const isReleased = attempt.isReleased || attempt.released;
-                            return (
-                              <tr key={attempt.id} className="hover:bg-white/5 transition-colors">
-                                <td className="p-3 font-black text-sm text-white">
-                                  {isReleased ? `${attempt.score} / ${attempt.totalPossible}` : "PENDING"}
-                                </td>
-                                <td className="p-3 text-right">
-                                  {isReleased ? (
-                                    <div className="inline-flex items-center gap-2">
-                                      <Button
-                                        onClick={() => handleDownloadResultPDF(attempt)}
-                                        className="h-8 px-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] tracking-wider rounded-lg inline-flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
-                                        title="Download Official Result PDF"
-                                      >
-                                        <Download className="w-3.5 h-3.5" /> DOWNLOAD
-                                      </Button>
-                                      <Button
-                                        onClick={() => handlePrint('result', attempt.id)}
-                                        variant="outline"
-                                        className="h-8 px-3 border-white/20 hover:bg-white/10 text-white font-black text-[10px] tracking-wider rounded-lg inline-flex items-center gap-1.5 active:scale-95 transition-all"
-                                        title="Print Official Result Slip"
-                                      >
-                                        <Printer className="w-3.5 h-3.5" /> PRINT
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <Badge className="bg-amber-500/20 text-amber-400 border-none font-black text-[8px] px-2 py-0.5 uppercase tracking-widest">Processing</Badge>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </Card>
             </div>
           </div>
         </motion.div>

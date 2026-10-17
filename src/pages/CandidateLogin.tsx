@@ -63,8 +63,8 @@ export default function CandidateLogin() {
 
     try {
       await loginWithExamNumber(examNumber.trim(), examPassword.trim() || undefined);
-      toast.success("Identity Verified. Opening Terminal...");
-      navigate('/exam/unified');
+      toast.success("Identity Verified. Opening Exam Instructions...");
+      navigate('/instructions/unified');
     } catch (e: any) {
       const msg = getFriendlyErrorMessage(e);
       toast.error(msg);
