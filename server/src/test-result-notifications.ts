@@ -81,6 +81,25 @@ async function testResultReleaseNotificationPayload() {
   const userResult = await sendResultReleaseNotifications(dummyUserCandidate, dummyAttempt);
   console.log(`Notification trigger completed for user fallback candidate. Result:`, userResult);
 
+  // Test malformed attempt results and null scores edge cases
+  console.log("--- Testing Edge Cases (null scores, malformed subjects) ---");
+  const malformedAttempt = new Attempt();
+  malformedAttempt.id = "attempt-uuid-edge";
+  malformedAttempt.userId = dummyCandidate.examNumber;
+  malformedAttempt.score = undefined as any;
+  malformedAttempt.totalPossible = undefined as any;
+  malformedAttempt.results = {
+    subjects: {
+      "English": null,
+      "Mathematics": 15,
+      "Physics": "invalid",
+      "Chemistry": { correct: undefined, total: null }
+    }
+  };
+
+  const edgeResult = await sendResultReleaseNotifications(dummyCandidate, malformedAttempt);
+  console.log(`Notification trigger completed for malformed attempt. Result:`, edgeResult);
+
   console.log("✅ Result release notification payload logic verified!");
 }
 

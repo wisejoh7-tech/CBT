@@ -214,42 +214,53 @@ export async function sendResultReleaseNotifications(
   let emailSent = false;
   let smsSent = false;
 
-  const scoreMsg = `VIVI CBT: Hello ${candidate.fullName}, your exam results have been released. Score: ${attempt.score}/${attempt.totalPossible}. Visit the portal to print your slip.`;
+  const score = attempt.score ?? 0;
+  const totalPossible = attempt.totalPossible ?? 0;
+  const candidateName = candidate.fullName || "Candidate";
+  const scoreMsg = `VIVI CBT: Hello ${candidateName}, your exam results have been released. Score: ${score}/${totalPossible}. Visit the portal to print your slip.`;
 
   // Build subject breakdown HTML if present in attempt.results
   let subjectsHtml = "";
   if (attempt.results && attempt.results.subjects && typeof attempt.results.subjects === "object") {
-    const subjectEntries = Object.entries(attempt.results.subjects as Record<string, { correct: number; total: number }>);
-    if (subjectEntries.length > 0) {
-      const rows = subjectEntries
-        .map(([subj, stats]) => `
-          <tr style="border-bottom: 1px solid #e2e8f0;">
-            <td style="padding: 8px 12px; font-weight: 500;">${subj}</td>
-            <td style="padding: 8px 12px; text-align: right; font-weight: 600; color: #0EA5E9;">${stats.correct} / ${stats.total}</td>
-          </tr>
-        `)
-        .join("");
-
-      subjectsHtml = `
-        <div style="margin: 20px 0;">
-          <h3 style="font-size: 16px; color: #1e293b; margin-bottom: 10px;">Subject Breakdown</h3>
-          <table style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-            <thead>
-              <tr style="background: #f1f5f9; text-align: left;">
-                <th style="padding: 8px 12px; font-size: 13px; color: #475569;">Subject</th>
-                <th style="padding: 8px 12px; text-align: right; font-size: 13px; color: #475569;">Score</th>
+    try {
+      const subjectEntries = Object.entries(attempt.results.subjects as Record<string, any>);
+      if (subjectEntries.length > 0) {
+        const rows = subjectEntries
+          .map(([subj, stats]) => {
+            const correct = stats && typeof stats === "object" && "correct" in stats ? (stats.correct ?? 0) : (typeof stats === "number" ? stats : 0);
+            const total = stats && typeof stats === "object" && "total" in stats ? (stats.total ?? 0) : 0;
+            return `
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px 12px; font-weight: 500;">${subj}</td>
+                <td style="padding: 8px 12px; text-align: right; font-weight: 600; color: #0EA5E9;">${correct} / ${total}</td>
               </tr>
-            </thead>
-            <tbody>
-              ${rows}
-            </tbody>
-          </table>
-        </div>
-      `;
+            `;
+          })
+          .join("");
+
+        subjectsHtml = `
+          <div style="margin: 20px 0;">
+            <h3 style="font-size: 16px; color: #1e293b; margin-bottom: 10px;">Subject Breakdown</h3>
+            <table style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+              <thead>
+                <tr style="background: #f1f5f9; text-align: left;">
+                  <th style="padding: 8px 12px; font-size: 13px; color: #475569;">Subject</th>
+                  <th style="padding: 8px 12px; text-align: right; font-size: 13px; color: #475569;">Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+    } catch (subjErr) {
+      logger.error("Failed to construct subject breakdown HTML:", subjErr);
     }
   }
 
-  const percentage = attempt.totalPossible > 0 ? ((attempt.score / attempt.totalPossible) * 100).toFixed(1) : "0";
+  const percentage = totalPossible > 0 ? ((score / totalPossible) * 100).toFixed(1) : "0";
 
   // 1. Send Email Notification
   if (candidate.email) {
@@ -260,11 +271,11 @@ export async function sendResultReleaseNotifications(
         html: `
           <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; background: #ffffff;">
             <h2 style="color: #0EA5E9; margin-top: 0;">Result Notification</h2>
-            <p>Hello <b>${candidate.fullName}</b>,</p>
+            <p>Hello <b>${candidateName}</b>,</p>
             <p>Your performance record for the VIVI Standard Examination has been verified and released.</p>
             <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid #e2e8f0;">
               <p style="margin: 0; font-size: 14px; color: #64748b;">AGGREGATE SCORE</p>
-              <p style="margin: 5px 0 0 0; font-size: 32px; font-weight: 900; color: #0EA5E9;">${attempt.score} / ${attempt.totalPossible} <span style="font-size: 18px; color: #64748b; font-weight: normal;">(${percentage}%)</span></p>
+              <p style="margin: 5px 0 0 0; font-size: 32px; font-weight: 900; color: #0EA5E9;">${score} / ${totalPossible} <span style="font-size: 18px; color: #64748b; font-weight: normal;">(${percentage}%)</span></p>
             </div>
             ${subjectsHtml}
             <p>You can now log in to your candidate dashboard to view the full breakdown and print your official result slip.</p>
@@ -276,7 +287,7 @@ export async function sendResultReleaseNotifications(
       logger.error(`Failed to send result email to ${candidate.email}:`, emailErr);
     }
   } else {
-    logger.warn(`Candidate ${candidate.fullName} (${candidate.examNumber}) has no email address configured.`);
+    logger.warn(`Candidate ${candidateName} has no email address configured.`);
   }
 
   // 2. Send Phone SMS Notification
@@ -287,7 +298,7 @@ export async function sendResultReleaseNotifications(
       logger.error(`Failed to send result SMS to ${candidate.phoneNumber}:`, smsErr);
     }
   } else {
-    logger.warn(`Candidate ${candidate.fullName} (${candidate.examNumber}) has no phone number configured.`);
+    logger.warn(`Candidate ${candidateName} has no phone number configured.`);
   }
 
   return { emailSent, smsSent };
@@ -335,20 +346,32 @@ router.post("/attempts/release-all", authenticateJWT, authorizeRoles("admin", "s
 
     let releasedCount = 0;
     for (const attempt of unreleasedAttempts) {
-      attempt.isReleased = true;
-      await attemptRepo.save(attempt);
-      releasedCount++;
+      try {
+        attempt.isReleased = true;
+        await attemptRepo.save(attempt);
+        releasedCount++;
 
-      const candidate = await findCandidateForAttempt(attempt.userId);
-      if (candidate) {
-        if ('assignedExamId' in candidate && candidate.assignedExamId) {
-          (candidate as Candidate).assignedExamId = null as any;
-          await candidateRepo.save(candidate as Candidate);
+        const candidate = await findCandidateForAttempt(attempt.userId);
+        if (candidate) {
+          if ('assignedExamId' in candidate && candidate.assignedExamId) {
+            try {
+              (candidate as Candidate).assignedExamId = null as any;
+              await candidateRepo.save(candidate as Candidate);
+            } catch (candSaveErr) {
+              logger.warn(`Could not clear assignedExamId for candidate ${candidate.id}:`, candSaveErr);
+            }
+          }
+
+          try {
+            await sendResultReleaseNotifications(candidate, attempt);
+          } catch (notifErr) {
+            logger.error(`Error sending release notification for attempt ${attempt.id}:`, notifErr);
+          }
+        } else {
+          logger.warn(`No candidate record found for attempt ${attempt.id} (userId: ${attempt.userId}) during batch release.`);
         }
-
-        await sendResultReleaseNotifications(candidate, attempt);
-      } else {
-        logger.warn(`No candidate record found for attempt ${attempt.id} (userId: ${attempt.userId}) during batch release.`);
+      } catch (attemptErr) {
+        logger.error(`Failed to release attempt ${attempt.id}:`, attemptErr);
       }
     }
 
@@ -381,21 +404,30 @@ router.post("/attempts/:id/release", authenticateJWT, authorizeRoles("admin", "s
     await attemptRepo.save(attempt);
 
     // Fetch candidate for notifications and clear assigned active exam
-    const candidate = await findCandidateForAttempt(attempt.userId);
+    try {
+      const candidate = await findCandidateForAttempt(attempt.userId);
 
-    if (candidate) {
-      if ('assignedExamId' in candidate && candidate.assignedExamId) {
-        (candidate as Candidate).assignedExamId = null as any;
-        await candidateRepo.save(candidate as Candidate);
+      if (candidate) {
+        if ('assignedExamId' in candidate && candidate.assignedExamId) {
+          try {
+            (candidate as Candidate).assignedExamId = null as any;
+            await candidateRepo.save(candidate as Candidate);
+          } catch (candSaveErr) {
+            logger.warn(`Could not clear assignedExamId for candidate ${candidate.id}:`, candSaveErr);
+          }
+        }
+
+        await sendResultReleaseNotifications(candidate, attempt);
+      } else {
+        logger.warn(`No candidate record found for attempt ${attempt.id} (userId: ${attempt.userId}) during release.`);
       }
-
-      await sendResultReleaseNotifications(candidate, attempt);
-    } else {
-      logger.warn(`No candidate record found for attempt ${attempt.id} (userId: ${attempt.userId}) during release.`);
+    } catch (postReleaseErr) {
+      logger.error(`Post-release processing (notifications/candidate sync) failed for attempt ${attempt.id}:`, postReleaseErr);
     }
 
     res.json({ message: "Results released and notifications dispatched via email and phone number." });
   } catch (error: any) {
+    logger.error("Release result error:", error);
     res.status(500).json({ message: "Failed to release results", error: error.message });
   }
 });
