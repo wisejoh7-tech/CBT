@@ -897,12 +897,16 @@ router.get("/public/download-result/:attemptId", async (req, res) => {
 
               <p class="label" style="margin-bottom: 10px;">Subject Breakdown</p>
               <table style="width: 100%; border-collapse: collapse;">
-                ${Object.entries(attempt.results?.subjects || {}).map(([subject, stats]: [string, any]) => `
-                  <tr style="border-bottom: 1px solid #e2e8f0;">
-                    <td style="padding: 10px 0; font-weight: bold;">${subject.toUpperCase()}</td>
-                    <td style="padding: 10px 0; text-align: right; font-weight: bold;">${stats.correct} / ${stats.total}</td>
-                  </tr>
-                `).join('')}
+                ${Object.entries(attempt.results?.subjects || {}).map(([subject, stats]: [string, any]) => {
+                  const correct = stats && typeof stats === 'object' && 'correct' in stats ? (stats.correct ?? 0) : (typeof stats === 'number' ? stats : 0);
+                  const total = stats && typeof stats === 'object' && 'total' in stats ? (stats.total ?? 0) : 0;
+                  return `
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                      <td style="padding: 10px 0; font-weight: bold;">${subject.toUpperCase()}</td>
+                      <td style="padding: 10px 0; text-align: right; font-weight: bold;">${correct} / ${total}</td>
+                    </tr>
+                  `;
+                }).join('')}
               </table>
             </div>
 
