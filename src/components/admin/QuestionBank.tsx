@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/lib/ui/button';
 import { Card } from '@/lib/ui/card';
 import { Badge } from '@/lib/ui/badge';
-import { ArrowLeft, Trash2, PlusCircle, FileText } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, FileText, Edit2 } from 'lucide-react';
 import { Exam, Question } from '@/src/types';
 import { cn } from '@/src/lib/utils/utils';
 
@@ -13,6 +13,7 @@ interface QuestionBankProps {
   setActiveTab: (val: string) => void;
   setShowAddQuestion: (val: boolean) => void;
   handleDeleteQuestion: (id: string) => void;
+  onEditQuestion?: (question: Question) => void;
 }
 
 export const QuestionBank: React.FC<QuestionBankProps> = ({
@@ -22,6 +23,7 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({
   setActiveTab,
   setShowAddQuestion,
   handleDeleteQuestion,
+  onEditQuestion,
 }) => {
   const currentExam = exams.find(e => e.id === selectedExamId);
 
@@ -85,12 +87,22 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({
                    <Badge variant="outline" className="bg-slate-100 text-slate-500 border-none font-black text-[8px] px-2.5 py-0.5 rounded-full tracking-wider uppercase">Type: MCQ</Badge>
                  </div>
 
-                 <button
-                  onClick={() => handleDeleteQuestion(q.id)}
-                  className="text-rose-400 hover:text-rose-600 font-black text-[9px] tracking-wider flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-rose-50 transition-all uppercase"
-                >
-                  <Trash2 className="w-3 h-3" /> Purge Item
-                </button>
+                 <div className="flex items-center gap-2">
+                   {onEditQuestion && (
+                     <button
+                       onClick={() => onEditQuestion(q)}
+                       className="text-amber-500 hover:text-amber-700 font-black text-[9px] tracking-wider flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-amber-50 transition-all uppercase"
+                     >
+                       <Edit2 className="w-3 h-3" /> Edit Item
+                     </button>
+                   )}
+                   <button
+                    onClick={() => handleDeleteQuestion(q.id)}
+                    className="text-rose-400 hover:text-rose-600 font-black text-[9px] tracking-wider flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-rose-50 transition-all uppercase"
+                  >
+                    <Trash2 className="w-3 h-3" /> Purge Item
+                  </button>
+                 </div>
               </div>
             </div>
           </Card>

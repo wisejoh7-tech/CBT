@@ -89,6 +89,23 @@ router.post("/:id/questions", authenticateJWT, authorizeRoles("admin", "super_ad
   res.status(201).json(question);
 });
 
+router.put("/:examId/questions/:questionId", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
+  const questionRepo = AppDataSource.getRepository(Question);
+  const question = await questionRepo.findOneBy({ id: req.params.questionId as any });
+  if (!question) return res.status(404).json({ message: "Question not found" });
+
+  const { text, options, correctOptionIndex, explanation, imageUrl, topic } = req.body;
+  if (text !== undefined) question.text = text;
+  if (options !== undefined) question.options = options;
+  if (correctOptionIndex !== undefined) question.correctOptionIndex = correctOptionIndex;
+  if (explanation !== undefined) question.explanation = explanation;
+  if (imageUrl !== undefined) question.imageUrl = imageUrl;
+  if (topic !== undefined) question.topic = topic;
+
+  await questionRepo.save(question);
+  res.json(question);
+});
+
 router.delete("/:examId/questions/:questionId", authenticateJWT, authorizeRoles("admin", "super_admin"), async (req, res) => {
   const questionRepo = AppDataSource.getRepository(Question);
   await questionRepo.delete(req.params.questionId);
