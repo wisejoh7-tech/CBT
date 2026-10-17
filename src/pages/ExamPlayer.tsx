@@ -576,40 +576,40 @@ export default function ExamPlayer() {
         ))}
       </nav>
 
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex min-h-0 overflow-hidden">
         <section className="flex-1 p-3 sm:p-6 md:p-8 overflow-y-auto flex justify-center">
           <div className="max-w-xl w-full">
             {currentQuestion && (
               <AnimatePresence mode="wait">
-                <motion.div key={currentQuestion.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4 sm:space-y-6">
+                <motion.div key={currentQuestion.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3 sm:space-y-4">
                   <div className="flex justify-between items-center">
-                    <Badge className="bg-primary/10 text-primary font-black px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs rounded-md border-none">{exams[activeExamIndex]?.subject} • Question {currentQuestionIndex + 1}</Badge>
+                    <Badge className="bg-primary/10 text-primary font-black px-2 py-0.5 text-[10px] sm:text-[11px] rounded-md border-none">{exams[activeExamIndex]?.subject} • Question {currentQuestionIndex + 1}</Badge>
                   </div>
 
-                  <h3 className="text-xs sm:text-sm font-bold leading-relaxed text-slate-800">{currentQuestion.text}</h3>
+                  <h3 className="text-xs sm:text-xs font-bold leading-relaxed text-slate-800">{currentQuestion.text}</h3>
 
                   {currentQuestion.imageUrl && (
-                    <div className="my-3 rounded-xl overflow-hidden border border-primary/10 max-h-60 flex justify-center bg-white p-2 shadow-sm">
+                    <div className="my-2 rounded-lg overflow-hidden border border-primary/10 max-h-48 flex justify-center bg-white p-1.5 shadow-sm">
                       <img
                         src={currentQuestion.imageUrl}
                         alt="Question Diagram"
-                        className="max-h-52 object-contain rounded-lg"
+                        className="max-h-40 object-contain rounded-md"
                       />
                     </div>
                   )}
 
-                  <div className="grid gap-2.5 sm:gap-3">
+                  <div className="grid gap-2 sm:gap-2.5">
                     {currentQuestion.options.map((opt, idx) => {
                       const isSelected = answers[currentQuestion.id] === idx;
                       return (
                         <button key={idx} onClick={() => handleSelectOption(idx)} className={cn(
-                          "flex items-center p-2.5 sm:p-3 rounded-xl border-2 transition-all text-left w-full",
+                          "flex items-center p-2 sm:p-2.5 rounded-lg border-2 transition-all text-left w-full",
                           isSelected ? "border-primary bg-primary/[0.03]" : "border-primary/10 bg-white hover:border-primary/30"
                         )}>
-                          <div className={cn("w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center font-black text-[11px] sm:text-xs mr-2.5 sm:mr-3 shrink-0", isSelected ? "bg-primary text-white" : "bg-primary/5")}>
+                          <div className={cn("w-5 h-5 rounded-md flex items-center justify-center font-black text-[10px] mr-2 shrink-0", isSelected ? "bg-primary text-white" : "bg-primary/5")}>
                             {String.fromCharCode(65 + idx)}
                           </div>
-                          <span className="text-xs font-semibold text-slate-700 break-words flex-1 min-w-0">{opt}</span>
+                          <span className="text-[11px] sm:text-xs font-medium text-slate-700 break-words flex-1 min-w-0">{opt}</span>
                         </button>
                       );
                     })}
