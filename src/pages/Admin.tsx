@@ -610,7 +610,7 @@ export default function Admin() {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col h-screen overflow-hidden relative z-10 w-full">
+      <main className="flex-1 flex flex-col h-screen min-h-0 overflow-hidden relative z-10 w-full">
         <header className="h-14 bg-white/80 backdrop-blur-md border-b border-primary/5 px-4 md:px-6 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-4">
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-primary/40 hover:text-primary bg-primary/5 rounded-lg transition-colors"><Menu className="w-4 h-4" /></button>
@@ -637,7 +637,7 @@ export default function Admin() {
           </div>
         </header>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
             <AnimatePresence mode="wait">
               <motion.div key={activeTab + (selectedExamId || '')} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
