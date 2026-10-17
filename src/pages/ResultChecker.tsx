@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/lib/ui/button';
 import { Input } from '@/lib/ui/input';
-import { Search, GraduationCap, Lock, AlertCircle, User, Shield, Monitor, ArrowLeft, Menu, X } from 'lucide-react';
+import { Search, GraduationCap, Lock, AlertCircle, User, Monitor, ArrowLeft, Menu, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 import { useAuth } from '@/src/context/AuthContext';
@@ -151,46 +151,6 @@ export default function ResultChecker() {
             </div>
           </div>
 
-          {/* Result Release Bulletin & Batch Status Widget */}
-          <div className="bg-white p-6 rounded-[16px] border border-primary/10 shadow-sm text-left space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                <Shield className="w-4 h-4 text-emerald-600" />
-                Result Release Bulletin
-              </span>
-              <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">Live Updates</span>
-            </div>
-
-            <div className="space-y-2.5 text-xs">
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
-                <div>
-                  <p className="font-extrabold text-[11px] text-slate-800">Batch A (Morning Session)</p>
-                  <p className="text-[9px] text-slate-400">All CBT Centers Nationwide</p>
-                </div>
-                <span className="text-[10px] font-black text-emerald-600 bg-emerald-100/60 px-2.5 py-1 rounded-lg">PUBLISHED ✓</span>
-              </div>
-
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
-                <div>
-                  <p className="font-extrabold text-[11px] text-slate-800">Batch B (Afternoon Session)</p>
-                  <p className="text-[9px] text-slate-400">All CBT Centers Nationwide</p>
-                </div>
-                <span className="text-[10px] font-black text-emerald-600 bg-emerald-100/60 px-2.5 py-1 rounded-lg">PUBLISHED ✓</span>
-              </div>
-
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
-                <div>
-                  <p className="font-extrabold text-[11px] text-slate-800">Supplementary / Rescheduled</p>
-                  <p className="text-[9px] text-slate-400">Under Quality Audit</p>
-                </div>
-                <span className="text-[10px] font-black text-amber-600 bg-amber-100/60 px-2.5 py-1 rounded-lg">PROCESSING</span>
-              </div>
-            </div>
-
-            <p className="text-[9px] text-slate-400 italic text-center pt-1">
-              Need PIN scratch card assistance? Contact support or visit your nearest accredited CBT Registration Center.
-            </p>
-          </div>
         </motion.div>
       </div>
 
