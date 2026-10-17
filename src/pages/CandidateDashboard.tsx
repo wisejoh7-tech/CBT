@@ -152,21 +152,21 @@ export default function CandidateDashboard() {
       const tableBody: (string | number)[][] = [];
       if (targetAttempt.results?.subjects) {
         Object.entries(targetAttempt.results.subjects).forEach(([subject, stats]: [string, any]) => {
-          tableBody.push([subject, `${stats.correct} / ${stats.total}`]);
+          tableBody.push([subject, Math.round(Number(stats.correct ?? stats.score ?? 0))]);
         });
       } else if (Array.isArray(targetAttempt.results) && targetAttempt.results.length > 0) {
         targetAttempt.results.forEach((r: any) => {
-          tableBody.push([r.subject || 'Subject', `${r.score}`]);
+          tableBody.push([r.subject || 'Subject', Math.round(Number(r.score) || 0)]);
         });
       } else {
-        tableBody.push(['Unified Assessment', `${targetAttempt.score} / ${targetAttempt.totalPossible}`]);
+        tableBody.push(['Unified Assessment', Math.round(Number(targetAttempt.score) || 0)]);
       }
 
       (doc as any).autoTable({
         startY: 97,
         head: [['Subject', 'Score']],
         body: tableBody,
-        foot: [['AGGREGATE SCORE', `${targetAttempt.score} / ${targetAttempt.totalPossible}`]],
+        foot: [['AGGREGATE SCORE', Math.round(Number(targetAttempt.score) || 0)]],
         headStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255], fontStyle: 'bold' },
         footStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
         theme: 'grid',
@@ -250,7 +250,7 @@ export default function CandidateDashboard() {
                    </h3>
                    <p className="text-[10px] sm:text-[11px] font-medium text-white/60 tracking-wide uppercase line-clamp-2">
                      {releasedAttempt
-                       ? `Verified Raw Score: ${releasedAttempt.score} / ${releasedAttempt.totalPossible}`
+                       ? `Verified Raw Score: ${Math.round(Number(releasedAttempt.score) || 0)}`
                        : dashboardData?.assignedExamId
                        ? "Assessment has been initiated on your terminal."
                        : "Proceed to terminal to begin session."}
@@ -602,7 +602,7 @@ export default function CandidateDashboard() {
                             return (
                               <tr key={attempt.id} className="hover:bg-white/5 transition-colors">
                                 <td className="p-3 font-black text-sm text-white">
-                                  {isReleased ? `${attempt.score} / ${attempt.totalPossible}` : "PENDING"}
+                                  {isReleased ? Math.round(Number(attempt.score) || 0) : "PENDING"}
                                 </td>
                                 <td className="p-3 text-right">
                                   {isReleased ? (
