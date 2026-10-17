@@ -152,21 +152,21 @@ export default function CandidateDashboard() {
       const tableBody: (string | number)[][] = [];
       if (targetAttempt.results?.subjects) {
         Object.entries(targetAttempt.results.subjects).forEach(([subject, stats]: [string, any]) => {
-          tableBody.push([subject, `${stats.correct} / ${stats.total}`]);
+          tableBody.push([subject, Math.round(Number(stats.correct ?? stats.score ?? 0))]);
         });
       } else if (Array.isArray(targetAttempt.results) && targetAttempt.results.length > 0) {
         targetAttempt.results.forEach((r: any) => {
-          tableBody.push([r.subject || 'Subject', `${r.score}`]);
+          tableBody.push([r.subject || 'Subject', Math.round(Number(r.score) || 0)]);
         });
       } else {
-        tableBody.push(['Unified Assessment', `${targetAttempt.score} / ${targetAttempt.totalPossible}`]);
+        tableBody.push(['Unified Assessment', Math.round(Number(targetAttempt.score) || 0)]);
       }
 
       (doc as any).autoTable({
         startY: 97,
         head: [['Subject', 'Score']],
         body: tableBody,
-        foot: [['AGGREGATE SCORE', `${targetAttempt.score} / ${targetAttempt.totalPossible}`]],
+        foot: [['AGGREGATE SCORE', Math.round(Number(targetAttempt.score) || 0)]],
         headStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255], fontStyle: 'bold' },
         footStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
         theme: 'grid',
@@ -248,8 +248,10 @@ export default function CandidateDashboard() {
                    </h3>
                    <p className="text-[10px] sm:text-[11px] font-medium text-white/60 tracking-wide uppercase line-clamp-2">
                      {releasedAttempt
-                       ? `Verified Raw Score: ${releasedAttempt.score} / ${releasedAttempt.totalPossible}`
-                       : "Welcome to your student registration portal."}
+                       ? `Verified Raw Score: ${Math.round(Number(releasedAttempt.score) || 0)}`
+                       : dashboardData?.assignedExamId
+                       ? "Assessment has been initiated on your terminal."
+                       : "Proceed to terminal to begin session."}
                    </p>
                 </div>
              </div>
@@ -543,6 +545,80 @@ export default function CandidateDashboard() {
                  </Button>
               </Card>
 
+              {/* Result Record */}
+              <Card className="p-6 sm:p-8 rounded-[28px] sm:rounded-[32px] border border-primary/5 bg-slate-900 text-white shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full translate-x-1/2 -translate-y-1/2 blur-2xl" />
+                <div className="flex items-center gap-3 mb-6 sm:mb-8 relative z-10">
+                  <Award className="w-5 h-5 text-emerald-400" />
+                  <h3 className="font-black text-[10px] sm:text-xs tracking-[0.2em] uppercase">Academic Records</h3>
+                </div>
+
+                <div className="relative z-10">
+                  {attempts.length === 0 ? (
+                    <div className="border border-white/10 rounded-2xl overflow-x-auto w-full">
+                      <table className="w-full border-collapse text-xs text-left min-w-[260px]">
+                        <thead>
+                          <tr className="bg-white/5 border-b border-white/10 text-[9px] font-black tracking-wider text-white/40 uppercase">
+                            <th className="p-3">Session</th>
+                            <th className="p-3 text-right">Score</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td colSpan={2} className="p-6 text-center text-white/30 font-bold uppercase tracking-wider text-[10px]">No results yet</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="border border-white/10 rounded-2xl overflow-x-auto w-full">
+                      <table className="w-full border-collapse text-xs text-left min-w-[260px]">
+                        <thead>
+                          <tr className="bg-white/5 border-b border-white/10 text-[9px] font-black tracking-wider text-white/40 uppercase">
+                            <th className="p-3">Session Score</th>
+                            <th className="p-3 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/10 font-medium">
+                          {attempts.map(attempt => {
+                            const isReleased = attempt.isReleased || attempt.released;
+                            return (
+                              <tr key={attempt.id} className="hover:bg-white/5 transition-colors">
+                                <td className="p-3 font-black text-sm text-white">
+                                  {isReleased ? Math.round(Number(attempt.score) || 0) : "PENDING"}
+                                </td>
+                                <td className="p-3 text-right">
+                                  {isReleased ? (
+                                    <div className="inline-flex items-center gap-2">
+                                      <Button
+                                        onClick={() => handleDownloadResultPDF(attempt)}
+                                        className="h-8 px-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] tracking-wider rounded-lg inline-flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+                                        title="Download Official Result PDF"
+                                      >
+                                        <Download className="w-3.5 h-3.5" /> DOWNLOAD
+                                      </Button>
+                                      <Button
+                                        onClick={() => handlePrint('result', attempt.id)}
+                                        variant="outline"
+                                        className="h-8 px-3 border-white/20 hover:bg-white/10 text-white font-black text-[10px] tracking-wider rounded-lg inline-flex items-center gap-1.5 active:scale-95 transition-all"
+                                        title="Print Official Result Slip"
+                                      >
+                                        <Printer className="w-3.5 h-3.5" /> PRINT
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Badge className="bg-amber-500/20 text-amber-400 border-none font-black text-[8px] px-2 py-0.5 uppercase tracking-widest">Processing</Badge>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </Card>
             </div>
           </div>
         </motion.div>
