@@ -244,9 +244,7 @@ export default function CandidateDashboard() {
                    <h3 className="text-lg sm:text-xl font-black tracking-tight leading-none truncate">
                      {releasedAttempt
                        ? "Official Result Released"
-                       : dashboardData?.assignedExamId
-                       ? "Active Assessment"
-                       : "Ready for Exam?"}
+                       : "Candidate Portal"}
                    </h3>
                    <p className="text-[10px] sm:text-[11px] font-medium text-white/60 tracking-wide uppercase line-clamp-2">
                      {releasedAttempt
@@ -257,7 +255,7 @@ export default function CandidateDashboard() {
                    </p>
                 </div>
              </div>
-             {releasedAttempt ? (
+             {releasedAttempt && (
                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
                  <Button
                    onClick={() => handleDownloadResultPDF(releasedAttempt)}
@@ -272,22 +270,7 @@ export default function CandidateDashboard() {
                  >
                    <Printer className="w-4 h-4" /> PRINT RESULT SLIP
                  </Button>
-                 {dashboardData?.assignedExamId && (
-                   <Button
-                     onClick={() => navigate(`/instructions/${dashboardData.assignedExamId}`)}
-                     className="h-12 sm:h-14 w-full sm:w-auto px-6 sm:px-8 bg-white text-primary rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest shadow-xl active:scale-95 transition-all hover:bg-slate-50 border-none shrink-0"
-                   >
-                     START ASSIGNED EXAM
-                   </Button>
-                 )}
                </div>
-             ) : (
-               <Button
-                 onClick={() => navigate(dashboardData?.assignedExamId ? `/instructions/${dashboardData.assignedExamId}` : '/instructions/unified')}
-                 className="h-12 sm:h-14 w-full md:w-auto px-8 sm:px-10 bg-white text-primary rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] tracking-widest shadow-xl active:scale-95 transition-all hover:bg-slate-50 border-none shrink-0"
-               >
-                 {dashboardData?.assignedExamId ? "START ASSIGNED EXAM" : "Start Exam"}
-               </Button>
              )}
           </Card>
 
