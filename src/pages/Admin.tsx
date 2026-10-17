@@ -13,7 +13,7 @@ import { useAuth } from '@/src/context/AuthContext';
 import { cn } from '@/src/lib/utils/utils';
 import { getApiUrl, safeJsonResponse, getFriendlyErrorMessage, apiFetch } from '@/src/lib/api-config';
 import { useAdminData } from './useAdminData';
-import { Candidate } from '@/src/types';
+import { Candidate, Question } from '@/src/types';
 
 // Sub-components
 import { Overview } from '../components/admin/Overview';
@@ -31,6 +31,7 @@ import { PerformanceAnalytics } from '../components/admin/PerformanceAnalytics';
 // Modals
 import { AddExamModal } from '../components/admin/modals/AddExamModal';
 import { AddQuestionModal } from '../components/admin/modals/AddQuestionModal';
+import { EditQuestionModal } from '../components/admin/modals/EditQuestionModal';
 import { AddSubjectModal } from '../components/admin/modals/AddSubjectModal';
 import { AddCandidateModal } from '../components/admin/modals/AddCandidateModal';
 import { AddStaffModal } from '../components/admin/modals/AddStaffModal';
@@ -157,6 +158,8 @@ export default function Admin() {
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [showAddSubject, setShowAddSubject] = useState(false);
   const [showAddQuestion, setShowAddQuestion] = useState(false);
+  const [showEditQuestion, setShowEditQuestion] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [showBulkAssign, setShowBulkAssign] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
 
@@ -260,6 +263,35 @@ export default function Admin() {
       setNewQuestion({ text: '', options: ['', '', '', ''], correctOptionIndex: 0, topic: 'General', imageUrl: '' });
       fetchQuestions(selectedExamId);
       fetchData();
+    }
+  };
+
+  const handleUpdateQuestion = async (updatedData: {
+    id: string;
+    text: string;
+    options: string[];
+    correctOptionIndex: number;
+    topic: string;
+    imageUrl?: string;
+  }) => {
+    if (!selectedExamId) return;
+    try {
+      const res = await apiFetch(getApiUrl(`/exams/${selectedExamId}/questions/${updatedData.id}`), {
+        method: 'PUT',
+        headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
+      if (res.ok) {
+        toast.success("Question updated successfully");
+        setShowEditQuestion(false);
+        setEditingQuestion(null);
+        fetchQuestions(selectedExamId);
+      } else {
+        const errData = await safeJsonResponse(res);
+        toast.error(errData?.message || "Failed to update question");
+      }
+    } catch (e) {
+      toast.error(getFriendlyErrorMessage(e));
     }
   };
 
@@ -717,6 +749,10 @@ export default function Admin() {
                     setActiveTab={setActiveTab}
                     setShowAddQuestion={setShowAddQuestion}
                     handleDeleteQuestion={handleDeleteQuestion}
+                    onEditQuestion={(q) => {
+                      setEditingQuestion(q);
+                      setShowEditQuestion(true);
+                    }}
                   />
                 )}
 
@@ -776,6 +812,17 @@ export default function Admin() {
             newQuestion={newQuestion}
             setNewQuestion={setNewQuestion}
             handleAddQuestion={handleAddQuestion}
+          />
+        )}
+        {showEditQuestion && editingQuestion && (
+          <EditQuestionModal
+            isOpen={showEditQuestion}
+            onClose={() => {
+              setShowEditQuestion(false);
+              setEditingQuestion(null);
+            }}
+            question={editingQuestion}
+            handleUpdateQuestion={handleUpdateQuestion}
           />
         )}
         {showAddSubject && (
