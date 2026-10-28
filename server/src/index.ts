@@ -28,6 +28,8 @@ import analyticsRoutes from "./routes/analytics";
 import centerRoutes from "./routes/center";
 import candidateRoutes from "./routes/candidate";
 import subjectRoutes from "./routes/subject";
+import financeRoutes from "./routes/finance";
+import bankingRoutes from "./routes/banking";
 
 import { ipBlocker } from "./middleware/ip-blocker";
 import { automationEngine } from "./lib/automation-engine";
@@ -221,6 +223,8 @@ app.use("/analytics", analyticsRoutes);
 app.use("/center", centerRoutes);
 app.use("/candidates", candidateRoutes);
 app.use("/subjects", subjectRoutes);
+app.use("/finance", financeRoutes);
+app.use("/banking", bankingRoutes);
 
 // Mount under /api prefix as well for standardized API requests
 // Mount API routes under /api namespace as well
@@ -230,6 +234,8 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/center", centerRoutes);
 app.use("/api/candidates", candidateRoutes);
 app.use("/api/subjects", subjectRoutes);
+app.use("/api/finance", financeRoutes);
+app.use("/api/banking", bankingRoutes);
 
 // API 404 handler: Ensure unmatched API routes return JSON, not HTML
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {

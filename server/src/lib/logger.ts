@@ -44,7 +44,7 @@ export const logger = winston.createLogger({
 });
 
 export async function createLog(data: {
-  type: LogType | "auth" | "security" | "exam" | "system";
+  type: LogType | "auth" | "security" | "exam" | "system" | "finance";
   severity: LogSeverity | "info" | "warning" | "error" | "critical";
   message: string;
   userId?: string;

@@ -20,8 +20,12 @@ import {
   BookOpen,
   Sparkles,
   TrendingUp,
-  Target
+  Target,
+  CreditCard,
+  CheckCircle2,
+  ShieldAlert
 } from 'lucide-react';
+import { StudentCardPaymentModal } from '../components/finance/StudentCardPaymentModal';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/lib/ui/badge';
 import { Input } from '@/lib/ui/input';
@@ -38,6 +42,7 @@ export default function CandidateDashboard() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditEditForm] = useState<any>({});
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const { profile, logOut } = useAuth();
   const navigate = useNavigate();
 
@@ -102,6 +107,16 @@ export default function CandidateDashboard() {
 
   const handlePrint = (type: 'schedule' | 'result', attemptId?: string) => {
     if (type === 'schedule') {
+      if (!dashboardData?.isFeePaid) {
+        toast.error("Examination Fee Unpaid! Please complete your card payment to print your exam slip.", {
+          action: {
+            label: "PAY NOW",
+            onClick: () => setShowPaymentModal(true)
+          }
+        });
+        setShowPaymentModal(true);
+        return;
+      }
       window.open(`/exam-slip/${dashboardData?.examNumber}`, '_blank');
     } else {
       const url = attemptId
@@ -230,6 +245,42 @@ export default function CandidateDashboard() {
 
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-6 relative z-10">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+
+          {/* Fee Verification & Payment Status Banner */}
+          {!dashboardData?.isFeePaid ? (
+            <Card className="p-6 bg-gradient-to-r from-amber-500 to-rose-600 text-white rounded-[28px] shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md shrink-0">
+                  <ShieldAlert className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-white/20 text-white border-none font-bold">FEES REQUIRED</Badge>
+                    <span className="font-mono text-xs font-bold text-amber-100">Fee Due: ₦5,000.00</span>
+                  </div>
+                  <h3 className="text-lg font-black mt-1">Exam Registration Fee Pending</h3>
+                  <p className="text-xs text-white/80 font-medium">
+                    You must pay your exam registration fee with your card to write your exam and download your exam slip.
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => setShowPaymentModal(true)}
+                className="h-12 px-6 bg-white text-rose-700 hover:bg-slate-100 font-black text-xs tracking-wider rounded-xl shadow-lg shrink-0 flex items-center gap-2"
+              >
+                <CreditCard className="w-4 h-4" /> PAY EXAM FEE WITH CARD
+              </Button>
+            </Card>
+          ) : (
+            <Card className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-emerald-800 text-xs font-bold">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <span>EXAM REGISTRATION FEE PAID & VERIFIED (Ref: {dashboardData.paymentReference || 'VERIFIED'})</span>
+              </div>
+              <Badge className="bg-emerald-600 text-white border-none">ACTIVE SESSION</Badge>
+            </Card>
+          )}
 
           {/* Main Action Card */}
           <Card className="p-6 sm:p-8 bg-primary text-white rounded-[28px] sm:rounded-[32px] shadow-2xl shadow-primary/20 flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-8 border-none overflow-hidden relative group">
@@ -550,6 +601,18 @@ export default function CandidateDashboard() {
       <footer className="py-8 sm:py-12 text-center bg-white border-t border-primary/5">
         <p className="text-[8px] sm:text-[10px] font-bold text-primary/10 tracking-[0.3em] uppercase px-4">&copy; {new Date().getFullYear()} VIVI CBT SYSTEMS • Secure Registration Portal</p>
       </footer>
+
+      {/* STUDENT CARD PAYMENT MODAL */}
+      <StudentCardPaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        examNumber={dashboardData?.examNumber || ''}
+        fullName={dashboardData?.fullName || ''}
+        amount={Number(dashboardData?.feeAmount || 5000.00)}
+        onPaymentSuccess={() => {
+          fetchData();
+        }}
+      />
     </div>
   );
 }

@@ -27,6 +27,7 @@ import { PersonnelManager } from '../components/admin/PersonnelManager';
 import { AuditTrail } from '../components/admin/AuditTrail';
 import { ResultsManager } from '../components/admin/ResultsManager';
 import { PerformanceAnalytics } from '../components/admin/PerformanceAnalytics';
+import { FinanceManager } from '../components/admin/FinanceManager';
 
 // Modals
 import { AddExamModal } from '../components/admin/modals/AddExamModal';
@@ -40,7 +41,7 @@ import { EditCandidateModal } from '../components/admin/modals/EditCandidateModa
 import { BulkAssignModal } from '../components/admin/modals/BulkAssignModal';
 
 // Icons
-import { LayoutDashboard, Users, BookOpen, Shield, Award, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, Shield, Award, TrendingUp, DollarSign } from 'lucide-react';
 
 export default function Admin() {
   const { profile, logOut } = useAuth();
@@ -570,6 +571,7 @@ export default function Admin() {
 
   const menuItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard, roles: ['super_admin', 'admin', 'reg_admin'] },
+    { id: 'finance', label: 'Banking & Finance', icon: DollarSign, roles: ['super_admin', 'admin', 'reg_admin'] },
     { id: 'enrollment', label: 'Candidates', icon: Users, roles: ['super_admin', 'admin', 'reg_admin'] },
     { id: 'hall', label: 'Exam Hall', icon: Monitor, roles: ['super_admin', 'admin', 'reg_admin'] },
     { id: 'results', label: 'Release Center', icon: Award, roles: ['super_admin', 'admin', 'reg_admin'] },
@@ -697,6 +699,8 @@ export default function Admin() {
                 )}
 
                 {activeTab === 'analytics' && <PerformanceAnalytics />}
+
+                {activeTab === 'finance' && <FinanceManager />}
 
                 {activeTab === 'enrollment' && (
                   <StudentRegistry

@@ -11,6 +11,13 @@ import { Attempt } from "./entities/Attempt";
 import { Seat } from "./entities/Seat";
 import { Log } from "./entities/Log";
 import { Subject } from "./entities/Subject";
+import { Account } from "./entities/Account";
+import { JournalEntry } from "./entities/JournalEntry";
+import { JournalLine } from "./entities/JournalLine";
+import { PaymentTransaction } from "./entities/PaymentTransaction";
+import { AdminBankAccount } from "./entities/AdminBankAccount";
+import { BankStatement } from "./entities/BankStatement";
+import { BankStatementLine } from "./entities/BankStatementLine";
 
 // Subscribers
 import { SeatSubscriber } from "./subscribers/SeatSubscriber";
@@ -55,7 +62,23 @@ export const AppDataSource = new DataSource({
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 30000,
   },
-  entities: [User, Candidate, Exam, Question, Attempt, Seat, Log, Subject],
+  entities: [
+    User,
+    Candidate,
+    Exam,
+    Question,
+    Attempt,
+    Seat,
+    Log,
+    Subject,
+    Account,
+    JournalEntry,
+    JournalLine,
+    PaymentTransaction,
+    AdminBankAccount,
+    BankStatement,
+    BankStatementLine,
+  ],
   migrations: [InitialMigration1717750000000, UpdateEntities1786523765590],
   migrationsRun: true,
   subscribers: [

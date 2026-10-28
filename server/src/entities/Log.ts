@@ -5,6 +5,7 @@ export enum LogType {
   SECURITY = "security",
   EXAM = "exam",
   SYSTEM = "system",
+  FINANCE = "finance",
 }
 
 export enum LogSeverity {

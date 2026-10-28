@@ -80,6 +80,15 @@ export class Candidate {
   @Column("simple-array")
   subjectCombination!: string[];
 
+  @Column({ type: "boolean", default: false })
+  isFeePaid!: boolean;
+
+  @Column({ type: "decimal", precision: 15, scale: 2, default: 5000.00 })
+  feeAmount!: number;
+
+  @Column({ type: "varchar", length: 100, nullable: true })
+  paymentReference?: string;
+
   @CreateDateColumn({ type: "timestamptz" })
   createdAt!: Date;
 }
